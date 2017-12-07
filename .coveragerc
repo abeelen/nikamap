@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = nikamap/*
+include = nikamap/*
+omit = */setup.py
+[report]
+include = nikamap/*
