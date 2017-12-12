@@ -11,12 +11,16 @@ from astropy import units as u
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord, match_coordinates_sky
 from astropy.nddata import NDDataArray, StdDevUncertainty, NDUncertainty
-from astropy.modeling import models
+from astropy.modeling import models, Parameter, Fittable2DModel
+from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
 from astropy.convolution import Kernel2D, Box2DKernel
 
 from astropy.table import Table, MaskedColumn, Column
 
+from photutils.psf import BasicPSFPhotometry
+from photutils.psf import DAOGroup
+from photutils.background import MedianBackground
 
 import photutils
 from photutils.datasets import make_gaussian_sources_image
@@ -44,7 +48,71 @@ def _round_up_to_odd_integer(value):
         return i
 
 
+class CircularGaussianPSF(Fittable2DModel):
+    r"""
+    Circular Gaussian model, not integrated, un-normalized.
+
+    Parameters
+    ----------
+    sigma : float
+        Width of the Gaussian PSF.
+    flux : float (default 1)
+        Total integrated flux over the entire PSF
+    x_0 : float (default 0)
+        Position of the peak in x direction.
+    y_0 : float (default 0)
+        Position of the peak in y direction.
+
+    """
+
+    flux = Parameter(default=1)
+    x_0 = Parameter(default=0)
+    y_0 = Parameter(default=0)
+    sigma = Parameter(default=1, fixed=True)
+
+    _erf = None
+    fit_deriv = None
+
+    @property
+    def bounding_box(self):
+        halfwidth = 4 * self.sigma
+        return ((int(self.y_0 - halfwidth), int(self.y_0 + halfwidth)),
+                (int(self.x_0 - halfwidth), int(self.x_0 + halfwidth)))
+
+    def __init__(self, sigma=sigma.default,
+                 x_0=x_0.default, y_0=y_0.default, flux=flux.default,
+                 **kwargs):
+        if self._erf is None:
+            from scipy.special import erf
+            self.__class__._erf = erf
+
+        super(CircularGaussianPSF, self).__init__(n_models=1, sigma=sigma,
+                                                  x_0=x_0, y_0=y_0,
+                                                  flux=flux, **kwargs)
+
+    def evaluate(self, x, y, flux, x_0, y_0, sigma):
+        """Model function Gaussian PSF model."""
+
+        return flux * np.exp(-((x - x_0)**2 + (y - y_0)**2) / (2*sigma**2))
+
+
 class NikaBeam(Kernel2D):
+    """NikaBeam describe the beam of a NikaMap
+
+    By default the beams are gaussian function, but the class should be able to handle arbitrary beam. It also add an internal pixel_scale which allow for `~astropy.units.Quantity` arguments
+
+    Parameters
+    ----------
+    fwhm : :class:~astropy.units.Quantity
+        Full width half maximum of the Gaussian kernel.
+    pixel_scale : `~astropy.units.equivalencies.pixel_scale`
+        The pixel scale either in units of angle/pixel or pixel/angle.
+
+    See also
+    --------
+    ~astropy.convolution.Gaussian2DKernel
+
+    """
     def __init__(self, fwhm=None, pixel_scale=None, **kwargs):
 
         self._pixel_scale = pixel_scale
@@ -69,6 +137,52 @@ class NikaBeam(Kernel2D):
 
 
 class NikaMap(NDDataArray):
+    """A NikaMap object represent a nika map with additionnal capabilities.
+
+    It contains the metadata, wcs, and all attribute (data/stddev/time/unit/mask) as well as potential source list detected in these maps.
+
+    Parameters
+    -----------
+    data : `~numpy.ndarray` or `NDData`
+        The actual data contained in this `NDData` object. Not that this
+        will always be copies by *reference* , so you should make copy
+        the ``data`` before passing it in if that's the  desired behavior.
+    uncertainty : `~astropy.nddata.NDUncertainty`, optional
+        Uncertainties on the data.
+    mask : `~numpy.ndarray`-like, optional
+        Mask for the data, given as a boolean Numpy array or any object that
+        can be converted to a boolean Numpy array with a shape
+        matching that of the data. The values must be ``False`` where
+        the data is *valid* and ``True`` when it is not (like Numpy
+        masked arrays). If ``data`` is a numpy masked array, providing
+        ``mask`` here will causes the mask from the masked array to be
+        ignored.
+    time : `~astropy.units.quantity.Quantity` array
+        The time spent per pixel on the map, must have unit equivalent to time
+        and shape equivalent to data
+    wcs : undefined, optional
+        WCS-object containing the world coordinate system for the data.
+    meta : `dict`-like object, optional
+        Metadata for this object.  "Metadata" here means all information that
+        is included with this object but not part of any other attribute
+        of this particular object.  e.g., creation date, unique identifier,
+        simulation parameters, exposure time, telescope name, etc.
+    unit : `~astropy.units.UnitBase` instance or str, optional
+        The units of the data.
+    beam : `~nikamap.NikaBeam`
+        The beam corresponding to the data, by default a circular gaussian
+        constructed from the header 'BMAJ' keyword.
+    fake_source : `~astropy.table.Table`, optional
+        The table of potential fake sources included in the data
+
+        .. note::
+            The table must contain at least 3 columns: ['ID', 'ra', 'dec']
+
+    sources : `~astropy.table.Table`, optional
+        The table of detected sources in the data.
+
+    """
+
     def __init__(self, *args, **kwargs):
 
         # Must be set AFTER the super() call
@@ -79,7 +193,11 @@ class NikaMap(NDDataArray):
 
         super(NikaMap, self).__init__(*args, **kwargs)
 
-        pixsize = np.abs(self.meta.get('CDELT1', 1)) * u.deg
+        if isinstance(self.wcs, WCS):
+            pixsize = np.abs(self.wcs.wcs.cdelt[0]) * u.deg
+        else:
+            pixsize = np.abs(self.meta.get('CDELT1', 1)) * u.deg
+
         self._pixel_scale = u.pixel_scale(pixsize / u.pixel)
 
         if time is not None:
@@ -130,7 +248,7 @@ class NikaMap(NDDataArray):
                 self._uncertainty = StdDevUncertainty(value)
             else:
                 raise TypeError("uncertainty must be an instance of a "
-                                "NDUncertainty object or a numpy array.")
+                                "StdDevUncertainty object or a numpy array.")
             self._uncertainty.parent_nddata = self
         else:
             self._uncertainty = value
@@ -175,28 +293,113 @@ class NikaMap(NDDataArray):
 
         return kwargs  # these must be returned
 
-    def detect_sources(self, threshold=3, clean=True, box_size=4):
-        """Detect sources with IRAF Star Finder and DAO StarFinder"""
+    def trim(self):
+        """Remove masked region on the edges"""
 
-        # To avoid fitting warnings...
+        mask = self.mask
+        axis_slice = []
+        for axis in [1, 0]:
+            good_pix = np.argwhere(np.mean(mask, axis=axis) != 1)
+            axis_slice.append(slice(np.min(good_pix), np.max(good_pix)+1))
+
+        return self[axis_slice[0], axis_slice[1]]
+
+    def add_gaussian_sources(self, nsources=10, peak_flux=1 * u.mJy, within=(1. / 4, 3. / 4), grid=None, wobble=False):
+
+        shape = self.shape
+
+        # TODO: Non gaussian beam
+        beam_std_pix = self.beam.fwhm_pix.value * gaussian_fwhm_to_sigma
+
+        sources = Table(masked=True)
+        sources['amplitude'] = (np.ones(nsources) * peak_flux).to(self.unit * u.beam)
+
+        if grid is None:
+            # Uniform random sources
+            x_mean = np.random.uniform(within[0], within[1], size=nsources)
+            y_mean = np.random.uniform(within[0], within[1], size=nsources)
+        else:
+            # Gridded sources
+            sq_sources = int(np.sqrt(nsources))
+            assert sq_sources**2 == nsources, 'nsources must be a squared number'
+            y_mean, x_mean = np.indices(
+                [sq_sources] * 2) / (sq_sources - 1) * (within[1] - within[0]) + within[0]
+
+            if wobble:
+                # With some wobbling if needed
+                step = (np.max(within) - np.min(within)) / (sq_sources - 1)
+                x_mean += np.random.normal(0, step / 2 *
+                                           gaussian_fwhm_to_sigma, size=x_mean.shape)
+                y_mean += np.random.normal(0, step / 2 *
+                                           gaussian_fwhm_to_sigma, size=y_mean.shape)
+
+        sources['x_mean'] = x_mean.flatten() * shape[1]
+        sources['y_mean'] = y_mean.flatten() * shape[0]
+
+        sources['x_stddev'] = np.ones(nsources) * beam_std_pix
+        sources['y_stddev'] = np.ones(nsources) * beam_std_pix
+        sources['theta'] = np.zeros(nsources)
+
+        # Crude check to be within the finite part of the map
+        if self.mask is not None:
+            within_coverage = ~self.mask[sources['y_mean'].astype(int), sources['x_mean'].astype(int)]
+            sources = sources[within_coverage]
+
+        # Gaussian sources...
+        self._data += make_gaussian_sources_image(shape, sources)
+
+        # Add an ID column
+        sources.add_column(Column(np.arange(len(sources)), name='ID'), 0)
+
+        # Transform pixel to world coordinates
+        a, d = self.wcs.wcs_pix2world(sources['x_mean'], sources['y_mean'], 0)
+        sources.add_columns([Column(a * u.deg, name='ra'),
+                             Column(d * u.deg, name='dec')])
+
+        # Remove unnecessary columns
+        sources.remove_columns(['x_mean', 'y_mean', 'x_stddev', 'y_stddev', 'theta'])
+
+        self.fake_sources = sources
+
+    def detect_sources(self, threshold=3, box_size=4):
+        """Detect sources with find local peaks above a specified threshold value.
+
+        The detection is made on the SNR map, and return an `~astropy.table.Table` with columns ``ID, ra, dec, SNR``.
+        If fake sources are present, a match is made with a distance threshold of ``beam_fwhm / 3``
+
+        Parameters
+        ----------
+        threshold : float
+            The data value or pixel-wise data values to be used for the
+            detection threshold.
+        box_size : scalar or tuple, optional
+            The size of the local region to search for peaks at every point
+            in ``data``.  If ``box_size`` is a scalar, then the region shape
+            will be ``(box_size, box_size)``.
+
+        Notes
+        -----
+        The edge of the map is cropped by the box_size in order to insure proper subpixel fitting.
+        """
+
+        detect_on = self.SNR.filled(0)
+
+        if self.mask is not None:
+                # Make sure that there is no detection on the edge of the map
+                box_kernel = Box2DKernel(box_size)
+                detect_mask = ~np.isclose(signal.fftconvolve(
+                    ~self.mask, box_kernel, mode='same'), 1)
+                detect_on[detect_mask] = 0
+
+        # TODO: Have a look at  ~photutils.psf.IterativelySubtractedPSFPhotometry
+
+        # To avoid bad fit warnings...
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', AstropyWarning)
-
-            # Make sure that there is no detection on the edge of the map
-            box_kernel = Box2DKernel(box_size)
-            detect_mask = ~np.isclose(signal.fftconvolve(
-                ~self.mask, box_kernel, mode='same'), 1)
-            detect_on = self.SNR.filled(0)
-            detect_on[detect_mask] = 0
-
             sources = photutils.find_peaks(
                 detect_on, threshold=threshold, mask=self.mask, wcs=self.wcs, subpixel=True, box_size=box_size)
         sources.meta['method'] = 'find_peak'
         sources.meta['threshold'] = threshold
-
-        if clean:
-            # Filter values on threshold
-            sources = sources[sources['peak_value'] > threshold]
 
         # Transform to masked Table here to avoid future warnings
         sources = Table(sources, masked=True)
@@ -266,40 +469,48 @@ class NikaMap(NDDataArray):
 
         if peak:
             # Crude Peak Photometry
-            sources['flux_peak'] = Column([self.data[np.int(y), np.int(
-                x)] for x, y in zip(xx, yy)], unit=self.unit * u.beam).to(u.mJy)
-            sources['eflux_peak'] = Column([self.uncertainty.array[np.int(y), np.int(
-                x)] for x, y in zip(xx, yy)], unit=self.unit * u.beam).to(u.mJy)
+            # From pixel indexes to array indexing
+            x_idx = np.floor(xx + 0.5).astype(int)
+            y_idx = np.floor(yy + 0.5).astype(int)
+            sources['flux_peak'] = Column(self.data[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
+            sources['eflux_peak'] = Column(self.uncertainty.array[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
 
         if psf:
             # BasicPSFPhotometry with fixed positions
-            from photutils.psf import IntegratedGaussianPRF, BasicPSFPhotometry
-            from astropy.modeling.fitting import LevMarLSQFitter
-            from photutils.psf import DAOGroup
-            from photutils.background import MedianBackground
 
             sigma_psf = self.beam.fwhm_pix.value * gaussian_fwhm_to_sigma
 
-            psf_model = IntegratedGaussianPRF(sigma=sigma_psf)
+            # Using an IntegratedGaussianPRF can cause biais in the photometry
+            # TODO: Check the NIKA2 calibration scheme
+            # from photutils.psf import IntegratedGaussianPRF
+            # psf_model = IntegratedGaussianPRF(sigma=sigma_psf)
+            psf_model = CircularGaussianPSF(sigma=sigma_psf)
+
             psf_model.x_0.fixed = True
             psf_model.y_0.fixed = True
 
-            daogroup = DAOGroup(2.0 * self.beam.fwhm_pix.value)
+            daogroup = DAOGroup(5 * self.beam.fwhm_pix.value)
             mmm_bkg = MedianBackground()
 
             photometry = BasicPSFPhotometry(group_maker=daogroup, bkg_estimator=mmm_bkg,
                                             psf_model=psf_model, fitter=LevMarLSQFitter(),
-                                            fitshape=(21, 21))
+                                            fitshape=9)
 
             positions = Table([Column(xx, name="x_0"), Column(yy, name="y_0")])
 
             result_tab = photometry(image=np.ma.array(
                 self.data, mask=self.mask).filled(0), init_guesses=positions)
 
+            # sources['flux_psf'] = Column(
+            #     result_tab['flux_fit'] / (2 * np.pi * sigma_psf**2), unit=self.unit * u.beam).to(u.mJy)
+            # sources['eflux_psf'] = Column(
+            #     result_tab['flux_unc'] / (2 * np.pi * sigma_psf**2), unit=self.unit * u.beam).to(u.mJy)
+
             sources['flux_psf'] = Column(
-                result_tab['flux_fit'] / (2 * np.pi * sigma_psf**2), unit=self.unit * u.beam).to(u.mJy)
+                result_tab['flux_fit'] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
             sources['eflux_psf'] = Column(
-                result_tab['flux_unc'] / (2 * np.pi * sigma_psf**2), unit=self.unit * u.beam).to(u.mJy)
+                result_tab['flux_unc'] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
+            sources['group_id'] = result_tab['group_id']
 
         self.sources = sources
 
@@ -342,16 +553,20 @@ class NikaMap(NDDataArray):
         # Convolve the mask and retrieve the fully sampled region, this
         # will remove one kernel width on the edges
         # mf_mask = ~np.isclose(convolve(~self.mask, kernel, normalize_kernel=False), 1)
-        mf_mask = ~np.isclose(signal.fftconvolve(
-            ~self.mask, kernel, mode='same'), 1)
+        if self.mask is not None:
+            mf_mask = ~np.isclose(signal.fftconvolve(~self.mask, kernel, mode='same'), 1)
+        else:
+            mf_mask = None
 
         # Convolve the time (integral for time)
         # with warnings.catch_warnings():
         #     warnings.simplefilter('ignore', AstropyWarning)
         #     mf_time = convolve(self.time, kernel, normalize_kernel=False)*self.time.unit
-        mf_time = signal.fftconvolve(self.__t_array__().filled(
-            0), kernel, mode='same') * self.time.unit
-        mf_time[mf_mask] = 0
+        mf_time = signal.fftconvolve(self.__t_array__().filled(0),
+                                     kernel, mode='same') * self.time.unit
+
+        if mf_mask is not None:
+            mf_time[mf_mask] = 0
 
         # Convolve the data (peak for unit conservation)
         kernel.normalize('peak')
@@ -359,19 +574,21 @@ class NikaMap(NDDataArray):
 
         # ma.filled(0) required for the fft convolution
         weights = 1. / self.uncertainty.array**2
-        weights[self.mask] = 0
+        if self.mask is not None:
+            weights[self.mask] = 0
 
         # with np.errstate(divide='ignore'):
         #     mf_uncertainty = np.sqrt(convolve(weights, kernel_sqr, normalize_kernel=False))**-1
         with np.errstate(invalid='ignore', divide='ignore'):
-            mf_uncertainty = np.sqrt(signal.fftconvolve(
-                weights, kernel_sqr, mode='same'))**-1
-        mf_uncertainty[mf_mask] = np.nan
+            mf_uncertainty = np.sqrt(signal.fftconvolve(weights,
+                                                        kernel_sqr, mode='same'))**-1
+        if mf_mask is not None:
+            mf_uncertainty[mf_mask] = np.nan
 
         # Units are not propagated in masked arrays...
         # mf_data = convolve(weights*data, kernel, normalize_kernel=False) * mf_uncertainty**2
-        mf_data = signal.fftconvolve(
-            weights * self.__array__().filled(0), kernel, mode='same') * mf_uncertainty**2
+        mf_data = signal.fftconvolve(weights * self.__array__().filled(0),
+                                     kernel, mode='same') * mf_uncertainty**2
 
         mf_data = NikaMap(mf_data, unit=self.unit, mask=mf_mask, time=mf_time,
                           uncertainty=StdDevUncertainty(mf_uncertainty), wcs=self.wcs,
@@ -493,49 +710,6 @@ def fake_header(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcse
     return header
 
 
-def fake_source(data, beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec, nsources=10, peak_flux=1 * u.mJy, within=(1. / 4, 3. / 4), grid=None, wobble=False):
-
-    shape = data.shape
-
-    beam_std_pix = (beam_fwhm / pixsize).decompose().value * \
-        gaussian_fwhm_to_sigma
-
-    sources = Table(masked=True)
-    sources['amplitude'] = (np.ones(nsources) * peak_flux).to(Jy_beam * u.beam)
-    if grid is None:
-        x_mean = np.random.uniform(within[0], within[1], size=nsources)
-        y_mean = np.random.uniform(within[0], within[1], size=nsources)
-    else:
-        sq_sources = int(np.sqrt(nsources))
-        assert sq_sources**2 == nsources, 'nsources must be a squared number'
-        y_mean, x_mean = np.indices(
-            [sq_sources] * 2) / (sq_sources - 1) * (within[1] - within[0]) + within[0]
-        if wobble:
-            step = (np.max(within) - np.min(within)) / (sq_sources - 1)
-            x_mean += np.random.normal(0, step / 2 *
-                                       gaussian_fwhm_to_sigma, size=x_mean.shape)
-            y_mean += np.random.normal(0, step / 2 *
-                                       gaussian_fwhm_to_sigma, size=y_mean.shape)
-
-    sources['x_mean'] = x_mean.flatten() * shape[1]
-    sources['y_mean'] = y_mean.flatten() * shape[0]
-
-    sources['x_stddev'] = np.ones(nsources) * beam_std_pix
-    sources['y_stddev'] = np.ones(nsources) * beam_std_pix
-    sources['theta'] = np.zeros(nsources)
-
-    # Crude check to be within the finite part of the map
-    within_coverage = np.isfinite(
-        data[sources['y_mean'].astype(int), sources['x_mean'].astype(int)])
-
-    sources = sources[within_coverage]
-
-    # Add an ID column
-    sources.add_column(Column(np.arange(len(sources)), name='ID'), 0)
-
-    return data + make_gaussian_sources_image(shape, sources), sources
-
-
 def fake_data(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec, NEFD=50e-3 * Jy_beam * u.s**0.5,
               nsources=32, grid=False, wobble=False, peak_flux=None, time_fwhm=1. / 5, jk_data=None, e_data=None):
     """Build fake dataset"""
@@ -583,18 +757,10 @@ def fake_data(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
     if peak_flux is None:
         peak_flux = 3 * (NEFD / np.sqrt(np.nanmax(time)) * u.beam).to(u.mJy)
 
-    if nsources:
-        data, sources = fake_source(data, beam_fwhm=beam_fwhm, pixsize=pixsize,
-                                    nsources=nsources, peak_flux=peak_flux, grid=grid, wobble=wobble)
-        a, d = WCS(header).wcs_pix2world(
-            sources['x_mean'], sources['y_mean'], 0)
-        sources.remove_columns(['x_mean', 'y_mean'])
-        sources.add_columns([Column(a * u.deg, name='ra'),
-                             Column(d * u.deg, name='dec')])
-    else:
-        sources = None
-
     data = NikaMap(data, mask=mask, unit=Jy_beam, uncertainty=StdDevUncertainty(
-        e_data), wcs=WCS(header), meta=header, time=time, fake_sources=sources)
+        e_data), wcs=WCS(header), meta=header, time=time)
+
+    if nsources:
+        data.add_gaussian_sources(nsources=nsources, peak_flux=peak_flux, grid=grid, wobble=wobble)
 
     return data
