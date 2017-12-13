@@ -616,7 +616,7 @@ class NikaMap(NDDataArray):
         # vmin, vmax = interval.get_limits(SNR)
         #   vmin, vmax = MinMaxInterval().get_limits(mf_SNR)
         vmin, vmax = -3, 5
-        snr = ax.imshow(SNR, vmin=vmin, vmax=vmax, origin='lower')
+        snr = ax.imshow(SNR, vmin=vmin, vmax=vmax, origin='lower', interpolation='none')
         snr.set_clim(clim)
         if levels is not None:
             levels = np.sqrt(2)**np.arange(levels[0], levels[1])
@@ -640,7 +640,9 @@ class NikaMap(NDDataArray):
 
         ax.set_xlim(0, self.shape[1])
         ax.set_ylim(0, self.shape[0])
-        ax.legend(loc='best', frameon=False)
+
+        if cat is not None:
+            ax.legend(loc='best', frameon=False)
 
         return ax
 
