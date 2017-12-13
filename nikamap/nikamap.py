@@ -821,7 +821,7 @@ class jk_nikamap:
             assert WCS(header)._naxis1 == WCS(_header)._naxis1, '{} has a different shape'.format(filename)
             assert WCS(header)._naxis2 == WCS(_header)._naxis2, '{} has a different shape'.format(filename)
 
-        if len(filenames) % 2:
+        if len(filenames) % 2 and n is not None:
             warnings.warn('Even number of files, dropping the last one')
             filenames = filenames[:-1]
 
