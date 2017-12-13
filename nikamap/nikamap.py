@@ -36,7 +36,7 @@ plt.ion()
 
 Jy_beam = u.Jy / u.beam
 
-__all__ = ['NikaBeam', 'NikaMap', 'fake_data']
+__all__ = ['NikaBeam', 'NikaMap', 'fake_data', 'jk_nikamap']
 
 
 # Forking from astropy.convolution.kernels
@@ -451,7 +451,13 @@ class NikaMap(NDDataArray):
 
         self.sources = sources
 
-    def match_sources(self, catalogs, dist_threshold=4 * u.arcsec):
+    def match_sources(self, catalogs, dist_threshold=None):
+
+        if dist_threshold is None:
+            dist_threshold = self.beam.fwhm / 3
+
+        if not isinstance(catalogs, list):
+            catalogs = [catalogs]
 
         for cat, ref_cat in product([self.sources], catalogs):
             cat_SkyCoord = SkyCoord(cat['ra'], cat['dec'], unit=(cat['ra'].unit, cat['dec'].unit))
@@ -640,7 +646,17 @@ class NikaMap(NDDataArray):
 
 
 def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
-    """Retrieve the required data from the fits file"""
+    """NIKA2 IDL Pipeline Map reader
+
+    Parameters
+    ----------
+    filenames : list
+        the list of fits files to produce the Jackknifes
+    band : str (1mm | 2mm)
+        the requested band
+    revert : boolean
+         use if to return -1 * data
+    """
 
     with fits.open(filename, **kwd) as hdus:
         # Fiddling to "fix" the fits file
@@ -653,26 +669,26 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
         elif band == "2mm":
             bmaj = hdus[0].header['FWHM_150'] * u.arcsec
 
-        data, header = hdus['Brightness_{}'.format(
-            band)].data, hdus['Brightness_{}'.format(band)].header
+        data = hdus['Brightness_{}'.format(band)].data
+        header = hdus['Brightness_{}'.format(band)].header
         e_data = hdus['Stddev_{}'.format(band)].data
         hits = hdus['Nhits_{}'.format(band)].data
 
-        header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
-        header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
+    header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
+    header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
 
-        time = (hits / f_sampling).to(u.h)
+    time = (hits / f_sampling).to(u.h)
 
-        # Mask unobserved regions
-        unobserved = hits == 0
-        data[unobserved] = np.nan
-        e_data[unobserved] = np.nan
+    # Mask unobserved regions
+    unobserved = hits == 0
+    data[unobserved] = np.nan
+    e_data[unobserved] = np.nan
 
-        if revert:
-            data *= -1
+    if revert:
+        data *= -1
 
-        data = NikaMap(data, mask=unobserved, uncertainty=StdDevUncertainty(
-            e_data), unit=header['UNIT'], wcs=WCS(header), meta=header, time=time)
+    data = NikaMap(data, mask=unobserved, uncertainty=StdDevUncertainty(
+        e_data), unit=header['UNIT'], wcs=WCS(header), meta=header, time=time)
 
     return data
 
@@ -764,3 +780,129 @@ def fake_data(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
         data.add_gaussian_sources(nsources=nsources, peak_flux=peak_flux, grid=grid, wobble=wobble)
 
     return data
+
+
+class jk_nikamap:
+    """A class to create weighted Jackknife maps from a list of fits files.
+
+    This acts as a python generator.
+
+    Parameters
+    ----------
+    filenames : list
+        the list of fits files to produce the Jackknifes
+    band : str (1mm | 2mm)
+        the requested band
+    n : int
+        the number of Jackknifes maps to be produced
+
+            if set to `None`, produce one weighted average of the maps
+
+    Notes
+    -----
+    A crude check is made on the wcs of each map when instanciated
+    """
+    def __init__(self, filenames, band='1mm', n=10, low_mem=False, **kwd):
+
+        self._iter = iter(self)  # Py2-style
+        self.i = 0
+        self.n = n
+        self.filenames = filenames
+        self.band = band
+        self.low_mem = False
+
+        header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
+
+        # Checking all header for consistency
+        for filename in filenames:
+            _header = fits.getheader(filename, 'Brightness_{}'.format(band))
+            assert WCS(header).wcs == WCS(_header).wcs, '{} has a different header'.format(filename)
+            assert header['UNIT'] == _header['UNIT'], '{} has a different unit'.format(filename)
+            assert WCS(header)._naxis1 == WCS(_header)._naxis1, '{} has a different shape'.format(filename)
+            assert WCS(header)._naxis2 == WCS(_header)._naxis2, '{} has a different shape'.format(filename)
+
+        if len(filenames) % 2:
+            warnings.warn('Even number of files, dropping the last one')
+            filenames = filenames[:-1]
+
+        # Retrieve common keywords
+        with fits.open(filenames[0], **kwd) as hdus:
+            if band == "1mm":
+                bmaj = hdus[0].header['FWHM_260'] * u.arcsec
+            elif band == "2mm":
+                bmaj = hdus[0].header['FWHM_150'] * u.arcsec
+
+        header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
+        header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
+
+        self.header = header
+
+        # This is low_mem=False case ...
+        datas = np.zeros((len(filenames), header['NAXIS2'], header['NAXIS1']))
+        weights = np.zeros((len(filenames), header['NAXIS2'], header['NAXIS1']))
+        time = np.zeros((header['NAXIS2'], header['NAXIS1']))*u.h
+
+        for i, filename in enumerate(filenames):
+
+            with fits.open(filename, **kwd) as hdus:
+
+                f_sampling = hdus[0].header['f_sampli'] * u.Hz
+                nhits = hdus['Nhits_{}'.format(band)].data
+
+                # Time always adds up
+                time += nhits / f_sampling
+
+                datas[i, :, :] = hdus['Brightness_{}'.format(band)].data
+                with np.errstate(invalid='ignore', divide='ignore'):
+                    weights[i, :, :] = hdus['Stddev_{}'.format(band)].data**-2
+
+                weights[i, nhits == 0] = 0
+
+        unobserved = time == 0
+        # Base jackknife weights
+        jk_weights = np.ones(len(filenames))
+        jk_weights[::2] *= -1
+
+        self.datas = datas
+        self.weights = weights
+        self.time = time
+        self.mask = unobserved
+        self.jk_weights = jk_weights
+
+    def __iter__(self):
+        # Iterators are iterables too.
+        # Adding this functions to make them so.
+        return self
+
+    def next(self):          # Py2-style
+        return self._iter.__next__()
+
+    def __next__(self):
+        if self.n is None:
+            # No Jackknife, just co-addition
+            self.i = self.n = 0
+            with np.errstate(invalid='ignore', divide='ignore'):
+                e_data = np.sum(self.weights, axis=0)**(-0.5)
+                data = np.sum(self.datas * self.weights, axis=0) * e_data**2
+
+        elif self.i < self.n:
+
+            # Produce Jackkife data until last iter
+            self.i += 1
+            np.random.shuffle(self.jk_weights)
+            with np.errstate(invalid='ignore', divide='ignore'):
+                e_data = np.sum(self.weights, axis=0)**(-0.5)
+                data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
+
+        else:
+            raise StopIteration()
+
+        data[self.mask] = np.nan
+        e_data[self.mask] = np.nan
+
+        data = NikaMap(data, mask=self.mask,
+                       uncertainty=StdDevUncertainty(e_data),
+                       unit=self.header['UNIT'], wcs=WCS(self.header),
+                       meta=self.header, time=self.time)
+
+        return data
