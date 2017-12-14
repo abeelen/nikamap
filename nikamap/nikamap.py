@@ -473,11 +473,13 @@ class NikaMap(NDDataArray):
 
         xx, yy = self.wcs.wcs_world2pix(sources['ra'], sources['dec'], 0)
 
+        x_idx = np.floor(xx + 0.5).astype(int)
+        y_idx = np.floor(yy + 0.5).astype(int)
+
         if peak:
             # Crude Peak Photometry
             # From pixel indexes to array indexing
-            x_idx = np.floor(xx + 0.5).astype(int)
-            y_idx = np.floor(yy + 0.5).astype(int)
+
             sources['flux_peak'] = Column(self.data[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
             sources['eflux_peak'] = Column(self.uncertainty.array[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
 
@@ -495,14 +497,16 @@ class NikaMap(NDDataArray):
             psf_model.x_0.fixed = True
             psf_model.y_0.fixed = True
 
-            daogroup = DAOGroup(5 * self.beam.fwhm_pix.value)
+            daogroup = DAOGroup(2 * self.beam.fwhm_pix.value)
             mmm_bkg = MedianBackground()
 
             photometry = BasicPSFPhotometry(group_maker=daogroup, bkg_estimator=mmm_bkg,
                                             psf_model=psf_model, fitter=LevMarLSQFitter(),
                                             fitshape=9)
 
-            positions = Table([Column(xx, name="x_0"), Column(yy, name="y_0")])
+            positions = Table([Column(xx, name="x_0"),
+                               Column(yy, name="y_0"),
+                               Column(self.data[y_idx, x_idx], name="flux_0")])
 
             result_tab = photometry(image=np.ma.array(
                 self.data, mask=self.mask).filled(0), init_guesses=positions)

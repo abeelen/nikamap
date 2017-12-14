@@ -170,6 +170,43 @@ def single_source_side():
 
 
 @pytest.fixture()
+def blended_sources():
+    # Large shape to allow for psf fitting
+    # as beam needs to be much smaller than the map at some point..
+    shape = (26, 26)
+    pixsize = 1/3
+    data = np.zeros(shape)
+    wcs = WCS()
+    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize
+    wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
+
+    fake_sources = Table(masked=True)
+    fake_sources['ID'] = [1, 2]
+    fake_sources['x_mean'] = [13.6, 15.1]
+    fake_sources['y_mean'] = [13.6, 15.1]
+
+    ra, dec = wcs.wcs_pix2world(fake_sources['x_mean'], fake_sources['y_mean'], 0)
+    fake_sources['ra'] = ra * u.deg
+    fake_sources['dec'] = dec * u.deg
+
+    xx, yy = np.indices(shape)
+    stddev = 1 / pixsize * gaussian_fwhm_to_sigma
+    g = models.Gaussian2D(1, fake_sources['y_mean'][0], fake_sources['x_mean'][0], stddev, stddev)
+    for source in fake_sources[1:]:
+        g += models.Gaussian2D(1, source['y_mean'], source['x_mean'], stddev, stddev)
+
+    data += g(xx, yy)
+
+    nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam, fake_sources=fake_sources)
+
+    nm.x = fake_sources['x_mean']
+    nm.y = fake_sources['y_mean']
+
+    return nm
+
+
+@pytest.fixture()
 def single_source_mask():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
@@ -198,7 +235,9 @@ def single_source_mask():
 def grid_sources():
     # Larger shape to allow for wobbling
     # as beam needs to be much smaller than the map at some point..
-    shape = (28, 28)
+    # Shape was too small to allow for a proper background estimation
+    # shape = (28, 28)
+    shape = (56, 56)
     pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
@@ -234,7 +273,7 @@ def wobble_grid_sources():
 
     nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam)
 
-    np.random.seed(0)
+    np.random.seed(1)
     # Additionnal attribute just for the tests...
     nm.add_gaussian_sources(nsources=2**2, peak_flux=1*u.Jy,
                             grid=True, wobble=True,
@@ -336,7 +375,8 @@ def generate_nikamaps(tmpdir_factory):
     return filenames
 
 
-@pytest.fixture(params=['single_source', 'single_source_side', 'single_source_mask', 'grid_sources', 'wobble_grid_sources'])
+@pytest.fixture(params=['single_source', 'single_source_side', 'single_source_mask',
+                        'grid_sources', 'wobble_grid_sources'])
 def nms(request):
     return request.getfuncargvalue(request.param)
 
@@ -385,6 +425,10 @@ def test_nikamap_detect_sources(nms):
     x_fake, y_fake = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
     x, y = nm.wcs.wcs_world2pix(nm.sources['ra'], nm.sources['dec'], 0)
 
+    # Tolerance coming from round wcs transformations
+    npt.assert_allclose(x_fake, x[ordering], atol=1e-11)
+    npt.assert_allclose(y_fake, y[ordering], atol=1e-11)
+
 
 def test_nikamap_phot_sources(nms):
 
@@ -395,8 +439,7 @@ def test_nikamap_phot_sources(nms):
     # Relative and absolute tolerance are really bad here for the case where the sources are not centered on pixels... Otherwise it give perfect answer when there is no noise
     npt.assert_allclose(nm.sources['flux_peak'].to(u.Jy).value, [1] * len(nm.sources), atol=1e-2, rtol=1e-1)
     # Relative tolerance is rather low to pass the case of multiple sources...
-    # TODO: Should not be that high !!! (See Issue #1)
-    npt.assert_allclose(nm.sources['flux_psf'].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-4)
+    npt.assert_allclose(nm.sources['flux_psf'].to(u.Jy).value, [1] * len(nm.sources))
 
 
 def test_nikamap_match_filter(nms):
@@ -455,3 +498,17 @@ def test_jk_nikmap(generate_nikamaps):
 
     with pytest.raises(StopIteration):
         next(iterator)
+
+
+def test_blended_sources(blended_sources):
+
+    nm = blended_sources
+    nm.detect_sources()
+    nm.phot_sources()
+
+    # Cannot recover all sources :
+    assert len(nm.sources) != len(nm.fake_sources)
+
+    # But still prior photometry can recover the flux
+    nm.phot_sources(nm.fake_sources)
+    npt.assert_allclose(nm.fake_sources['flux_psf'].to(u.Jy).value, [1] * len(nm.fake_sources))
