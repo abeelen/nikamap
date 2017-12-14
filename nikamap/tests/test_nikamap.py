@@ -15,6 +15,7 @@ from astropy.nddata import StdDevUncertainty
 from astropy.modeling import models
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
 from photutils.datasets import make_gaussian_sources_image
+from astropy.convolution import MexicanHat2DKernel
 
 import numpy.testing as npt
 
@@ -110,6 +111,30 @@ def test_nikamap_init_uncertainty():
     nm_mean = nm.add(nm).divide(2)
     assert np.all(nm_mean.data == nm.data)
     npt.assert_allclose(nm_mean.uncertainty.array, np.array([1, 1, 1])/np.sqrt(2))
+
+    # Wrong size
+    with pytest.raises(ValueError):
+        nm = NikaMap(data, uncertainty=uncertainty[1:])
+
+    # Wrong TypeError
+    with pytest.raises(TypeError):
+        nm = NikaMap(data, uncertainty=list(uncertainty))
+
+
+def test_nikamap_compressed():
+    data = np.array([1, 2, 3])
+    uncertainty = np.array([10, 1, 1])
+    mask = np.array([True, False, False])
+    time = np.ones(3)*u.h
+
+    nm = NikaMap(data, uncertainty=uncertainty, mask=mask, time=time, unit=u.Jy)
+
+    assert np.all(nm.compressed() == np.array([2, 3]) * u.Jy)
+    assert np.all(nm.uncertainty_compressed() == np.array([1, 1]) * u.Jy)
+
+    assert np.all(nm.__array__() == np.ma.array(data * u.Jy, mask=mask))
+    assert np.all(nm.__u_array__() == np.ma.array(uncertainty * u.Jy, mask=mask))
+    assert np.all(nm.__t_array__() == np.ma.array(time, mask=mask))
 
 
 @pytest.fixture()
@@ -237,7 +262,7 @@ def grid_sources():
     # as beam needs to be much smaller than the map at some point..
     # Shape was too small to allow for a proper background estimation
     # shape = (28, 28)
-    shape = (56, 56)
+    shape = (60, 60)
     pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
@@ -429,6 +454,12 @@ def test_nikamap_detect_sources(nms):
     npt.assert_allclose(x_fake, x[ordering], atol=1e-11)
     npt.assert_allclose(y_fake, y[ordering], atol=1e-11)
 
+    # Fake empy data to fake no found sources
+    nm._data *= 0
+    nm.detect_sources()
+    assert nm.sources is None
+    assert np.all(nm.fake_sources['find_peak'].mask)
+
 
 def test_nikamap_phot_sources(nms):
 
@@ -453,6 +484,10 @@ def test_nikamap_match_filter(nms):
     npt.assert_allclose(mf_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
     npt.assert_allclose((nm.beam.fwhm*np.sqrt(2)).to(u.arcsec), mf_nm.beam.fwhm.to(u.arcsec))
 
+    mh_nm = nm.match_filter(MexicanHat2DKernel(nm.beam.fwhm_pix.value * gaussian_fwhm_to_sigma))
+    npt.assert_allclose(mh_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
+    assert mh_nm.beam.fwhm is None
+
 
 def test_nikamap_match_sources(nms):
 
@@ -476,6 +511,9 @@ def test_nikamap_read(generate_nikamaps):
     assert data.beam.fwhm.to(u.arcsec).value == primary_header['FWHM_260']
     assert np.all(data.time[~data.mask].value == ((primary_header['F_SAMPLI']*u.Hz)**-1).to(u.h).value)
 
+    data_revert = NikaMap.read(filenames[0], revert=True)
+    assert np.all(data_revert._data[~data_revert.mask] == -1 * data._data[~data.mask])
+
 
 def test_jk_nikmap(generate_nikamaps):
 
@@ -498,6 +536,9 @@ def test_jk_nikmap(generate_nikamaps):
 
     with pytest.raises(StopIteration):
         next(iterator)
+
+    with pytest.warns(UserWarning):
+        iterator = jk_nikamap(filenames[1:], n=1)
 
 
 def test_blended_sources(blended_sources):
