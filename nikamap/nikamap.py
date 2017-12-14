@@ -361,7 +361,7 @@ class NikaMap(NDDataArray):
 
         self.fake_sources = sources
 
-    def detect_sources(self, threshold=3, box_size=4):
+    def detect_sources(self, threshold=3, box_size=5):
         """Detect sources with find local peaks above a specified threshold value.
 
         The detection is made on the SNR map, and return an `~astropy.table.Table` with columns ``ID, ra, dec, SNR``.

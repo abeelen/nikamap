@@ -135,6 +135,41 @@ def single_source():
 
 
 @pytest.fixture()
+def single_source_side():
+    # Large shape to allow for psf fitting
+    # as beam needs to be much smaller than the map at some point..
+    shape = (26, 26)
+    pixsize = 1/3
+    data = np.zeros(shape)
+    wcs = WCS()
+    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize
+    wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
+
+    fake_sources = Table(masked=True)
+    fake_sources['ID'] = [1]
+    fake_sources['x_mean'] = [0]
+    fake_sources['y_mean'] = [13]
+
+    ra, dec = wcs.wcs_pix2world(fake_sources['x_mean'], fake_sources['y_mean'], 0)
+    fake_sources['ra'] = ra * u.deg
+    fake_sources['dec'] = dec * u.deg
+
+    xx, yy = np.indices(shape)
+    stddev = 1 / pixsize * gaussian_fwhm_to_sigma
+    g = models.Gaussian2D(1, fake_sources['y_mean'], fake_sources['x_mean'], stddev, stddev)
+
+    data += g(xx, yy)
+
+    nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam, fake_sources=fake_sources)
+
+    nm.x = fake_sources['x_mean']
+    nm.y = fake_sources['y_mean']
+
+    return nm
+
+
+@pytest.fixture()
 def single_source_mask():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
@@ -301,7 +336,7 @@ def generate_nikamaps(tmpdir_factory):
     return filenames
 
 
-@pytest.fixture(params=['single_source', 'single_source_mask', 'grid_sources', 'wobble_grid_sources'])
+@pytest.fixture(params=['single_source', 'single_source_side', 'single_source_mask', 'grid_sources', 'wobble_grid_sources'])
 def nms(request):
     return request.getfuncargvalue(request.param)
 
@@ -332,7 +367,8 @@ def test_nikamap_add_gaussian_sources(nms):
     npt.assert_allclose(nm.data, g(xx, yy))
 
     x, y = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
-    npt.assert_allclose([x, y], [nm.x, nm.y])
+    # We are actually only testing the tolerance on x,y -> ra, dec -> x, y
+    npt.assert_allclose([x, y], [nm.x, nm.y], atol=1e-13)
 
 
 def test_nikamap_detect_sources(nms):
@@ -345,6 +381,9 @@ def test_nikamap_detect_sources(nms):
     npt.assert_allclose(nm.fake_sources['ra'], nm.sources['ra'][ordering])
     npt.assert_allclose(nm.fake_sources['dec'], nm.sources['dec'][ordering])
     npt.assert_allclose(nm.sources['SNR'], [4] * len(nm.sources))
+
+    x_fake, y_fake = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
+    x, y = nm.wcs.wcs_world2pix(nm.sources['ra'], nm.sources['dec'], 0)
 
 
 def test_nikamap_phot_sources(nms):
