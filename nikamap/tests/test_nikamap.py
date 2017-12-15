@@ -1,9 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import pytest
-
-import os.path as op
-
 import numpy as np
 
 import astropy.units as u
@@ -19,14 +16,14 @@ from astropy.convolution import MexicanHat2DKernel
 
 import numpy.testing as npt
 
-# from nikamap import nikamap as nm
+import matplotlib.pyplot as plt
+
 # from nikamap.nikamap import NikaMap, jk_nikamap
 
-import nikamap as nm
+# import nikamap as nm
+# data_path = op.join(nm.__path__[0], 'data')
+
 from ..nikamap import NikaMap, jk_nikamap
-
-
-data_path = op.join(nm.__path__[0], 'data')
 
 
 def test_nikamap_init():
@@ -318,8 +315,6 @@ def generate_nikamaps(tmpdir_factory):
 
     tmpdir = tmpdir_factory.mktemp("nm_maps")
 
-    band = "1mm"
-
     shape = (60, 60)
     pixsize = 1/3 * u.deg
     noise_level = 1 * u.Jy / u.beam
@@ -360,6 +355,7 @@ def generate_nikamaps(tmpdir_factory):
     primary_header = fits.header.Header()
     primary_header['f_sampli'] = 10., 'Fake the f_sampli keyword'
     primary_header['FWHM_260'] = fwhm.to(u.arcsec).value, '[arcsec] Fake the FWHM_260 keyword'
+    primary_header['FWHM_150'] = fwhm.to(u.arcsec).value, '[arcsec] Fake the FWHM_150 keyword'
 
     primary_header['nsources'] = nsources, 'Number of fake sources'
     primary_header['pixsize'] = pixsize.to(u.deg).value, '[deg] pixel size'
@@ -389,10 +385,13 @@ def generate_nikamaps(tmpdir_factory):
         header['UNIT'] = "Jy / beam", 'Fake Unit'
 
         hdus = fits.hdu.HDUList(hdus=[primary])
-        hdus.append(fits.hdu.ImageHDU(data.value, header=header, name='Brightness_{}'.format(band)))
-        hdus.append(fits.hdu.ImageHDU(uncertainty.value, header=header, name='Stddev_{}'.format(band)))
-        hdus.append(fits.hdu.ImageHDU(hits, header=header, name='Nhits_{}'.format(band)))
-        hdus.append(fits.hdu.BinTableHDU(sources, name="fake_sources"))
+
+        for band in ['1mm', '2mm']:
+            hdus.append(fits.hdu.ImageHDU(data.value, header=header, name='Brightness_{}'.format(band)))
+            hdus.append(fits.hdu.ImageHDU(uncertainty.value, header=header, name='Stddev_{}'.format(band)))
+            hdus.append(fits.hdu.ImageHDU(hits, header=header, name='Nhits_{}'.format(band)))
+            hdus.append(fits.hdu.BinTableHDU(sources, name="fake_sources"))
+
         hdus.writeto(filename, overwrite=True)
 
         filenames.append(filename)
@@ -500,11 +499,41 @@ def test_nikamap_match_sources(nms):
     assert np.all(nm.sources['ID'] == nm.sources['to_match'])
 
 
+@pytest.mark.mpl_image_compare
+def test_nikamap_plot_SNR(nms):
+
+    nm = nms
+    fig = nm.plot_SNR()
+
+    return fig
+
+
+@pytest.mark.mpl_image_compare
+def test_nikamap_plot_SNR_ax(nms):
+
+    nm = nms
+    fig, axes = plt.subplots(nrows=2, ncols=2, subplot_kw={'projection': nm.wcs})
+    axes = axes.flatten()
+    nm.plot_SNR(ax=axes[0], title="title")
+    nm.plot_SNR(ax=axes[1], levels=(1, 5))
+    nm.plot_SNR(ax=axes[2], cat=[(nm.fake_sources, '+')])
+    nm.detect_sources()
+    nm.plot_SNR(ax=axes[3], cat=True)
+
+    return fig
+
+
 def test_nikamap_read(generate_nikamaps):
 
     filenames = generate_nikamaps
     primary_header = fits.getheader(filenames[0], 0)
+
     data = NikaMap.read(filenames[0])
+    data_2mm = NikaMap.read(filenames[0], band="2mm")
+    data_1mm = NikaMap.read(filenames[0], band="1mm")
+
+    assert np.all(data._data[~data.mask] == data_1mm._data[~data_1mm.mask])
+    assert np.all(data._data[~data.mask] == data_2mm._data[~data_2mm.mask])
 
     assert np.all(data.uncertainty.array[~data.mask] == primary_header['NOISE'])
     assert data.shape == (primary_header['SHAPE0'], primary_header['SHAPE1'])
@@ -537,8 +566,22 @@ def test_jk_nikmap(generate_nikamaps):
     with pytest.raises(StopIteration):
         next(iterator)
 
+    # Odd number
     with pytest.warns(UserWarning):
         iterator = jk_nikamap(filenames[1:], n=1)
+
+    # Non existent files
+    with pytest.warns(UserWarning):
+        iterator = jk_nikamap([filenames[0], filenames[1], 'toto.fits'], n=1)
+
+    # Non existent files
+    with pytest.raises(AssertionError):
+        iterator = jk_nikamap([filenames[0]], n=1)
+
+    # Non existent files
+    with pytest.warns(UserWarning):
+        with pytest.raises(AssertionError):
+            iterator = jk_nikamap([filenames[0], 'toto.fits'], n=1)
 
 
 def test_blended_sources(blended_sources):

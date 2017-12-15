@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import os
 from itertools import product
 
 import numpy as np
@@ -561,7 +562,12 @@ class NikaMap(NDDataArray):
 
         if not ax:
             fig = plt.figure()
-            ax = fig.add_subplot(111, projection=self.wcs, title=title)
+            ax = fig.add_subplot(111, projection=self.wcs)
+        else:
+            fig = None
+
+        if title is not None:
+            ax.set_title(title)
 
         # interval = ZScaleInterval()
         # vmin, vmax = interval.get_limits(SNR)
@@ -572,7 +578,7 @@ class NikaMap(NDDataArray):
         if levels is not None:
             levels = np.sqrt(2)**np.arange(levels[0], levels[1])
             levels = np.concatenate((-levels[::-1], levels))
-            ax.contour(SNR, levels=levels, origin='lower', colors='w')
+            ax.contour(SNR, levels=levels, alpha=0.8, colors='w')
 
         # In case of fake sources, overplot them
         if self.fake_sources:
@@ -584,7 +590,7 @@ class NikaMap(NDDataArray):
 
         if cat is not None:
             for _cat, _mark in list(cat):
-                label = _cat.meta.get('method') or _cat.meta.get('name')
+                label = _cat.meta.get('method') or _cat.meta.get('name') or 'Unknown'
                 cat_SkyCoord = SkyCoord(_cat['ra'], _cat['dec'], unit=(_cat['ra'].unit, _cat['dec'].unit))
                 x, y = self.wcs.wcs_world2pix(cat_SkyCoord.ra, cat_SkyCoord.dec, 0)
                 ax.scatter(x, y, marker=_mark, alpha=0.8, label=label)
@@ -595,7 +601,25 @@ class NikaMap(NDDataArray):
         if cat is not None:
             ax.legend(loc='best', frameon=False)
 
-        return ax
+        if fig:
+            return fig
+
+
+def retrieve_primary_keys(filename, band="1mm", **kwd):
+    """Retrieve usefulle keys in primary header"""
+
+    with fits.open(filename, **kwd) as hdus:
+        # Fiddling to "fix" the fits file
+        # extension params and info
+        # hdus[14].header['EXTNAME'] = 'Param'
+        # hdus[15].header['EXTNAME'] = 'Info'
+        f_sampling = hdus[0].header['f_sampli'] * u.Hz
+        if band in ["1mm", '1', '3']:
+            bmaj = hdus[0].header['FWHM_260'] * u.arcsec
+        elif band in ["2mm", '2']:
+            bmaj = hdus[0].header['FWHM_150'] * u.arcsec
+
+    return f_sampling, bmaj
 
 
 def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
@@ -605,22 +629,17 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
     ----------
     filenames : list
         the list of fits files to produce the Jackknifes
-    band : str (1mm | 2mm)
+    band : str (1mm | 2mm | 1 | 2 | 3)
         the requested band
     revert : boolean
          use if to return -1 * data
     """
 
+    assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+
+    f_sampling, bmaj = retrieve_primary_keys(filename, band, **kwd)
+
     with fits.open(filename, **kwd) as hdus:
-        # Fiddling to "fix" the fits file
-        # extension params and info
-        # hdus[14].header['EXTNAME'] = 'Param'
-        # hdus[15].header['EXTNAME'] = 'Info'
-        f_sampling = hdus[0].header['f_sampli'] * u.Hz
-        if band == "1mm":
-            bmaj = hdus[0].header['FWHM_260'] * u.arcsec
-        elif band == "2mm":
-            bmaj = hdus[0].header['FWHM_150'] * u.arcsec
 
         data = hdus['Brightness_{}'.format(band)].data
         header = hdus['Brightness_{}'.format(band)].header
@@ -660,7 +679,7 @@ class jk_nikamap:
     ----------
     filenames : list
         the list of fits files to produce the Jackknifes
-    band : str (1mm | 2mm)
+    band : str (1mm | 2mm | 1 | 2 | 3)
         the requested band
     n : int
         the number of Jackknifes maps to be produced
@@ -680,6 +699,20 @@ class jk_nikamap:
         self.band = band
         self.low_mem = False
 
+        assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+
+        # Chek for file
+        checked_filenames = []
+        for filename in filenames:
+            if os.path.isfile(filename):
+                checked_filenames.append(filename)
+            else:
+                warnings.warn('{} does not exist, removing from list'.format(filename), UserWarning)
+
+        filenames = checked_filenames
+
+        assert len(filenames) > 1, 'Less than 2 existing files in filenames'
+
         header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
 
         # Checking all header for consistency
@@ -695,11 +728,7 @@ class jk_nikamap:
             filenames = filenames[:-1]
 
         # Retrieve common keywords
-        with fits.open(filenames[0], **kwd) as hdus:
-            if band == "1mm":
-                bmaj = hdus[0].header['FWHM_260'] * u.arcsec
-            elif band == "2mm":
-                bmaj = hdus[0].header['FWHM_150'] * u.arcsec
+        f_sampling, bmaj = retrieve_primary_keys(filename, band, **kwd)
 
         header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
         header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
