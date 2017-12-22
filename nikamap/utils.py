@@ -1,4 +1,8 @@
+from __future__ import absolute_import, division, print_function
+
 import numpy as np
+import warnings
+
 from astropy.io import fits
 from astropy import units as u
 from astropy.wcs import WCS
@@ -153,3 +157,127 @@ def fake_data(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
         data.add_gaussian_sources(nsources=nsources, peak_flux=peak_flux, grid=grid, wobble=wobble)
 
     return data
+
+
+def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold=0, max_loop=10):
+    """Generate x, y uniform position within a mask, with a minimum distance between them
+
+    Notes
+    -----
+    depending on the distance threshold and the number of loop, the requested number of sources might not be returned
+    """
+
+    pos = np.array([[], []], dtype=np.float).T
+
+    i_loop = 0
+    while i_loop < max_loop and len(pos) < nsources:
+        i_loop += 1
+
+        # note that these are pixels 0-indexes
+        pos = np.concatenate((pos, np.random.uniform(within[0], within[1], (nsources, 2)) * np.asarray(shape) - 0.5))
+
+        # Filter sources inside the mask
+        if mask is not None:
+            pos_idx = np.floor(pos + 0.5).astype(int)
+            inside = ~mask[pos_idx[:, 0], pos_idx[:, 1]]
+            pos = pos[inside]
+
+        # Removing too close sources
+        dist_mask = np.ones(len(pos), dtype=np.bool)
+        while not np.all(~dist_mask):
+            # Computing pixel distances between all sources
+            dist = np.sqrt(np.sum((pos.reshape(len(pos), 1, 2) - pos)**2, 2))
+
+            # Filter 0 distances and find minima
+            i = np.arange(len(pos))
+            dist[i, i] = np.inf
+            arg_min_dist = np.argmin(dist, 1)
+            min_dist = dist[i, arg_min_dist]
+            # This will mask pair of sources with dist < dist_threshold
+            dist_mask = min_dist < dist_threshold
+
+            # un-mask the second source
+            for idx, arg_min in enumerate(arg_min_dist):
+                if dist_mask[idx]:
+                    dist_mask[arg_min] = False
+
+            pos = pos[~dist_mask]
+
+        pos = pos[0:nsources]
+
+    if i_loop == max_loop and len(pos) < nsources:
+        warnings.warn("Maximum of loops reached, only have {} positions".format(len(pos)), UserWarning)
+
+    return pos[:, 1], pos[:, 0]
+
+
+def pos_gridded(nsources=2**2, shape=None, within=(0, 1), mask=None, wobble=False, wobble_frac=1):
+    """Generate x, y gridded position within a mask
+
+    Parameters
+    ----------
+    wobble : boolean
+        Add a random offset with fwhm = grid_step * wobble_frac
+
+    Notes
+    -----
+    requested number of sources might not be returned"""
+
+    sq_sources = int(np.sqrt(nsources))
+    assert sq_sources**2 == nsources, 'nsources must be a squared number'
+    assert nsources > 1, 'nsouces can not be 1'
+
+    # square distribution with step margin on the side
+    within_step = (within[1] - within[0]) / (sq_sources + 1)
+    pos = np.indices([sq_sources] * 2, dtype=np.float) * within_step + within[0] + within_step
+
+    if wobble:
+        # With some wobbling if needed
+        pos += np.random.normal(0, within_step * wobble_frac * gaussian_fwhm_to_sigma, pos.shape)
+
+    pos = pos.reshape(2, nsources).T
+
+    # wobbling can push sources outside the shape
+    inside = np.sum((pos >= 0) & (pos <= 1), 1) == 2
+    pos = pos[inside]
+
+    pos = pos * np.asarray(shape) - 0.5
+
+    if mask is not None:
+        pos_idx = np.floor(pos + 0.5).astype(int)
+        inside = ~mask[pos_idx[:, 0], pos_idx[:, 1]]
+        pos = pos[inside]
+
+    if len(pos) < nsources:
+        warnings.warn("Only {} positions".format(len(pos)), UserWarning)
+
+    return pos[:, 1], pos[:, 0]
+
+
+def pos_list(nsources=1, shape=None, within=(0, 1), mask=None, x_mean=None, y_mean=None):
+    """Return positions within a mask
+
+    Notes
+    -----
+    requested number of sources might not be returned"""
+
+    assert x_mean is not None and y_mean is not None, 'you must provide x_mean & y_mean'
+    assert len(x_mean) == len(y_mean), 'x_mean and y_mean must have the same dimension'
+    assert nsources <= len(x_mean), 'x_mean must contains at least {} sources'.format(nsources)
+
+    pos = np.array([y_mean, x_mean]).T
+
+    # within
+    limits = shape * np.asarray(within)[:, np.newaxis]
+    inside = np.sum((pos >= limits[0]) & (pos <= limits[1]-1), 1) == 2
+    pos = pos[inside]
+
+    if mask is not None:
+        pos_idx = np.floor(pos + 0.5).astype(int)
+        inside = ~mask[pos_idx[:, 0], pos_idx[:, 1]]
+        pos = pos[inside]
+
+    if len(pos) < nsources:
+        warnings.warn("Only {} positions".format(len(pos)), UserWarning)
+
+    return pos[:, 1], pos[:, 0]

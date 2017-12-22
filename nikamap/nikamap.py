@@ -33,7 +33,7 @@ import warnings
 from astropy.utils.exceptions import AstropyWarning
 
 from .utils import CircularGaussianPSF, _round_up_to_odd_integer
-
+from .utils import pos_uniform, pos_gridded
 
 Jy_beam = u.Jy / u.beam
 
@@ -248,38 +248,23 @@ class NikaMap(NDDataArray):
 
         return self[axis_slice[0], axis_slice[1]]
 
-    def add_gaussian_sources(self, nsources=10, peak_flux=1 * u.mJy, within=(1. / 4, 3. / 4), grid=False, wobble=False):
+    def add_gaussian_sources(self, nsources=10, peak_flux=1 * u.mJy, within=(0, 1), pos_gen=pos_uniform, **kwargs):
 
         shape = self.shape
 
         # TODO: Non gaussian beam
         beam_std_pix = self.beam.fwhm_pix.value * gaussian_fwhm_to_sigma
 
+        x_mean, y_mean = pos_gen(nsources=nsources, shape=shape, within=within, mask=self.mask, **kwargs)
+
+        nsources = len(x_mean)
+
         sources = Table(masked=True)
+
         sources['amplitude'] = (np.ones(nsources) * peak_flux).to(self.unit * u.beam)
 
-        if grid:
-            # Gridded sources
-            sq_sources = int(np.sqrt(nsources))
-            assert sq_sources**2 == nsources, 'nsources must be a squared number'
-            y_mean, x_mean = np.indices(
-                [sq_sources] * 2) / (sq_sources - 1) * (within[1] - within[0]) + within[0]
-
-            if wobble:
-                # With some wobbling if needed
-                step = (np.max(within) - np.min(within)) / (sq_sources - 1)
-                x_mean += np.random.normal(0, step / 2 *
-                                           gaussian_fwhm_to_sigma, size=x_mean.shape)
-                y_mean += np.random.normal(0, step / 2 *
-                                           gaussian_fwhm_to_sigma, size=y_mean.shape)
-
-        else:
-            # Uniform random sources
-            x_mean = np.random.uniform(within[0], within[1], size=nsources)
-            y_mean = np.random.uniform(within[0], within[1], size=nsources)
-
-        sources['x_mean'] = x_mean.flatten() * shape[1]
-        sources['y_mean'] = y_mean.flatten() * shape[0]
+        sources['x_mean'] = x_mean
+        sources['y_mean'] = y_mean
 
         sources['x_stddev'] = np.ones(nsources) * beam_std_pix
         sources['y_stddev'] = np.ones(nsources) * beam_std_pix
@@ -695,7 +680,6 @@ class jk_nikamap:
         self._iter = iter(self)  # Py2-style
         self.i = 0
         self.n = n
-        self.filenames = filenames
         self.band = band
         self.low_mem = False
 
@@ -726,6 +710,8 @@ class jk_nikamap:
         if len(filenames) % 2 and n is not None:
             warnings.warn('Even number of files, dropping the last one', UserWarning)
             filenames = filenames[:-1]
+
+        self.filenames = filenames
 
         # Retrieve common keywords
         f_sampling, bmaj = retrieve_primary_keys(filename, band, **kwd)

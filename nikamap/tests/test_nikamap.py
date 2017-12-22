@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 # data_path = op.join(nm.__path__[0], 'data')
 
 from ..nikamap import NikaMap, jk_nikamap
+from ..utils import pos_gridded
 
 
 def test_nikamap_init():
@@ -138,7 +139,7 @@ def test_nikamap_compressed():
 def single_source():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
-    shape = (26, 26)
+    shape = (27, 27)
     pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
@@ -149,10 +150,10 @@ def single_source():
     nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam)
 
     # Additionnal attribute just for the tests...
-    nm.x = np.asarray([shape[1]/2])
-    nm.y = np.asarray([shape[0]/2])
+    nm.x = np.asarray([shape[1]/2 - 0.5])
+    nm.y = np.asarray([shape[0]/2 - 0.5])
     nm.add_gaussian_sources(nsources=1, peak_flux=1*u.Jy,
-                            within=(nm.y[0]/shape[0], nm.x[0]/shape[1]))
+                            within=(1/2, 1/2))
     return nm
 
 
@@ -160,7 +161,7 @@ def single_source():
 def single_source_side():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
-    shape = (26, 26)
+    shape = (27, 27)
     pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
@@ -195,7 +196,7 @@ def single_source_side():
 def blended_sources():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
-    shape = (26, 26)
+    shape = (27, 27)
     pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
@@ -232,7 +233,7 @@ def blended_sources():
 def single_source_mask():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
-    shape = (26, 26)
+    shape = (27, 27)
     pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
@@ -241,15 +242,17 @@ def single_source_mask():
     wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
 
     xx, yy = np.indices(shape)
-    mask = np.sqrt((xx-shape[1]/2)**2 + (yy-shape[0]/2)**2) > 10
+    mask = np.sqrt((xx-(shape[1]-1)/2)**2 + (yy-(shape[0]-1)/2)**2) > 10
+
+    data[mask] = np.nan
 
     nm = NikaMap(data, uncertainty=np.ones_like(data)/4, mask=mask, wcs=wcs, unit=u.Jy/u.beam)
 
     # Additionnal attribute just for the tests...
-    nm.x = np.asarray([shape[1]/2])
-    nm.y = np.asarray([shape[0]/2])
+    nm.x = np.asarray([shape[1]/2 - 0.5])
+    nm.y = np.asarray([shape[0]/2 - 0.5])
     nm.add_gaussian_sources(nsources=1, peak_flux=1*u.Jy,
-                            within=(nm.y[0]/shape[0], nm.x[0]/shape[1]))
+                            within=(1/2, 1/2))
     return nm
 
 
@@ -270,8 +273,7 @@ def grid_sources():
     nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam)
 
     # Additionnal attribute just for the tests...
-    nm.add_gaussian_sources(nsources=2**2, peak_flux=1*u.Jy,
-                            grid=True)
+    nm.add_gaussian_sources(nsources=2**2, peak_flux=1*u.Jy, pos_gen=pos_gridded, within=(1/4, 3/4))
 
     x, y = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
 
@@ -295,11 +297,9 @@ def wobble_grid_sources():
 
     nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam)
 
-    np.random.seed(1)
+    np.random.seed(0)
     # Additionnal attribute just for the tests...
-    nm.add_gaussian_sources(nsources=2**2, peak_flux=1*u.Jy,
-                            grid=True, wobble=True,
-                            within=(1/3, 2/3))
+    nm.add_gaussian_sources(nsources=2**2, peak_flux=1*u.Jy, pos_gen=pos_gridded, wobble=True, wobble_frac=0.2)
 
     x, y = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
 
@@ -428,7 +428,11 @@ def test_nikamap_add_gaussian_sources(nms):
     g = models.Gaussian2D(1, nm.y[0], nm.x[0], stddev, stddev)
     for item_x, item_y in zip(nm.y[1:], nm.x[1:]):
         g += models.Gaussian2D(1, item_x, item_y, stddev, stddev)
-    npt.assert_allclose(nm.data, g(xx, yy))
+
+    if nm.mask is None:
+        npt.assert_allclose(nm.data, g(xx, yy))
+    else:
+        npt.assert_allclose(nm.data[~nm.mask], g(xx, yy)[~nm.mask])
 
     x, y = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
     # We are actually only testing the tolerance on x,y -> ra, dec -> x, y
@@ -467,9 +471,9 @@ def test_nikamap_phot_sources(nms):
     nm.phot_sources()
 
     # Relative and absolute tolerance are really bad here for the case where the sources are not centered on pixels... Otherwise it give perfect answer when there is no noise
-    npt.assert_allclose(nm.sources['flux_peak'].to(u.Jy).value, [1] * len(nm.sources), atol=1e-2, rtol=1e-1)
+    npt.assert_allclose(nm.sources['flux_peak'].to(u.Jy).value, [1] * len(nm.sources), atol=1e-1, rtol=1e-1)
     # Relative tolerance is rather low to pass the case of multiple sources...
-    npt.assert_allclose(nm.sources['flux_psf'].to(u.Jy).value, [1] * len(nm.sources))
+    npt.assert_allclose(nm.sources['flux_psf'].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
 
 
 def test_nikamap_match_filter(nms):
