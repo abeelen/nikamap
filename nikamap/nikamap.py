@@ -430,10 +430,10 @@ class NikaMap(NDDataArray):
             psf_model.x_0.fixed = True
             psf_model.y_0.fixed = True
 
-            daogroup = DAOGroup(2 * self.beam.fwhm_pix.value)
-            mmm_bkg = MedianBackground()
+            daogroup = DAOGroup(3 * self.beam.fwhm_pix.value)
+            # mmm_bkg = MedianBackground()
 
-            photometry = BasicPSFPhotometry(group_maker=daogroup, bkg_estimator=mmm_bkg,
+            photometry = BasicPSFPhotometry(group_maker=daogroup, bkg_estimator=None,
                                             psf_model=psf_model, fitter=LevMarLSQFitter(),
                                             fitshape=9)
 
@@ -449,6 +449,7 @@ class NikaMap(NDDataArray):
             # sources['eflux_psf'] = Column(
             #     result_tab['flux_unc'] / (2 * np.pi * sigma_psf**2), unit=self.unit * u.beam).to(u.mJy)
 
+            result_tab.sort('id')
             sources['flux_psf'] = Column(
                 result_tab['flux_fit'] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
             sources['eflux_psf'] = Column(
