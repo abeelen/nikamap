@@ -631,8 +631,9 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
         e_data = hdus['Stddev_{}'.format(band)].data
         hits = hdus['Nhits_{}'.format(band)].data
 
-    header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
-    header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
+    if 'BMAJ' not in header:
+        header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
+        header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
 
     time = (hits / f_sampling).to(u.h)
 
