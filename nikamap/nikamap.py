@@ -37,7 +37,7 @@ from .utils import pos_uniform, pos_gridded
 
 Jy_beam = u.Jy / u.beam
 
-__all__ = ['NikaBeam', 'NikaMap', 'jk_nikamap']
+__all__ = ['NikaBeam', 'NikaMap']
 
 
 class NikaBeam(Kernel2D):
@@ -431,9 +431,9 @@ class NikaMap(NDDataArray):
             psf_model.y_0.fixed = True
 
             daogroup = DAOGroup(3 * self.beam.fwhm_pix.value)
-            # mmm_bkg = MedianBackground()
+            mmm_bkg = MedianBackground()
 
-            photometry = BasicPSFPhotometry(group_maker=daogroup, bkg_estimator=None,
+            photometry = BasicPSFPhotometry(group_maker=daogroup, bkg_estimator=mmm_bkg,
                                             psf_model=psf_model, fitter=LevMarLSQFitter(),
                                             fitshape=9)
 
@@ -632,7 +632,7 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
         e_data = hdus['Stddev_{}'.format(band)].data
         hits = hdus['Nhits_{}'.format(band)].data
 
-    if 'BMAJ' not in header:
+    if 'BMAJ' not in header:  # pragma: no cover  # old file format
         header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
         header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
 
@@ -655,140 +655,3 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
 with registry.delay_doc_updates(NikaMap):
     registry.register_reader('fits', NikaMap, fits_nikamap_reader)
     registry.register_identifier('fits', NikaMap, fits.connect.is_fits)
-
-
-class jk_nikamap:
-    """A class to create weighted Jackknife maps from a list of fits files.
-
-    This acts as a python generator.
-
-    Parameters
-    ----------
-    filenames : list
-        the list of fits files to produce the Jackknifes
-    band : str (1mm | 2mm | 1 | 2 | 3)
-        the requested band
-    n : int
-        the number of Jackknifes maps to be produced
-
-            if set to `None`, produce one weighted average of the maps
-
-    Notes
-    -----
-    A crude check is made on the wcs of each map when instanciated
-    """
-    def __init__(self, filenames, band='1mm', n=10, low_mem=False, **kwd):
-
-        self._iter = iter(self)  # Py2-style
-        self.i = 0
-        self.n = n
-        self.band = band
-        self.low_mem = False
-
-        assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
-
-        # Chek for file
-        checked_filenames = []
-        for filename in filenames:
-            if os.path.isfile(filename):
-                checked_filenames.append(filename)
-            else:
-                warnings.warn('{} does not exist, removing from list'.format(filename), UserWarning)
-
-        filenames = checked_filenames
-
-        assert len(filenames) > 1, 'Less than 2 existing files in filenames'
-
-        header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
-
-        # Checking all header for consistency
-        for filename in filenames:
-            _header = fits.getheader(filename, 'Brightness_{}'.format(band))
-            assert WCS(header).wcs == WCS(_header).wcs, '{} has a different header'.format(filename)
-            assert header['UNIT'] == _header['UNIT'], '{} has a different unit'.format(filename)
-            assert WCS(header)._naxis1 == WCS(_header)._naxis1, '{} has a different shape'.format(filename)
-            assert WCS(header)._naxis2 == WCS(_header)._naxis2, '{} has a different shape'.format(filename)
-
-        if len(filenames) % 2 and n is not None:
-            warnings.warn('Even number of files, dropping the last one', UserWarning)
-            filenames = filenames[:-1]
-
-        self.filenames = filenames
-
-        # Retrieve common keywords
-        f_sampling, bmaj = retrieve_primary_keys(filename, band, **kwd)
-
-        header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
-        header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
-
-        self.header = header
-
-        # This is low_mem=False case ...
-        datas = np.zeros((len(filenames), header['NAXIS2'], header['NAXIS1']))
-        weights = np.zeros((len(filenames), header['NAXIS2'], header['NAXIS1']))
-        time = np.zeros((header['NAXIS2'], header['NAXIS1']))*u.h
-
-        for i, filename in enumerate(filenames):
-
-            with fits.open(filename, **kwd) as hdus:
-
-                f_sampling = hdus[0].header['f_sampli'] * u.Hz
-                nhits = hdus['Nhits_{}'.format(band)].data
-
-                # Time always adds up
-                time += nhits / f_sampling
-
-                datas[i, :, :] = hdus['Brightness_{}'.format(band)].data
-                with np.errstate(invalid='ignore', divide='ignore'):
-                    weights[i, :, :] = hdus['Stddev_{}'.format(band)].data**-2
-
-                weights[i, nhits == 0] = 0
-
-        unobserved = time == 0
-        # Base jackknife weights
-        jk_weights = np.ones(len(filenames))
-        jk_weights[::2] *= -1
-
-        self.datas = datas
-        self.weights = weights
-        self.time = time
-        self.mask = unobserved
-        self.jk_weights = jk_weights
-
-    def __iter__(self):
-        # Iterators are iterables too.
-        # Adding this functions to make them so.
-        return self
-
-    def next(self):          # Py2-style
-        return self._iter.__next__()
-
-    def __next__(self):
-        if self.n is None:
-            # No Jackknife, just co-addition
-            self.i = self.n = 0
-            with np.errstate(invalid='ignore', divide='ignore'):
-                e_data = np.sum(self.weights, axis=0)**(-0.5)
-                data = np.sum(self.datas * self.weights, axis=0) * e_data**2
-
-        elif self.i < self.n:
-
-            # Produce Jackkife data until last iter
-            self.i += 1
-            np.random.shuffle(self.jk_weights)
-            with np.errstate(invalid='ignore', divide='ignore'):
-                e_data = np.sum(self.weights, axis=0)**(-0.5)
-                data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
-
-        else:
-            raise StopIteration()
-
-        data[self.mask] = np.nan
-        e_data[self.mask] = np.nan
-
-        data = NikaMap(data, mask=self.mask,
-                       uncertainty=StdDevUncertainty(e_data),
-                       unit=self.header['UNIT'], wcs=WCS(self.header),
-                       meta=self.header, time=self.time)
-
-        return data
