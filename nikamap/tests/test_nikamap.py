@@ -13,6 +13,8 @@ from astropy.modeling import models
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
 from astropy.convolution import MexicanHat2DKernel
 
+from photutils.datasets import make_gaussian_sources_image
+
 import numpy.testing as npt
 
 import matplotlib.pyplot as plt
@@ -313,37 +315,63 @@ def generate_fits(tmpdir_factory):
 
     tmpdir = tmpdir_factory.mktemp("nm_map")
     filename = str(tmpdir.join('map.fits'))
+    # Larger map to perform check_SNR
 
-    nm = single_source_mask()
+    np.random.seed(0)
+
+    shape = (256, 256)
+    pixsize = 1/3 * u.deg
+    peak_flux = 1 * u.Jy
+    noise_level = 0.1 * u.Jy / u.beam
+    fwhm = 1 * u.deg
+    nsources = 1
+
+    wcs = WCS()
+    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize
+    wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
+
+    xx, yy = np.indices(shape)
+    mask = np.sqrt((xx-(shape[1]-1)/2)**2 + (yy-(shape[0]-1)/2)**2) > shape[0]/2
+
+    sources = Table(masked=True)
+    sources['amplitude'] = np.ones(nsources) * peak_flux
+    sources['x_mean'] = [shape[1] / 2]
+    sources['y_mean'] = [shape[0] / 2]
+
+    beam_std_pix = (fwhm / pixsize).decompose().value * gaussian_fwhm_to_sigma
+    sources['x_stddev'] = np.ones(nsources) * beam_std_pix
+    sources['y_stddev'] = np.ones(nsources) * beam_std_pix
+    sources['theta'] = np.zeros(nsources)
+
+    data = make_gaussian_sources_image(shape, sources)
+
+    hits = np.ones(shape=shape, dtype=np.float)
+    uncertainty = np.ones(shape, dtype=np.float) * noise_level.to(u.Jy/u.beam).value
+    data += np.random.normal(loc=0, scale=1, size=shape) * uncertainty
+    data[mask] = np.nan
+    hits[mask] = 0
+    uncertainty[mask] = 0
+
+    header = wcs.to_header()
+    header['UNIT'] = "Jy / beam", 'Fake Unit'
 
     primary_header = fits.header.Header()
     primary_header['f_sampli'] = 10., 'Fake the f_sampli keyword'
-    primary_header['FWHM_260'] = nm.beam.fwhm.to(u.arcsec).value, '[arcsec] Fake the FWHM_260 keyword'
-    primary_header['FWHM_150'] = nm.beam.fwhm.to(u.arcsec).value, '[arcsec] Fake the FWHM_150 keyword'
+    primary_header['FWHM_260'] = fwhm.to(u.arcsec).value, '[arcsec] Fake the FWHM_260 keyword'
+    primary_header['FWHM_150'] = fwhm.to(u.arcsec).value, '[arcsec] Fake the FWHM_150 keyword'
 
-    primary_header['nsources'] = len(nm.fake_sources), 'Number of fake sources'
-    primary_header['pixsize'] = np.abs(nm.wcs.wcs.cdelt[0]), '[deg] pixel size'
-    primary_header['shape0'] = nm.shape[0], '[0] of map shape'
-    primary_header['shape1'] = nm.shape[1], '[1] of map shape'
+    primary_header['nsources'] = 1, 'Number of fake sources'
+    primary_header['noise'] = noise_level.to(u.Jy/u.beam).value, '[Jy/beam] noise level per map'
 
     primary = fits.hdu.PrimaryHDU(header=primary_header)
-
-    hits = np.ones(shape=nm.shape, dtype=np.float)
-    uncertainty = nm.uncertainty.array
-    data = nm.data
-    mask = np.isfinite(data)
-    hits[~mask] = 0
-    uncertainty[~mask] = 0
-
-    header = nm.wcs.to_header()
-    header['UNIT'] = "Jy / beam", 'Fake Unit'
 
     hdus = fits.hdu.HDUList(hdus=[primary])
     for band in ['1mm', '2mm']:
         hdus.append(fits.hdu.ImageHDU(data, header=header, name='Brightness_{}'.format(band)))
         hdus.append(fits.hdu.ImageHDU(uncertainty, header=header, name='Stddev_{}'.format(band)))
         hdus.append(fits.hdu.ImageHDU(hits, header=header, name='Nhits_{}'.format(band)))
-        hdus.append(fits.hdu.BinTableHDU(nm.fake_sources, name="fake_sources"))
+        hdus.append(fits.hdu.BinTableHDU(sources, name="fake_sources"))
 
     hdus.writeto(filename, overwrite=True)
 
@@ -478,6 +506,27 @@ def test_nikamap_plot_SNR_ax(nms):
     return fig
 
 
+def test_nikamap_check_SNR(generate_fits):
+
+    filename = generate_fits
+    nm = NikaMap.read(filename)
+
+    std = nm.check_SNR()
+    # Tolerance comes from the fact that we biased the result using the SNR cut for the fit
+    npt.assert_allclose(std, 1, rtol=1e-2)
+
+@pytest.mark.mpl_image_compare
+def test_nikamap_check_SNR_ax(generate_fits):
+
+    filename = generate_fits
+    nm = NikaMap.read(filename)
+
+    fig, ax = plt.subplots()
+    std = nm.check_SNR(ax=ax)
+
+    return fig
+
+
 def test_nikamap_read(generate_fits):
 
     filename = generate_fits
@@ -490,7 +539,6 @@ def test_nikamap_read(generate_fits):
     assert np.all(data._data[~data.mask] == data_1mm._data[~data_1mm.mask])
     assert np.all(data._data[~data.mask] == data_2mm._data[~data_2mm.mask])
 
-    assert data.shape == (primary_header['SHAPE0'], primary_header['SHAPE1'])
     assert data.beam.fwhm.to(u.arcsec).value == primary_header['FWHM_260']
     assert np.all(data.time[~data.mask].value == ((primary_header['F_SAMPLI']*u.Hz)**-1).to(u.h).value)
 

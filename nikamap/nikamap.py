@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import os
 from itertools import product
 
 import numpy as np
@@ -28,6 +27,7 @@ from photutils.datasets import make_gaussian_sources_image
 
 # from scipy.signal import convolve
 from scipy import signal
+from scipy.optimize import curve_fit
 
 import warnings
 from astropy.utils.exceptions import AstropyWarning
@@ -589,6 +589,52 @@ class NikaMap(NDDataArray):
 
         if fig:
             return fig
+
+    def check_SNR(self, ax=None, bins=100):
+        """Perform normality test on SNR map
+
+        Parameters
+        ----------
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            axe to plot the histogram and fits
+        bins: int
+            number of bins for the histogram. Default 100.
+
+        Returns
+        -------
+        std : float
+            return the robust standard deviation of the SNR
+
+        Notes
+        -----
+        To recover the normality you must multiply the uncertainty array by the returned stddev value
+        >>> std = data.check_SNR()
+        >>> data.uncertainty.array *= std
+        """
+
+        SN = self.SNR.compressed()
+        hist, bin_edges = np.histogram(SN, bins=bins, normed=True, range=(-5, 5))
+
+        # is biased if signal is presmf_beament
+        # is biased if trimmed
+        # mu, std = norm.fit(SN)
+
+        bin_center = (bin_edges[1:]+bin_edges[:-1])/2
+
+        # Clip to 3 sigma, this will biais the result
+        robust = (-6 < bin_center) & (bin_center < 3)
+
+        def gauss(x, a, c, s):
+            return a*np.exp(-(x-c)**2/(2*s**2))
+
+        popt, pcov = curve_fit(gauss, bin_center[robust], hist[robust])
+        mu, std = popt[1:]
+
+        if ax is not None:
+            ax.plot(bin_center, hist, drawstyle='steps-mid')
+            ax.plot(bin_center, gauss(bin_center, *popt))
+
+        return std
 
 
 def retrieve_primary_keys(filename, band="1mm", **kwd):
