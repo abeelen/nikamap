@@ -9,6 +9,7 @@ from astropy.wcs import WCS
 from astropy.modeling import Parameter, Fittable2DModel
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
 from astropy.nddata import StdDevUncertainty
+from astropy.convolution import CustomKernel, convolve_fft
 
 Jy_beam = u.Jy / u.beam
 
@@ -98,65 +99,6 @@ def fake_header(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcse
     header['BMIN'] = (beam_fwhm.to(u.deg).value, '[deg],  Beam major axis')
 
     return header
-
-
-def fake_data(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec, NEFD=50e-3 * Jy_beam * u.s**0.5,
-              nsources=32, grid=False, wobble=False, peak_flux=None, time_fwhm=1. / 5, jk_data=None, e_data=None):
-    """Build fake dataset"""
-
-    # To avoid import loops
-    from .nikamap import NikaMap
-
-    if jk_data is not None:
-        # JK data, extract all...
-        data = jk_data.data
-        e_data = jk_data.uncertainty
-        mask = jk_data.mask
-        time = jk_data.time
-        header = jk_data.wcs.to_header()
-        shape = data.shape
-    elif e_data is not None:
-        # Only gave e_data
-        mask = np.isnan(e_data)
-        time = ((e_data / NEFD)**(-1. / 0.5)).to(u.h)
-        e_data = e_data.to(Jy_beam).value
-
-        data = np.random.normal(0, 1, size=shape) * e_data
-
-    else:
-        # Regular gaussian noise
-        if time_fwhm is not None:
-            # Time as a centered gaussian
-            y_idx, x_idx = np.indices(shape, dtype=np.float)
-            time = np.exp(-((x_idx - shape[1] / 2)**2 / (2 * (gaussian_fwhm_to_sigma * time_fwhm * shape[1])**2) +
-                            (y_idx - shape[0] / 2)**2 / (2 * (gaussian_fwhm_to_sigma * time_fwhm * shape[0])**2))) * u.h
-        else:
-            # Time is uniform
-            time = np.ones(shape) * u.h
-
-        mask = time < 1 * u.s
-        time[mask] = np.nan
-
-        e_data = (NEFD * time**(-0.5)).to(Jy_beam).value
-
-        # White noise plus source
-        data = np.random.normal(0, 1, size=shape) * e_data
-
-    header = fake_header(shape, beam_fwhm, pixsize)
-    header['NEFD'] = (NEFD.to(Jy_beam * u.s**0.5).value,
-                      '[Jy/beam sqrt(s)], NEFD')
-
-    # min flux which should be recoverable at the center of the field at 3 sigma
-    if peak_flux is None:
-        peak_flux = 3 * (NEFD / np.sqrt(np.nanmax(time)) * u.beam).to(u.mJy)
-
-    data = NikaMap(data, mask=mask, unit=Jy_beam, uncertainty=StdDevUncertainty(
-        e_data), wcs=WCS(header), meta=header, time=time)
-
-    if nsources:
-        data.add_gaussian_sources(nsources=nsources, peak_flux=peak_flux, grid=grid, wobble=wobble)
-
-    return data
 
 
 def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold=0, max_loop=10):
@@ -281,3 +223,162 @@ def pos_list(nsources=1, shape=None, within=(0, 1), mask=None, x_mean=None, y_me
         warnings.warn("Only {} positions".format(len(pos)), UserWarning)
 
     return pos[:, 1], pos[:, 0]
+
+
+def fake_data(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec, NEFD=50e-3 * Jy_beam * u.s**0.5,
+              nsources=32, peak_flux=None, time_fwhm=1. / 5, jk_data=None, e_data=None, pos_gen=pos_uniform, **kwargs):
+    """Build fake dataset"""
+
+    # To avoid import loops
+    from .nikamap import NikaMap
+
+    if jk_data is not None:
+        # JK data, extract all...
+        data = jk_data.data
+        e_data = jk_data.uncertainty
+        mask = jk_data.mask
+        time = jk_data.time
+        header = jk_data.wcs.to_header()
+        shape = data.shape
+    elif e_data is not None:
+        # Only gave e_data
+        mask = np.isnan(e_data)
+        time = ((e_data / NEFD)**(-1. / 0.5)).to(u.h)
+        e_data = e_data.to(Jy_beam).value
+
+        data = np.random.normal(0, 1, size=shape) * e_data
+
+    else:
+        # Regular gaussian noise
+        if time_fwhm is not None:
+            # Time as a centered gaussian
+            y_idx, x_idx = np.indices(shape, dtype=np.float)
+            time = np.exp(-((x_idx - shape[1] / 2)**2 / (2 * (gaussian_fwhm_to_sigma * time_fwhm * shape[1])**2) +
+                            (y_idx - shape[0] / 2)**2 / (2 * (gaussian_fwhm_to_sigma * time_fwhm * shape[0])**2))) * u.h
+        else:
+            # Time is uniform
+            time = np.ones(shape) * u.h
+
+        mask = time < 1 * u.s
+        time[mask] = np.nan
+
+        e_data = (NEFD * time**(-0.5)).to(Jy_beam).value
+
+        # White noise plus source
+        data = np.random.normal(0, 1, size=shape) * e_data
+
+    header = fake_header(shape, beam_fwhm, pixsize)
+    header['NEFD'] = (NEFD.to(Jy_beam * u.s**0.5).value,
+                      '[Jy/beam sqrt(s)], NEFD')
+
+    # min flux which should be recoverable at the center of the field at 3 sigma
+    if peak_flux is None:
+        peak_flux = 3 * (NEFD / np.sqrt(np.nanmax(time)) * u.beam).to(u.mJy)
+
+    data = NikaMap(data, mask=mask, unit=Jy_beam, uncertainty=StdDevUncertainty(
+        e_data), wcs=WCS(header), meta=header, time=time)
+
+    if nsources:
+        data.add_gaussian_sources(nsources=nsources, peak_flux=peak_flux, pos_gen=pos_gen, **kwargs)
+
+    return data
+
+
+def fft_2D_hanning(mask, size=2):
+
+    assert np.min(mask.shape) > size * 2 + 1
+    assert size > 1
+
+    idx = np.linspace(-0.5, 0.5, size * 2 + 1, endpoint=True)
+    xx, yy = np.meshgrid(idx, idx)
+    n = np.sqrt(xx**2 + yy**2)
+    hann_kernel = (1 + np.cos(2*np.pi*n)) / 2
+    hann_kernel[n > 0.5] = 0
+
+    hann_kernel = CustomKernel(hann_kernel)
+    hann_kernel.normalize('integral')
+
+    # Reduce mask size to apodize on the edge
+    apod = np.isclose(convolve_fft((~mask).astype(np.float), hann_kernel), 1).astype(np.float)
+
+    # Final convolution goes to 0 on the edge
+    apod = convolve_fft(apod, hann_kernel)
+
+    return apod
+
+
+def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
+    """Return the bin averaged power spectral density of an image
+
+    Parameters
+    ----------
+    img : array_like or :class:`~astropy.units.quantity.Quantity`
+        the input (2D) image
+    res : float or :class:`~astropy.units.quantity.Quantity`, optional
+        the resolution elements of the image
+    bins : int or sequence of scalars or str, optional
+        If `bins` is an int, it defines the number of equal-width
+        bins in the given range (10, by default). If `bins` is a
+        sequence, it defines the bin edges, including the rightmost
+        edge, allowing for non-uniform bin widths. (see `~numpy.histogram`)
+    range : (float, float), optional
+        The lower and upper range of the bins. (see `~numpy.histogram`)
+
+    Returns
+    -------
+    powspec_k : array or :class:`~astropy.units.quantity.Quantity`
+        The value of the power spectrum, optionnaly with a units
+    bin_edges : array of dtype float or :class:`~astropy.units.quantity.Quantity`
+        Return the bin edges ``(length(hist)+1)``.
+
+    Notes
+    -----
+    If img as a unit of Jy/beam and res is in arcsec, the resulting
+    unit is Jy**2 / beam**2 arcsec**2, by dividing the result per
+    the square of the beam area (in say arcsec**2 / beam), one obtain
+    Jy**2 / arcsec**2
+
+    """
+    img_unit = 1
+    if isinstance(img, u.Quantity):
+        img_unit = img.unit
+    elif isinstance(img, np.ma.MaskedArray) and isinstance(img.data, u.Quantity):
+        img_unit = img.data.unit
+        # TODO: apodization will change the absolute level of the powerspectra, check how to correct
+        if apod_size is not None:
+            apod_data = fft_2D_hanning(img.mask, apod_size)
+        else:
+            apod_data = np.ones(img.shape)
+        img = img.filled(0)*apod_data
+
+    pix_unit = 1
+    if isinstance(res, u.Quantity):
+        pix_unit = res.unit
+
+    npix_x, npix_y = img.shape
+
+    # numpy foward fft does not normalize by 1/N see
+    # http://docs.scipy.org/doc/numpy/reference/routines.fft.html#implementation-details
+    # Also see the definition of Power Spectral density
+    # https://en.wikipedia.org/wiki/Spectral_density
+    # Note that the factor 2 is accounted for the fact that we count each frequency twice...
+    pow_sqr = np.absolute(np.fft.fft2(img))**2 / (npix_x * npix_y) * res**2
+
+    # Define corresponding fourier modes
+    u_freq = np.fft.fftfreq(npix_x, d=res)
+    v_freq = np.fft.fftfreq(npix_y, d=res)
+
+    k_freq = np.sqrt(u_freq[:, np.newaxis]**2+v_freq**2)
+
+    hist, bin_edges = np.histogram(k_freq, bins=bins, range=range, weights=pow_sqr)
+    norm, _ = np.histogram(k_freq, bins=bins, range=range)
+    with np.errstate(invalid='ignore'):
+        hist /= norm
+
+    # Histogram remove the units so put it back here
+    hist *= img_unit**2
+    hist *= pix_unit**2
+
+    bin_edges *= pix_unit**-1
+
+    return hist, bin_edges

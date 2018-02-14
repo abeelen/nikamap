@@ -542,6 +542,18 @@ def test_nikamap_plot_SNR_ax(nms):
 
     return fig
 
+@pytest.mark.mpl_image_compare
+def test_nikamap_plot_PSD(nms):
+
+    nm = nms
+    fig, axes = plt.subplots(nrows=4, sharex=True)
+    nm.plot_PSD(ax=axes[0])
+    nm.plot_PSD(ax=axes[1], apod_size=5)
+    nm.plot_PSD(ax=axes[2], bins=50)
+    nm.plot_PSD(ax=axes[3], snr=True)
+
+    return fig
+
 
 def test_nikamap_check_SNR(generate_fits):
 

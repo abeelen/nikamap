@@ -34,6 +34,7 @@ from astropy.utils.exceptions import AstropyWarning
 
 from .utils import CircularGaussianPSF, _round_up_to_odd_integer
 from .utils import pos_uniform, pos_gridded
+from .utils import powspec_k
 
 Jy_beam = u.Jy / u.beam
 
@@ -654,6 +655,81 @@ class NikaMap(NDDataArray):
             ax.plot(bin_center, gauss(bin_center, *popt))
 
         return std
+
+    def plot_PSD(self, ax=None, bins=100, range=None, apod_size=None, snr=False, **kwargs):
+        """Plot the power spectrum of the map
+
+        Parameters
+        ----------
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Axe to plot the power spectrum
+        bins : int
+            Number of bins for the histogram. Default 100.
+        range : (float, float), optional
+            The lower and upper range of the bins. (see `~numpy.histogram`)
+        snr : boolean
+            use the SNR map
+
+        Returns
+        -------
+        powspec_k : :class:`~astropy.units.quantity.Quantity`
+            The value of the power spectrum
+        bin_edges : :class:`~astropy.units.quantity.Quantity`
+            Return the bin edges ``(length(hist)+1)``.
+        """
+
+        if snr:
+            data = self.SNR
+        else:
+            data = self.__array__()
+
+        res = (1*u.pixel).to(u.arcsec, equivalencies=self._pixel_scale)
+        powspec, bin_edges = powspec_k(data, res=res, bins=bins, range=range, apod_size=apod_size)
+
+        if snr:
+            powspec /= res**2
+        else:
+            powspec /= (self.beam.area / u.beam)**2
+            powspec = powspec.to(u.Jy**2 / u.sr)
+
+        if ax is not None:
+            bin_center = (bin_edges[1:]+bin_edges[:-1])/2
+            ax.loglog(bin_center, powspec, **kwargs)
+            ax.set_xlabel(r'k [arcsec$^{-1}$]')
+            ax.set_ylabel('P(k) [{}]'.format(powspec.unit))
+
+    def get_square_slice(self, start=None):
+        """Retrieve the slice to get the maximum unmasked square
+
+        Parameters
+        ----------
+        start : (int, int)
+            define the center (y, x) of the starting point (default: center of the image)
+
+        Returns
+        -------
+        islice : slice
+            to be applied on the object itself on both dimension data[islice, islice]
+
+        Notes
+        -----
+        Simply growth a square symetrically from the starting point
+        """
+
+        if start is None:
+            start = np.asarray(self.shape) // 2
+
+        islice = slice(*(start+[0, 1]))
+
+        while np.all(~self.mask[islice, islice]):
+            islice = slice(islice.start-1, islice.stop)
+        islice = slice(islice.start+1, islice.stop)
+
+        while np.all(~self.mask[islice, islice]):
+            islice = slice(islice.start, islice.stop+1)
+        islice = slice(islice.start, islice.stop-1)
+
+        return islice
 
 
 def retrieve_primary_keys(filename, band="1mm", **kwd):
