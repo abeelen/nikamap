@@ -71,6 +71,9 @@ class NikaBeam(Kernel2D):
         super(NikaBeam, self).__init__(**kwargs)
         self._truncation = np.abs(1. - self._array.sum())
 
+    def __repr__(self):
+        return "<NikaBeam(fwhm={}, pixel_scale={:.2f} / pixel)".format(self.fwhm.to(u.arcsec), (1*u.pixel).to(u.arcsec, equivalencies=self._pixel_scale))
+
     @property
     def fwhm(self):
         return self._fwhm
@@ -78,6 +81,22 @@ class NikaBeam(Kernel2D):
     @property
     def fwhm_pix(self):
         return self._fwhm.to(u.pixel, equivalencies=self._pixel_scale)
+
+    @property
+    def sigma(self):
+        return self._fwhm * gaussian_fwhm_to_sigma
+
+    @property
+    def sigma_pix(self):
+        return self._fwhm.to(u.pixel, equivalencies=self._pixel_scale) * gaussian_fwhm_to_sigma
+
+    @property
+    def area(self):
+        return 2 * np.pi * self.sigma**2
+
+    @property
+    def area_pix(self):
+        return 2 * np.pi * self.sigma_pix**2
 
 
 class NikaMap(NDDataArray):
@@ -253,7 +272,7 @@ class NikaMap(NDDataArray):
         shape = self.shape
 
         # TODO: Non gaussian beam
-        beam_std_pix = self.beam.fwhm_pix.value * gaussian_fwhm_to_sigma
+        beam_std_pix = self.beam.sigma_pix.value
 
         x_mean, y_mean = pos_gen(nsources=nsources, shape=shape, within=within, mask=self.mask, **kwargs)
 
@@ -419,7 +438,7 @@ class NikaMap(NDDataArray):
         if psf:
             # BasicPSFPhotometry with fixed positions
 
-            sigma_psf = self.beam.fwhm_pix.value * gaussian_fwhm_to_sigma
+            sigma_psf = self.beam.sigma_pix.value
 
             # Using an IntegratedGaussianPRF can cause biais in the photometry
             # TODO: Check the NIKA2 calibration scheme

@@ -24,8 +24,45 @@ import matplotlib.pyplot as plt
 # import nikamap as nm
 # data_path = op.join(nm.__path__[0], 'data')
 
-from ..nikamap import NikaMap
+from ..nikamap import NikaMap, NikaBeam
 from ..utils import pos_gridded
+
+
+def test_nikabeam_exceptions():
+    # TODO: Should probably be assertions at the __init__ stage...
+
+    fwhm = 18 * u.arcsec
+
+    with pytest.raises(AttributeError):
+        beam = NikaBeam()
+
+    with pytest.raises(AttributeError):
+        beam = NikaBeam(fwhm.value)
+
+    with pytest.raises(TypeError):
+        beam = NikaBeam(fwhm, fwhm)
+
+
+def test_nikabeam_init():
+    # TODO: What if we init with an array ?
+    fwhm = 18 * u.arcsec
+    pix_scale = u.equivalencies.pixel_scale(2*u.arcsec / u.pixel)
+
+    beam = NikaBeam(fwhm, pix_scale)
+
+    assert beam.fwhm == fwhm
+    assert beam.fwhm_pix == fwhm.to(u.pixel, equivalencies=pix_scale)
+
+    assert beam.sigma == fwhm * gaussian_fwhm_to_sigma
+    assert beam.sigma_pix == fwhm.to(u.pixel, equivalencies=pix_scale) * gaussian_fwhm_to_sigma
+
+    assert beam.area == 2 * np.pi * (fwhm * gaussian_fwhm_to_sigma)**2
+    assert beam.area_pix == 2 * np.pi * (fwhm.to(u.pixel, equivalencies=pix_scale) * gaussian_fwhm_to_sigma)**2
+
+    beam.normalize('peak')
+    npt.assert_allclose(beam.area_pix.value, np.sum(beam.array), rtol=1e-4)
+
+    assert str(beam) == '<NikaBeam(fwhm=18.0 arcsec, pixel_scale=2.00 arcsec / pixel)'
 
 
 def test_nikamap_init():
