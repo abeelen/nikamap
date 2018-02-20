@@ -484,10 +484,11 @@ def test_nikamap_phot_sources(nms):
 
     nm = nms
     nm.detect_sources()
-    nm.phot_sources()
-
+    nm.phot_sources(peak=True, psf=False)
     # Relative and absolute tolerance are really bad here for the case where the sources are not centered on pixels... Otherwise it give perfect answer when there is no noise
     npt.assert_allclose(nm.sources['flux_peak'].to(u.Jy).value, [1] * len(nm.sources), atol=1e-1, rtol=1e-1)
+
+    nm.phot_sources(peak=False, psf=True)
     # Relative tolerance is rather low to pass the case of multiple sources...
     npt.assert_allclose(nm.sources['flux_psf'].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
 
@@ -519,6 +520,32 @@ def test_nikamap_match_sources(nms):
     assert np.all(nm.sources['ID'] == nm.sources['to_match'])
 
 
+def test_nikamap_match_sources_threshold(nms):
+
+    nm = nms
+    nm.detect_sources()
+    sources = nm.sources
+    sources.meta['name'] = 'to_match'
+    nm.match_sources(sources, dist_threshold=nm.beam.fwhm)
+
+    assert np.all(nm.sources['ID'] == nm.sources['to_match'])
+
+
+def test_nikamap_match_sources_list(nms):
+
+    nm = nms
+    nm.detect_sources()
+    sources = nm.sources.copy()
+    sources.meta['name'] = 'to_match_1'
+    sources2 = nm.sources.copy()
+    sources2.meta['name'] = 'to_match_2'
+
+    nm.match_sources([sources, sources2])
+
+    assert np.all(nm.sources['ID'] == nm.sources['to_match_1'])
+    assert np.all(nm.sources['ID'] == nm.sources['to_match_2'])
+
+
 @pytest.mark.mpl_image_compare
 def test_nikamap_plot_SNR(nms):
 
@@ -534,13 +561,15 @@ def test_nikamap_plot_SNR_ax(nms):
     nm = nms
     fig, axes = plt.subplots(nrows=2, ncols=2, subplot_kw={'projection': nm.wcs})
     axes = axes.flatten()
-    nm.plot_SNR(ax=axes[0], title="title")
+    nm.plot_SNR(ax=axes[0], title="title", clim=(-3, 3))
     nm.plot_SNR(ax=axes[1], levels=(1, 5))
     nm.plot_SNR(ax=axes[2], cat=[(nm.fake_sources, '+')])
     nm.detect_sources()
+    nm.fake_sources = None
     nm.plot_SNR(ax=axes[3], cat=True)
 
     return fig
+
 
 @pytest.mark.mpl_image_compare
 def test_nikamap_plot_PSD(nms):
@@ -551,6 +580,8 @@ def test_nikamap_plot_PSD(nms):
     nm.plot_PSD(ax=axes[1], apod_size=5)
     nm.plot_PSD(ax=axes[2], bins=50)
     nm.plot_PSD(ax=axes[3], snr=True)
+
+    powspec, bins = nm.plot_PSD()
 
     return fig
 
@@ -563,6 +594,7 @@ def test_nikamap_check_SNR(generate_fits):
     std = nm.check_SNR()
     # Tolerance comes from the fact that we biased the result using the SNR cut for the fit
     npt.assert_allclose(std, 1, rtol=1e-2)
+
 
 @pytest.mark.mpl_image_compare
 def test_nikamap_check_SNR_ax(generate_fits):
@@ -607,3 +639,30 @@ def test_blended_sources(blended_sources):
     # But still prior photometry can recover the flux
     nm.phot_sources(nm.fake_sources)
     npt.assert_allclose(nm.fake_sources['flux_psf'].to(u.Jy).value, [1] * len(nm.fake_sources))
+
+
+def test_get_square_slice(single_source_mask):
+
+    nm = single_source_mask
+    islice = nm.get_square_slice()
+
+    radius = 10
+    assert np.floor(np.sqrt(2) * radius) == islice.stop - islice.start - 1
+    assert np.floor(nm.shape[0] / 2 - np.sqrt(2)*radius / 2) == islice.start
+    assert np.floor(nm.shape[0] / 2 + np.sqrt(2)*radius / 2 + 1) == islice.stop
+
+
+def test_get_square_slice_start(single_source_mask):
+
+    nm = single_source_mask
+
+    with pytest.raises(AssertionError):
+        islice = nm.get_square_slice(start=14)
+        islice = nm.get_square_slice(start=[14, 14, 14])
+
+    islice = nm.get_square_slice(start=(14, 14))
+
+    radius = 10
+    assert np.floor(np.sqrt(2) * radius) == islice.stop - islice.start - 1
+    assert np.floor(nm.shape[0] / 2 - np.sqrt(2)*radius / 2) == islice.start
+    assert np.floor(nm.shape[0] / 2 + np.sqrt(2)*radius / 2 + 1) == islice.stop

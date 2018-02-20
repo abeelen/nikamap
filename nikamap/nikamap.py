@@ -698,6 +698,8 @@ class NikaMap(NDDataArray):
             ax.set_xlabel(r'k [arcsec$^{-1}$]')
             ax.set_ylabel('P(k) [{}]'.format(powspec.unit))
 
+        return powspec, bin_edges
+
     def get_square_slice(self, start=None):
         """Retrieve the slice to get the maximum unmasked square
 
@@ -718,8 +720,11 @@ class NikaMap(NDDataArray):
 
         if start is None:
             start = np.asarray(self.shape) // 2
+        else:
+            assert isinstance(start, (list, tuple, np.ndarray)), "start should have a length of 2"
+            assert len(start) == 2, "start should have a length of 2"
 
-        islice = slice(*(start+[0, 1]))
+        islice = slice(*(np.asarray(start)+[0, 1]))
 
         while np.all(~self.mask[islice, islice]):
             islice = slice(islice.start-1, islice.stop)
@@ -745,6 +750,8 @@ def retrieve_primary_keys(filename, band="1mm", **kwd):
             bmaj = hdus[0].header['FWHM_260'] * u.arcsec
         elif band in ["2mm", '2']:
             bmaj = hdus[0].header['FWHM_150'] * u.arcsec
+        else:
+            bmaj = None
 
     return f_sampling, bmaj
 
