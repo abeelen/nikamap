@@ -76,9 +76,9 @@ sphinx_gallery_conf = {
     # path where to save gallery generated examples
     'gallery_dirs': 'auto_examples',
     # To auto-generate example sections in the API
-    'doc_module': ('nikamap',),
+    # 'doc_module': ('nikamap',),
     # Auto-generated mini-galleries go here
-    'backreferences_dir': 'gen_api'
+    # 'backreferences_dir': 'gen_api'
 }
 
 # Automatically generate stub pages for API
@@ -137,7 +137,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -298,4 +298,8 @@ texinfo_domain_indices = False
 #texinfo_no_detailmenu = False
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+intersphinx_mapping = {'http://docs.python.org/': None,
+                       'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+                       'matplotlib': ('http://matplotlib.org/', None),
+                       'astropy': ('http://docs.astropy.org/en/stable/', None)}

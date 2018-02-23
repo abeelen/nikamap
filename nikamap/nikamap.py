@@ -44,18 +44,18 @@ __all__ = ['NikaBeam', 'NikaMap']
 class NikaBeam(Kernel2D):
     """NikaBeam describe the beam of a NikaMap
 
-    By default the beams are gaussian function, but the class should be able to handle arbitrary beam. It also add an internal pixel_scale which allow for `~astropy.units.Quantity` arguments
+    By default the beams are gaussian function, but the class should be able to handle arbitrary beam. It also add an internal pixel_scale which allow for :class:`astropy.units.Quantity` arguments
 
     Parameters
     ----------
-    fwhm : :class:~astropy.units.Quantity
+    fwhm : :class:`astropy.units.Quantity`
         Full width half maximum of the Gaussian kernel.
-    pixel_scale : `~astropy.units.equivalencies.pixel_scale`
+    pixel_scale : `astropy.units.equivalencies.pixel_scale`
         The pixel scale either in units of angle/pixel or pixel/angle.
 
     See also
     --------
-    ~astropy.convolution.Gaussian2DKernel
+    :class:`astropy.convolution.Gaussian2DKernel`
 
     """
     def __init__(self, fwhm=None, pixel_scale=None, **kwargs):
@@ -107,11 +107,11 @@ class NikaMap(NDDataArray):
 
     Parameters
     -----------
-    data : `~numpy.ndarray` or `NDData`
+    data : :class:`~numpy.ndarray` or :class:`astropy.nddata.NDData`
         The actual data contained in this `NDData` object. Not that this
         will always be copies by *reference* , so you should make copy
         the ``data`` before passing it in if that's the  desired behavior.
-    uncertainty : `~astropy.nddata.NDUncertainty`, optional
+    uncertainty : :class:`astropy.nddata.NDUncertainty`, optional
         Uncertainties on the data.
     mask : `~numpy.ndarray`-like, optional
         Mask for the data, given as a boolean Numpy array or any object that
@@ -121,7 +121,7 @@ class NikaMap(NDDataArray):
         masked arrays). If ``data`` is a numpy masked array, providing
         ``mask`` here will causes the mask from the masked array to be
         ignored.
-    time : `~astropy.units.quantity.Quantity` array
+    time : :class:`astropy.units.quantity.Quantity` array
         The time spent per pixel on the map, must have unit equivalent to time
         and shape equivalent to data
     wcs : undefined, optional
@@ -131,18 +131,18 @@ class NikaMap(NDDataArray):
         is included with this object but not part of any other attribute
         of this particular object.  e.g., creation date, unique identifier,
         simulation parameters, exposure time, telescope name, etc.
-    unit : `~astropy.units.UnitBase` instance or str, optional
+    unit : :class:`astropy.units.UnitBase` instance or str, optional
         The units of the data.
-    beam : `~nikamap.NikaBeam`
+    beam : :class:`nikamap.NikaBeam`
         The beam corresponding to the data, by default a circular gaussian
         constructed from the header 'BMAJ' keyword.
-    fake_source : `~astropy.table.Table`, optional
+    fake_source : :class:`astropy.table.Table`, optional
         The table of potential fake sources included in the data
 
         .. note::
             The table must contain at least 3 columns: ['ID', 'ra', 'dec']
 
-    sources : `~astropy.table.Table`, optional
+    sources : :class`astropy.table.Table`, optional
         The table of detected sources in the data.
 
     """
@@ -314,7 +314,7 @@ class NikaMap(NDDataArray):
     def detect_sources(self, threshold=3, box_size=5):
         """Detect sources with find local peaks above a specified threshold value.
 
-        The detection is made on the SNR map, and return an `~astropy.table.Table` with columns ``ID, ra, dec, SNR``.
+        The detection is made on the SNR map, and return an :class`astropy.table.Table` with columns ``ID, ra, dec, SNR``.
         If fake sources are present, a match is made with a distance threshold of ``beam_fwhm / 3``
 
         Parameters
@@ -628,6 +628,7 @@ class NikaMap(NDDataArray):
         Notes
         -----
         To recover the normality you must multiply the uncertainty array by the returned stddev value
+
         >>> std = data.check_SNR()
         >>> data.uncertainty.array *= std
         """
@@ -661,7 +662,7 @@ class NikaMap(NDDataArray):
 
         Parameters
         ----------
-        ax : :class:`~matplotlib.axes.Axes`, optional
+        ax : :class:`matplotlib.axes.Axes`, optional
             Axe to plot the power spectrum
         bins : int
             Number of bins for the histogram. Default 100.
@@ -672,9 +673,9 @@ class NikaMap(NDDataArray):
 
         Returns
         -------
-        powspec_k : :class:`~astropy.units.quantity.Quantity`
+        powspec_k : :class:`astropy.units.quantity.Quantity`
             The value of the power spectrum
-        bin_edges : :class:`~astropy.units.quantity.Quantity`
+        bin_edges : :class:`astropy.units.quantity.Quantity`
             Return the bin edges ``(length(hist)+1)``.
         """
 

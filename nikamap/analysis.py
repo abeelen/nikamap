@@ -24,18 +24,18 @@ def check_filenames(filenames, band="1mm"):
         if os.path.isfile(filename):
             checked_filenames.append(filename)
         else:
-            warnings.warn(f'{filename} does not exist, removing from list', UserWarning)
+            warnings.warn('{} does not exist, removing from list'.format(filename), UserWarning)
 
     filenames = checked_filenames
-    header = fits.getheader(filenames[0], f'Brightness_{band}')
+    header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
 
     # Checking all header for consistency
     for filename in filenames:
-        _header = fits.getheader(filename, f'Brightness_{band}')
-        assert WCS(header).wcs == WCS(_header).wcs, f'{filename} has a different header'
-        assert header['UNIT'] == _header['UNIT'], f'{filename} has a different unit'
-        assert WCS(header)._naxis1 == WCS(_header)._naxis1, f'{filename} has a different shape'
-        assert WCS(header)._naxis2 == WCS(_header)._naxis2, f'{filename} has a different shape'
+        _header = fits.getheader(filename, 'Brightness_{}'.format(band))
+        assert WCS(header).wcs == WCS(_header).wcs, '{} has a different header'.format(filename)
+        assert header['UNIT'] == _header['UNIT'], '{} has a different uni'.format(filename)
+        assert WCS(header)._naxis1 == WCS(_header)._naxis1, '{} has a different shape'.format(filename)
+        assert WCS(header)._naxis2 == WCS(_header)._naxis2, '{} has a different shape'.format(filename)
 
     return filenames
 
@@ -166,7 +166,7 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False):
     f_sampling, bmaj = retrieve_primary_keys(filenames[0], band)
 
     n_scans = len(filenames)
-    header = fits.getheader(filenames[0], f'Brightness_{band}')
+    header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
 
     if 'BMAJ' not in header:  # pragma: no cover  # old file format
         header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
@@ -185,10 +185,10 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False):
 
     for index, filename in enumerate(filenames):
         with fits.open(filename, 'readonly') as fits_file:
-            datas[index] = fits_file[f'Brightness_{band}'].data
-            hits += fits_file[f'Nhits_{band}'].data
+            datas[index] = fits_file['Brightness_{}'.format(band)].data
+            hits += fits_file['Nhits_{}'.format(band)].data
             if wmean:
-                stddev = fits_file[f'Stddev_{band}'].data
+                stddev = fits_file['Stddev_{}'.format(band)].data
                 with np.errstate(divide='ignore'):
                     weights[index] = 1/stddev**2
 

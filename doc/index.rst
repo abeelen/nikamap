@@ -1,16 +1,11 @@
-.. shablona documentation master file, created by sphinx-quickstart on Tue Apr 14 10:29:06 2015. You can adapt this file completely to your liking, but it should at least contain the root `toctree` directive.
 
-Welcome to nikamap's documentation!
+Welcome to NikaMap's documentation!
 ====================================
 
-`Nikamap` is a template for a small scientific Python project. 
+`NikaMap` is a class to manipulate data produced by the IDL NIKA2 pipeline
 
 To see how to use it, please refer to the `README file 
 <https://gitlab.lam.fr/abeelen/nikamap/blob/master/README.md>`_ in the Github repository.
-
-This is an example of documentation of the software, using sphinx_. 
-
-.. _sphinx: http://sphinx-doc.org/
 
 
 Contents:

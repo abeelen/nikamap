@@ -342,14 +342,19 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
     img_unit = 1
     if isinstance(img, u.Quantity):
         img_unit = img.unit
-    elif isinstance(img, np.ma.MaskedArray) and isinstance(img.data, u.Quantity):
-        img_unit = img.data.unit
+    elif isinstance(img, np.ma.MaskedArray):
+
         # TODO: apodization will change the absolute level of the powerspectra, check how to correct
         if apod_size is not None:
             apod_data = fft_2D_hanning(img.mask, apod_size)
-        else:
-            apod_data = np.ones(img.shape)
-        img = img.filled(0)*apod_data
+            img *= apod_data
+
+        if isinstance(img.data, u.Quantity):
+            img_unit = img.data.unit
+
+        img = img.filled(0)
+
+
 
     pix_unit = 1
     if isinstance(res, u.Quantity):
