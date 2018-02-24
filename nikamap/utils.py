@@ -70,7 +70,7 @@ class CircularGaussianPSF(Fittable2DModel):
     def evaluate(self, x, y, flux, x_0, y_0, sigma):
         """Model function Gaussian PSF model."""
 
-        return flux * np.exp(-((x - x_0)**2 + (y - y_0)**2) / (2*sigma**2))
+        return flux * np.exp(-((x - x_0)**2 + (y - y_0)**2) / (2 * sigma**2))
 
 
 def fake_header(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec):
@@ -116,7 +116,8 @@ def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold
         i_loop += 1
 
         # note that these are pixels 0-indexes
-        pos = np.concatenate((pos, np.random.uniform(within[0], within[1], (nsources, 2)) * np.asarray(shape) - 0.5))
+        pos = np.concatenate((pos, np.random.uniform(
+            within[0], within[1], (nsources, 2)) * np.asarray(shape) - 0.5))
 
         # Filter sources inside the mask
         if mask is not None:
@@ -148,7 +149,8 @@ def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold
         pos = pos[0:nsources]
 
     if i_loop == max_loop and len(pos) < nsources:
-        warnings.warn("Maximum of loops reached, only have {} positions".format(len(pos)), UserWarning)
+        warnings.warn("Maximum of loops reached, only have {} positions".format(
+            len(pos)), UserWarning)
 
     return pos[:, 1], pos[:, 0]
 
@@ -171,11 +173,13 @@ def pos_gridded(nsources=2**2, shape=None, within=(0, 1), mask=None, wobble=Fals
 
     # square distribution with step margin on the side
     within_step = (within[1] - within[0]) / (sq_sources + 1)
-    pos = np.indices([sq_sources] * 2, dtype=np.float) * within_step + within[0] + within_step
+    pos = np.indices([sq_sources] * 2, dtype=np.float) * \
+        within_step + within[0] + within_step
 
     if wobble:
         # With some wobbling if needed
-        pos += np.random.normal(0, within_step * wobble_frac * gaussian_fwhm_to_sigma, pos.shape)
+        pos += np.random.normal(0, within_step *
+                                wobble_frac * gaussian_fwhm_to_sigma, pos.shape)
 
     pos = pos.reshape(2, nsources).T
 
@@ -204,14 +208,16 @@ def pos_list(nsources=1, shape=None, within=(0, 1), mask=None, x_mean=None, y_me
     requested number of sources might not be returned"""
 
     assert x_mean is not None and y_mean is not None, 'you must provide x_mean & y_mean'
-    assert len(x_mean) == len(y_mean), 'x_mean and y_mean must have the same dimension'
-    assert nsources <= len(x_mean), 'x_mean must contains at least {} sources'.format(nsources)
+    assert len(x_mean) == len(
+        y_mean), 'x_mean and y_mean must have the same dimension'
+    assert nsources <= len(
+        x_mean), 'x_mean must contains at least {} sources'.format(nsources)
 
     pos = np.array([y_mean, x_mean]).T
 
     # within
     limits = shape * np.asarray(within)[:, np.newaxis]
-    inside = np.sum((pos >= limits[0]) & (pos <= limits[1]-1), 1) == 2
+    inside = np.sum((pos >= limits[0]) & (pos <= limits[1] - 1), 1) == 2
     pos = pos[inside]
 
     if mask is not None:
@@ -279,7 +285,8 @@ def fake_data(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
         e_data), wcs=WCS(header), meta=header, time=time)
 
     if nsources:
-        data.add_gaussian_sources(nsources=nsources, peak_flux=peak_flux, pos_gen=pos_gen, **kwargs)
+        data.add_gaussian_sources(
+            nsources=nsources, peak_flux=peak_flux, pos_gen=pos_gen, **kwargs)
 
     return data
 
@@ -292,14 +299,15 @@ def fft_2D_hanning(mask, size=2):
     idx = np.linspace(-0.5, 0.5, size * 2 + 1, endpoint=True)
     xx, yy = np.meshgrid(idx, idx)
     n = np.sqrt(xx**2 + yy**2)
-    hann_kernel = (1 + np.cos(2*np.pi*n)) / 2
+    hann_kernel = (1 + np.cos(2 * np.pi * n)) / 2
     hann_kernel[n > 0.5] = 0
 
     hann_kernel = CustomKernel(hann_kernel)
     hann_kernel.normalize('integral')
 
     # Reduce mask size to apodize on the edge
-    apod = np.isclose(convolve_fft((~mask).astype(np.float), hann_kernel), 1).astype(np.float)
+    apod = np.isclose(convolve_fft((~mask).astype(
+        np.float), hann_kernel), 1).astype(np.float)
 
     # Final convolution goes to 0 on the edge
     apod = convolve_fft(apod, hann_kernel)
@@ -354,8 +362,6 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
 
         img = img.filled(0)
 
-
-
     pix_unit = 1
     if isinstance(res, u.Quantity):
         pix_unit = res.unit
@@ -373,9 +379,10 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
     u_freq = np.fft.fftfreq(npix_x, d=res)
     v_freq = np.fft.fftfreq(npix_y, d=res)
 
-    k_freq = np.sqrt(u_freq[:, np.newaxis]**2+v_freq**2)
+    k_freq = np.sqrt(u_freq[:, np.newaxis]**2 + v_freq**2)
 
-    hist, bin_edges = np.histogram(k_freq, bins=bins, range=range, weights=pow_sqr)
+    hist, bin_edges = np.histogram(
+        k_freq, bins=bins, range=range, weights=pow_sqr)
     norm, _ = np.histogram(k_freq, bins=bins, range=range)
     with np.errstate(invalid='ignore'):
         hist /= norm

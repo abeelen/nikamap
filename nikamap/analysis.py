@@ -16,7 +16,8 @@ __all__ = ['jackknife', 'bootstrap']
 def check_filenames(filenames, band="1mm"):
     """Check the existence and compatibility of a list of NIKA IDL fits"""
 
-    assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+    assert band in ['1mm', '2mm', '1', '2',
+                    '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
 
     # Chek for existence
     checked_filenames = []
@@ -24,7 +25,8 @@ def check_filenames(filenames, band="1mm"):
         if os.path.isfile(filename):
             checked_filenames.append(filename)
         else:
-            warnings.warn('{} does not exist, removing from list'.format(filename), UserWarning)
+            warnings.warn('{} does not exist, removing from list'.format(
+                filename), UserWarning)
 
     filenames = checked_filenames
     header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
@@ -32,10 +34,14 @@ def check_filenames(filenames, band="1mm"):
     # Checking all header for consistency
     for filename in filenames:
         _header = fits.getheader(filename, 'Brightness_{}'.format(band))
-        assert WCS(header).wcs == WCS(_header).wcs, '{} has a different header'.format(filename)
-        assert header['UNIT'] == _header['UNIT'], '{} has a different uni'.format(filename)
-        assert WCS(header)._naxis1 == WCS(_header)._naxis1, '{} has a different shape'.format(filename)
-        assert WCS(header)._naxis2 == WCS(_header)._naxis2, '{} has a different shape'.format(filename)
+        assert WCS(header).wcs == WCS(
+            _header).wcs, '{} has a different header'.format(filename)
+        assert header['UNIT'] == _header['UNIT'], '{} has a different uni'.format(
+            filename)
+        assert WCS(header)._naxis1 == WCS(
+            _header)._naxis1, '{} has a different shape'.format(filename)
+        assert WCS(header)._naxis2 == WCS(
+            _header)._naxis2, '{} has a different shape'.format(filename)
 
     return filenames
 
@@ -60,6 +66,7 @@ class jackknife:
     -----
     A crude check is made on the wcs of each map when instanciated
     """
+
     def __init__(self, filenames, band='1mm', n=10, low_mem=False, **kwd):
 
         self._iter = iter(self)  # Py2-style
@@ -72,7 +79,8 @@ class jackknife:
         assert len(filenames) > 1, 'Less than 2 existing files in filenames'
 
         if len(filenames) % 2 and n is not None:
-            warnings.warn('Even number of files, dropping the last one', UserWarning)
+            warnings.warn(
+                'Even number of files, dropping the last one', UserWarning)
             filenames = filenames[:-1]
 
         self.filenames = filenames
@@ -89,8 +97,9 @@ class jackknife:
 
         # This is low_mem=False case ...
         datas = np.zeros((len(filenames), header['NAXIS2'], header['NAXIS1']))
-        weights = np.zeros((len(filenames), header['NAXIS2'], header['NAXIS1']))
-        time = np.zeros((header['NAXIS2'], header['NAXIS1']))*u.h
+        weights = np.zeros(
+            (len(filenames), header['NAXIS2'], header['NAXIS1']))
+        time = np.zeros((header['NAXIS2'], header['NAXIS1'])) * u.h
 
         for i, filename in enumerate(filenames):
 
@@ -142,7 +151,8 @@ class jackknife:
             np.random.shuffle(self.jk_weights)
             with np.errstate(invalid='ignore', divide='ignore'):
                 e_data = np.sum(self.weights, axis=0)**(-0.5)
-                data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
+                data = np.sum(self.datas * self.weights *
+                              self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
 
         else:
             raise StopIteration()
@@ -190,7 +200,7 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False):
             if wmean:
                 stddev = fits_file['Stddev_{}'.format(band)].data
                 with np.errstate(divide='ignore'):
-                    weights[index] = 1/stddev**2
+                    weights[index] = 1 / stddev**2
 
     if wmean:
         mask = ~np.isfinite(weights)
@@ -199,13 +209,15 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False):
 
     # This is where the magic happens
     for index in np.arange(n_bootstrap):
-        shuffled_index = np.floor(np.random.uniform(0, n_scans, n_scans)).astype(np.int)
+        shuffled_index = np.floor(np.random.uniform(
+            0, n_scans, n_scans)).astype(np.int)
         if wmean:
             bs_array[index, :, :] = np.ma.average(datas[shuffled_index, :, :],
                                                   weights=weights[shuffled_index, :, :],
                                                   axis=0, returned=False)
         else:
-            bs_array[index, :, :] = np.mean(datas[shuffled_index, :, :], axis=0)
+            bs_array[index, :, :] = np.mean(
+                datas[shuffled_index, :, :], axis=0)
 
     data = np.mean(bs_array, axis=0)
     e_data = np.std(bs_array, axis=0, ddof=1)
@@ -217,6 +229,7 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False):
     data[unobserved] = np.nan
     e_data[unobserved] = np.nan
 
-    data = NikaMap(data, mask=unobserved, uncertainty=StdDevUncertainty(e_data), unit=header['UNIT'], wcs=WCS(header), meta=header, time=time)
+    data = NikaMap(data, mask=unobserved, uncertainty=StdDevUncertainty(
+        e_data), unit=header['UNIT'], wcs=WCS(header), meta=header, time=time)
 
     return data
