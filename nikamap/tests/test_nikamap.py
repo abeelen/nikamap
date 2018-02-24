@@ -583,7 +583,8 @@ def test_nikamap_match_sources_list(nms):
     assert np.all(nm.sources['ID'] == nm.sources['to_match_1'])
     assert np.all(nm.sources['ID'] == nm.sources['to_match_2'])
 
-#Different freetype on github
+
+# Different freetype on github
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)
 def test_nikamap_plot_SNR(nms):
 
@@ -593,7 +594,7 @@ def test_nikamap_plot_SNR(nms):
     return fig
 
 
-#Different freetype on github
+# Different freetype on github
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)
 def test_nikamap_plot_SNR_ax(nms):
 
@@ -611,7 +612,7 @@ def test_nikamap_plot_SNR_ax(nms):
     return fig
 
 
-#Different freetype on github
+# Different freetype on github
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)
 def test_nikamap_plot_PSD(nms):
 
@@ -637,7 +638,7 @@ def test_nikamap_check_SNR(generate_fits):
     npt.assert_allclose(std, 1, rtol=1e-2)
 
 
-#Different freetype on github
+# Different freetype on github
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)
 def test_nikamap_check_SNR_ax(generate_fits):
 
