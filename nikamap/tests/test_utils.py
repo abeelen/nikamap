@@ -104,9 +104,7 @@ def test_pos_list():
         x, y = pos_list(nsources=nsources, shape=shape,
                         x_mean=x_mean, y_mean=y_mean, within=(1 / 4, 3 / 4))
 
-    assert np.all(x == x_mean[shape[1] // 4:shape[1]
-                              * 3 // 4]), 'should be identical'
-
+    assert np.all(x == x_mean[shape[1] // 4:shape[1] * 3 // 4]), 'should be identical'
     x_mean = np.linspace(-1, 18, nsources)
 
     with pytest.warns(UserWarning):

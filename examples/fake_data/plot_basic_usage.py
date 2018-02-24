@@ -25,7 +25,7 @@ data_path = os.getcwd()
 nm = NikaMap.read(os.path.join(data_path, 'fake_map.fits'))
 
 
-################################################################################
+##########################################################################
 # NikaMap is derived from the `astropy.NDData` class and thus you can access and and manipulate the data the same way
 #
 # * `nm.data` : an np.array containing the brightness
@@ -36,34 +36,34 @@ nm = NikaMap.read(os.path.join(data_path, 'fake_map.fits'))
 
 print(nm)
 
-################################################################################
+##########################################################################
 #
 print(nm.wcs)
 
-################################################################################
+##########################################################################
 # Basic Plotting
 # --------------
 # thus they can be plotted directly using maplotlib routines
 
 plt.imshow(nm.data)
 
-################################################################################
+##########################################################################
 # There are a few plotting routines, the most convenient one is to
 # plot the signal to noise ratio map :
 
 nm.plot_SNR()
 
-################################################################################
+##########################################################################
 # or the power spectrum density of the data :
 
 fig, ax = plt.subplots()
 powspec, bins = nm.plot_PSD(ax=ax)
 
-################################################################################
+##########################################################################
 # Beware that this PSD is based on an non-uniform noise, thus dominated by the
 # largest noise part of the map
 
-################################################################################
+##########################################################################
 # Match filtering
 # ---------------
 #
@@ -73,7 +73,7 @@ powspec, bins = nm.plot_PSD(ax=ax)
 mf_nm = nm.match_filter(nm.beam)
 mf_nm.plot_SNR()
 
-################################################################################
+##########################################################################
 # Source detection & photometry
 # -----------------------------
 #
@@ -81,50 +81,53 @@ mf_nm.plot_SNR()
 
 mf_nm.detect_sources(threshold=3)
 
-################################################################################
+##########################################################################
 # The resulting catalog is stored in the source property of the NikaMap object
 
 print(mf_nm.sources)
 
-################################################################################
+##########################################################################
 # and can be overploted on the SNR maplotlib
 mf_nm.plot_SNR(cat=True)
 
-################################################################################
+##########################################################################
 # There is two available photometry :
 # * peak_flux : to retrieve point sources flux directly on the pixel value of the map, ideadlly on the matched filtered map
 # * psf_flux : which perfom psf fitting on the pixels at the given position
 
 mf_nm.phot_sources(peak=True, psf=False)
 
-################################################################################
+##########################################################################
 # catalog which can be transfered to the un-filtered maplotlib
 nm.phot_sources(sources=mf_nm.sources, peak=False, psf=True)
 
-################################################################################
+##########################################################################
 # which can be compared to the original fake source catalog
 fake_sources = Table.read('fake_map.fits', 'FAKE_SOURCES')
 fake_sources.meta['name'] = 'fake sources'
 nm.plot_SNR(cat=[(fake_sources, '^'), (nm.sources, '+')])
 
-################################################################################
+##########################################################################
 # or in greater details :
 
 fake_coords = SkyCoord(fake_sources['ra'], fake_sources['dec'], unit="deg")
 detected_coords = SkyCoord(nm.sources['ra'], nm.sources['dec'], unit="deg")
 
 idx, sep2d, _ = fake_coords.match_to_catalog_sky(detected_coords)
-good = sep2d < 10*u.arcsec
+good = sep2d < 10 * u.arcsec
 idx = idx[good]
 sep2d = sep2d[good]
 
-ra_off = Angle(fake_sources[good]['ra']-nm.sources[idx]['ra'], 'deg')
-dec_off = Angle(fake_sources[good]['dec']-nm.sources[idx]['dec'], 'deg')
+ra_off = Angle(fake_sources[good]['ra'] - nm.sources[idx]['ra'], 'deg')
+dec_off = Angle(fake_sources[good]['dec'] - nm.sources[idx]['dec'], 'deg')
 
 fig, axes = plt.subplots(ncols=2)
 for method in ['flux_psf', 'flux_peak']:
-    axes[0].errorbar(fake_sources[good]['amplitude'], nm.sources[idx][method],
-                     yerr=nm.sources[idx]['e{}'.format(method)], fmt='o', label=method)
+    axes[0].errorbar(fake_sources[good]['amplitude'],
+                     nm.sources[idx][method],
+                     yerr=nm.sources[idx]['e{}'.format(method)],
+                     fmt='o',
+                     label=method)
 axes[0].legend(loc='best')
 axes[0].set_xlabel('input flux [mJy]')
 axes[0].set_ylabel('detected flux [mJy]')
