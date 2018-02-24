@@ -10,7 +10,7 @@ deploy:
     repo: abeelen/nikamap
 env:
   global:
-  - PIP_DEPS="pytest coveralls pytest-cov flake8 pytest-mpl"
+  - PIP_DEPS="pytest coveralls pytest-cov flake8 pytest-mpl matplotlib"
 python:
 - '3.5'
 - '3.6'
@@ -22,6 +22,6 @@ script:
 - flake8 --ignore N802,N806,E501,F841,F401 `find . -name \*.py | grep -v setup.py | grep -v version.py | grep -v __init__.py | grep -v /doc/`
 - mkdir for_test
 - cd for_test
-- py.test --pyargs nikamap --cov-report term-missing --cov=nikamap
+-  MPLBACKEND="agg" py.test --mpl --pyargs nikamap --cov-report term-missing --cov=nikamap
 after_success:
 - coveralls
