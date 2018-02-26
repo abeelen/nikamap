@@ -76,9 +76,9 @@ sphinx_gallery_conf = {
     # path where to save gallery generated examples
     'gallery_dirs': 'auto_examples',
     # To auto-generate example sections in the API
-    # 'doc_module': ('nikamap',),
+    'doc_module': ('nikamap',),
     # Auto-generated mini-galleries go here
-    # 'backreferences_dir': 'gen_api'
+    'backreferences_dir': 'gen_api'
 }
 
 # Automatically generate stub pages for API
