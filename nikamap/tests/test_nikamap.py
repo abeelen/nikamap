@@ -171,7 +171,9 @@ def test_nikamap_compressed():
     assert np.all(nm.__array__() == np.ma.array(data, mask=mask))
     assert np.all(nm.__u_array__() == np.ma.array(uncertainty, mask=mask))
 
-    assert np.all(nm.__t_array__() == np.ma.array(time, mask=mask))
+    # To insure compatilibity with Astropy 3.0, maskedQuantity cannot evaluate truth value of quantities
+    assert np.all(nm.__t_array__().data == time)
+    assert np.all(nm.__t_array__().mask == mask)
 
 
 @pytest.fixture()
