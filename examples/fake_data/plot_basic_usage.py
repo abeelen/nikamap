@@ -7,6 +7,7 @@ This example shows the basic operation on the NikaMap object
 
 """
 import os
+import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
 from astropy.table import Table
@@ -40,6 +41,11 @@ print(nm)
 #
 print(nm.wcs)
 
+################################################################################
+# NikaMap objects support slicing like numpy arrays, thus one can access part of the dataset
+
+print(nm[96:128, 96:128])
+
 ##########################################################################
 # Basic Plotting
 # --------------
@@ -48,10 +54,15 @@ print(nm.wcs)
 plt.imshow(nm.data)
 
 ##########################################################################
-# There are a few plotting routines, the most convenient one is to
-# plot the signal to noise ratio map :
+# or using the convience routine of NikaMap
+#
 
-nm.plot_SNR()
+fig, axes = plt.subplots(ncols=2, subplot_kw={'projection': nm.wcs})
+levels = np.logspace(np.log10(2 * 1e-3), np.log10(10e-3), 4)
+nm[275:300, 270:295].plot(ax=axes[0], levels=levels)
+nm[210:260, 260:310].plot(ax=axes[1], levels=levels)
+
+nm.plot_SNR(cbar=True)
 
 ##########################################################################
 # or the power spectrum density of the data :
@@ -59,8 +70,11 @@ nm.plot_SNR()
 fig, ax = plt.subplots()
 powspec, bins = nm.plot_PSD(ax=ax)
 
+islice = nm.get_square_slice()
+_ = nm[islice, islice].plot_PSD(ax=ax)
+
 ##########################################################################
-# Beware that this PSD is based on an non-uniform noise, thus dominated by the
+# Beware that these PSD are based on an non-uniform noise, thus dominated by the
 # largest noise part of the map
 
 ##########################################################################

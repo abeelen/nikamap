@@ -320,6 +320,9 @@ class NikaMap(NDDataArray):
         sources.add_columns([Column(a * u.deg, name='ra'),
                              Column(d * u.deg, name='dec')])
 
+        sources['_ra'] = sources['ra']
+        sources['_dec'] = sources['dec']
+
         # Remove unnecessary columns
         sources.remove_columns(
             ['x_mean', 'y_mean', 'x_stddev', 'y_stddev', 'theta'])
@@ -380,6 +383,10 @@ class NikaMap(NDDataArray):
             # Rename usefull columns
             sources.rename_column('icrs_ra_centroid', 'ra')
             sources.rename_column('icrs_dec_centroid', 'dec')
+
+            # Copy column for compatibility
+            sources['_ra'] = sources['ra']
+            sources['_dec'] = sources['dec']
 
             # Sort by decreasing SNR
             sources['fit_peak_value'].name = 'SNR'
@@ -580,11 +587,45 @@ class NikaMap(NDDataArray):
 
         return mf_data
 
-    def plot_SNR(self, clim=None, levels=None, title=None, ax=None, cat=None):
+    def plot(self, snr=False, ax=None, title=None, cbar=False, cat=None, levels=None, **kwargs):
+        """Convenience routine to plot the dataset
 
-        SNR = self.SNR.data
-        if clim is None:
-            clim = (-4, 4)
+        Parameters
+        ----------
+        snr : boolean, optionnal
+            Plot the signal to noise ratio instead of the signal (default: False)
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Axe to plot the power spectrum
+        title : string, optionnal
+            Title of the plot
+        cbar: boolean, optionnal
+            Draw a colorbar (ax must be None)
+        cat : boolean of list of tuple [(cat, symbol)], optionnal
+            If True, overplot the current self.source catalog with '^' as marker.
+            Otherwise overplot the given catalogs on the map.
+        levels: array_like, optionnal
+            Overplot levels contours, add negative contours as dashed line
+        **kwargs
+            Arbitrary keyword arguments for :func:`matplotib.pyplot.imshow `
+
+        Returns
+        -------
+        fig (:class:`matplotlib.pyplot.figure`), optionnal
+            fix ax is None, return the newly created figure
+
+        Notes
+        -----
+        * if a fake_sources property is present, it will be overplotted with 'o' as marker
+        * each catalog *must* have '_ra' & '_dec' column
+
+        """
+
+        if snr:
+            data = self.SNR.data
+            cbar_label = 'SNR'
+        else:
+            data = self.__array__()
+            cbar_label = 'Brightness [{}]'.format(self.unit)
 
         if not ax:
             fig = plt.figure()
@@ -595,22 +636,20 @@ class NikaMap(NDDataArray):
         if title is not None:
             ax.set_title(title)
 
-        # interval = ZScaleInterval()
-        # vmin, vmax = interval.get_limits(SNR)
-        #   vmin, vmax = MinMaxInterval().get_limits(mf_SNR)
-        vmin, vmax = -3, 5
-        snr = ax.imshow(SNR, vmin=vmin, vmax=vmax,
-                        origin='lower', interpolation='none')
-        snr.set_clim(clim)
+        cax = ax.imshow(data, origin='lower', interpolation='none', **kwargs)
+
         if levels is not None:
-            levels = np.sqrt(2)**np.arange(levels[0], levels[1])
-            levels = np.concatenate((-levels[::-1], levels))
-            ax.contour(SNR, levels=levels, alpha=0.8, colors='w')
+            ax.contour(data, levels=levels, alpha=0.8, colors='w')
+            ax.contour(data, levels=-levels[::-1], alpha=0.8, colors='w', linestyles='dashed')
+
+        if cbar:
+            cbar = fig.colorbar(cax)
+            cbar.set_label(cbar_label)
 
         # In case of fake sources, overplot them
         if self.fake_sources:
             x, y = self.wcs.wcs_world2pix(
-                self.fake_sources['ra'], self.fake_sources['dec'], 0)
+                self.fake_sources['_ra'], self.fake_sources['_dec'], 0)
             ax.scatter(x, y, marker='o', c='red', alpha=0.8)
 
         if cat is True:
@@ -618,12 +657,9 @@ class NikaMap(NDDataArray):
 
         if cat is not None:
             for _cat, _mark in list(cat):
-                label = _cat.meta.get('method') or _cat.meta.get(
-                    'name') or 'Unknown'
-                cat_SkyCoord = SkyCoord(_cat['ra'], _cat['dec'], unit=(
-                    _cat['ra'].unit, _cat['dec'].unit))
-                x, y = self.wcs.wcs_world2pix(
-                    cat_SkyCoord.ra, cat_SkyCoord.dec, 0)
+                label = _cat.meta.get('method') or _cat.meta.get('name') or 'Unknown'
+                cat_SkyCoord = SkyCoord(_cat['_ra'], _cat['_dec'], unit=(_cat['_ra'].unit, _cat['_dec'].unit))
+                x, y = self.wcs.wcs_world2pix(cat_SkyCoord.ra, cat_SkyCoord.dec, 0)
                 ax.scatter(x, y, marker=_mark, alpha=0.8, label=label)
 
         ax.set_xlim(0, self.shape[1])
@@ -634,6 +670,10 @@ class NikaMap(NDDataArray):
 
         if fig:
             return fig
+
+    def plot_SNR(self, vmin=-3, vmax=5, **kwargs):
+        """Convenience method to plot the signal to noise map"""
+        return self.plot(snr=True, vmin=-3, vmax=5, **kwargs)
 
     def check_SNR(self, ax=None, bins=100):
         """Perform normality test on SNR map
@@ -683,7 +723,7 @@ class NikaMap(NDDataArray):
 
         return std
 
-    def plot_PSD(self, ax=None, bins=100, range=None, apod_size=None, snr=False, **kwargs):
+    def plot_PSD(self, snr=False, ax=None, bins=100, range=None, apod_size=None, **kwargs):
         """Plot the power spectrum of the map
 
         Parameters
@@ -708,7 +748,7 @@ class NikaMap(NDDataArray):
         if snr:
             data = self.SNR
         else:
-            data = self.__array__() * self.unit
+            data = np.ma.array(self.data * self.unit, mask=self.mask)
 
         res = (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale)
         powspec, bin_edges = powspec_k(
