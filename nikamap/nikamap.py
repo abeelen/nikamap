@@ -187,12 +187,22 @@ class NikaMap(NDDataArray):
         return self.uncertainty.array[~self.mask] * self.uncertainty.unit
 
     def __array__(self):
-        return np.ma.array(self.data * self.unit, mask=self.mask)
+        """
+        This allows code that requests a Numpy array to use an NDData
+        object as a Numpy array.
+
+        Notes
+        -----
+        Overrite NDData.__array__ to force for MaskedArray output
+        """
+        return np.ma.array(self.data, mask=self.mask)
 
     def __u_array__(self):
-        return np.ma.array(self.uncertainty.array * self.unit, mask=self.mask)
+        """Retrieve uncertainty array as masked array"""
+        return np.ma.array(self.uncertainty.array, mask=self.mask)
 
     def __t_array__(self):
+        """Retrieve time array as maskedQuantity"""
         return np.ma.array(self.time, mask=self.mask, fill_value=0)
 
     @property
@@ -698,7 +708,7 @@ class NikaMap(NDDataArray):
         if snr:
             data = self.SNR
         else:
-            data = self.__array__()
+            data = self.__array__() * self.unit
 
         res = (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale)
         powspec, bin_edges = powspec_k(

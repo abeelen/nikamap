@@ -46,7 +46,7 @@ def test_nikabeam_exceptions():
 def test_nikabeam_init():
     # TODO: What if we init with an array ?
     fwhm = 18 * u.arcsec
-    pix_scale = u.equivalencies.pixel_scale(2 * u.arcsec / u.pixel)
+    pix_scale = u.equivalencies.pixel_scale(2*u.arcsec / u.pixel)
 
     beam = NikaBeam(fwhm, pix_scale)
 
@@ -54,18 +54,15 @@ def test_nikabeam_init():
     assert beam.fwhm_pix == fwhm.to(u.pixel, equivalencies=pix_scale)
 
     assert beam.sigma == fwhm * gaussian_fwhm_to_sigma
-    assert beam.sigma_pix == fwhm.to(
-        u.pixel, equivalencies=pix_scale) * gaussian_fwhm_to_sigma
+    assert beam.sigma_pix == fwhm.to(u.pixel, equivalencies=pix_scale) * gaussian_fwhm_to_sigma
 
     assert beam.area == 2 * np.pi * (fwhm * gaussian_fwhm_to_sigma)**2
-    assert beam.area_pix == 2 * np.pi * \
-        (fwhm.to(u.pixel, equivalencies=pix_scale) * gaussian_fwhm_to_sigma)**2
+    assert beam.area_pix == 2 * np.pi * (fwhm.to(u.pixel, equivalencies=pix_scale) * gaussian_fwhm_to_sigma)**2
 
     beam.normalize('peak')
     npt.assert_allclose(beam.area_pix.value, np.sum(beam.array), rtol=1e-4)
 
-    assert str(
-        beam) == '<NikaBeam(fwhm=18.0 arcsec, pixel_scale=2.00 arcsec / pixel)'
+    assert str(beam) == '<NikaBeam(fwhm=18.0 arcsec, pixel_scale=2.00 arcsec / pixel)'
 
 
 def test_nikamap_init():
@@ -79,25 +76,25 @@ def test_nikamap_init():
     assert nm.uncertainty is None
 
     # time "empty"
-    assert np.all(nm.time == 0 * u.s)
+    assert np.all(nm.time == 0*u.s)
 
     # Default pixsize 1*u.deg
-    assert (1 * u.pixel).to(u.deg, equivalencies=nm._pixel_scale) == 1 * u.deg
+    assert (1*u.pixel).to(u.deg, equivalencies=nm._pixel_scale) == 1*u.deg
 
     # Default beam fwhm 1*u.deg
-    assert nm.beam.fwhm == 1 * u.deg
+    assert nm.beam.fwhm == 1*u.deg
 
 
 def test_nikamap_init_quantity():
-    data = np.array([1, 2, 3]) * u.Jy / u.beam
+    data = np.array([1, 2, 3])*u.Jy/u.beam
     nm = NikaMap(data)
-    assert nm.unit == u.Jy / u.beam
+    assert nm.unit == u.Jy/u.beam
 
 
 def test_nikamap_init_time():
-    data = np.array([1, 2, 3]) * u.Jy / u.beam
+    data = np.array([1, 2, 3])*u.Jy/u.beam
 
-    time = np.array([1, 2]) * u.s
+    time = np.array([1, 2])*u.s
     with pytest.raises(ValueError):
         nm = NikaMap(data, time=time)
 
@@ -105,11 +102,11 @@ def test_nikamap_init_time():
     with pytest.raises(ValueError):
         nm = NikaMap(data, time=time)
 
-    time = np.array([1, 2, 3]) * u.Hz
+    time = np.array([1, 2, 3])*u.Hz
     with pytest.raises(ValueError):
         nm = NikaMap(data, time=time)
 
-    time = np.array([1, 2, 3]) * u.h
+    time = np.array([1, 2, 3])*u.h
     nm = NikaMap(data, time=time)
     assert nm.time.unit == u.h
 
@@ -118,17 +115,17 @@ def test_nikamap_init_meta():
     data = np.array([1, 2, 3])
     meta = fits.header.Header()
 
-    meta['CDELT1'] = -1. / 3600, 'pixel size used for pixel_scale'
-    meta['BMAJ'] = 1. / 3600, 'Beam Major Axis'
+    meta['CDELT1'] = -1./3600, 'pixel size used for pixel_scale'
+    meta['BMAJ'] = 1./3600, 'Beam Major Axis'
     nm = NikaMap(data, meta=meta)
-    assert (1 * u.pixel).to(u.deg, equivalencies=nm._pixel_scale) == 1 * u.arcsec
-    assert nm.beam.fwhm == 1 * u.arcsec
+    assert (1*u.pixel).to(u.deg, equivalencies=nm._pixel_scale) == 1*u.arcsec
+    assert nm.beam.fwhm == 1*u.arcsec
 
     # Full header
     meta['CRPIX1'] = 1
     meta['CRPIX2'] = 2
-    meta['CDELT1'] = -1 / 3600
-    meta['CDELT2'] = 1 / 3600
+    meta['CDELT1'] = -1/3600
+    meta['CDELT2'] = 1/3600
     meta['CRVAL1'] = 0
     meta['CRVAL2'] = 0
     meta['CTYPE1'] = 'RA---TAN'
@@ -149,8 +146,7 @@ def test_nikamap_init_uncertainty():
 
     nm_mean = nm.add(nm).divide(2)
     assert np.all(nm_mean.data == nm.data)
-    npt.assert_allclose(nm_mean.uncertainty.array,
-                        np.array([1, 1, 1]) / np.sqrt(2))
+    npt.assert_allclose(nm_mean.uncertainty.array, np.array([1, 1, 1])/np.sqrt(2))
 
     # Wrong size
     with pytest.raises(ValueError):
@@ -165,17 +161,15 @@ def test_nikamap_compressed():
     data = np.array([1, 2, 3])
     uncertainty = np.array([10, 1, 1])
     mask = np.array([True, False, False])
-    time = np.ones(3) * u.h
+    time = np.ones(3)*u.h
 
-    nm = NikaMap(data, uncertainty=uncertainty,
-                 mask=mask, time=time, unit=u.Jy)
+    nm = NikaMap(data, uncertainty=uncertainty, mask=mask, time=time, unit=u.Jy)
 
     assert np.all(nm.compressed() == np.array([2, 3]) * u.Jy)
     assert np.all(nm.uncertainty_compressed() == np.array([1, 1]) * u.Jy)
 
-    assert np.all(nm.__array__() == np.ma.array(data * u.Jy, mask=mask))
-    assert np.all(nm.__u_array__() == np.ma.array(
-        uncertainty * u.Jy, mask=mask))
+    assert np.all(nm.__array__() == np.ma.array(data, mask=mask))
+    assert np.all(nm.__u_array__() == np.ma.array(uncertainty, mask=mask))
     assert np.all(nm.__t_array__() == np.ma.array(time, mask=mask))
 
 
@@ -184,21 +178,20 @@ def single_source():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
     shape = (27, 27)
-    pixsize = 1 / 3
+    pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
-    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
-    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
+    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize
     wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
 
-    nm = NikaMap(data, uncertainty=np.ones_like(
-        data) / 4, wcs=wcs, unit=u.Jy / u.beam)
+    nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam)
 
     # Additionnal attribute just for the tests...
-    nm.x = np.asarray([shape[1] / 2 - 0.5])
-    nm.y = np.asarray([shape[0] / 2 - 0.5])
-    nm.add_gaussian_sources(nsources=1, peak_flux=1 * u.Jy,
-                            within=(1 / 2, 1 / 2))
+    nm.x = np.asarray([shape[1]/2 - 0.5])
+    nm.y = np.asarray([shape[0]/2 - 0.5])
+    nm.add_gaussian_sources(nsources=1, peak_flux=1*u.Jy,
+                            within=(1/2, 1/2))
     return nm
 
 
@@ -207,11 +200,11 @@ def single_source_side():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
     shape = (27, 27)
-    pixsize = 1 / 3
+    pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
-    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
-    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
+    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize
     wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
 
     fake_sources = Table(masked=True)
@@ -219,20 +212,17 @@ def single_source_side():
     fake_sources['x_mean'] = [0]
     fake_sources['y_mean'] = [13]
 
-    ra, dec = wcs.wcs_pix2world(
-        fake_sources['x_mean'], fake_sources['y_mean'], 0)
+    ra, dec = wcs.wcs_pix2world(fake_sources['x_mean'], fake_sources['y_mean'], 0)
     fake_sources['ra'] = ra * u.deg
     fake_sources['dec'] = dec * u.deg
 
     xx, yy = np.indices(shape)
     stddev = 1 / pixsize * gaussian_fwhm_to_sigma
-    g = models.Gaussian2D(
-        1, fake_sources['y_mean'], fake_sources['x_mean'], stddev, stddev)
+    g = models.Gaussian2D(1, fake_sources['y_mean'], fake_sources['x_mean'], stddev, stddev)
 
     data += g(xx, yy)
 
-    nm = NikaMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs,
-                 unit=u.Jy / u.beam, fake_sources=fake_sources)
+    nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam, fake_sources=fake_sources)
 
     nm.x = fake_sources['x_mean']
     nm.y = fake_sources['y_mean']
@@ -245,11 +235,11 @@ def blended_sources():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
     shape = (27, 27)
-    pixsize = 1 / 3
+    pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
-    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
-    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
+    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize
     wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
 
     fake_sources = Table(masked=True)
@@ -257,23 +247,19 @@ def blended_sources():
     fake_sources['x_mean'] = [13.6, 15.1]
     fake_sources['y_mean'] = [13.6, 15.1]
 
-    ra, dec = wcs.wcs_pix2world(
-        fake_sources['x_mean'], fake_sources['y_mean'], 0)
+    ra, dec = wcs.wcs_pix2world(fake_sources['x_mean'], fake_sources['y_mean'], 0)
     fake_sources['ra'] = ra * u.deg
     fake_sources['dec'] = dec * u.deg
 
     xx, yy = np.indices(shape)
     stddev = 1 / pixsize * gaussian_fwhm_to_sigma
-    g = models.Gaussian2D(
-        1, fake_sources['y_mean'][0], fake_sources['x_mean'][0], stddev, stddev)
+    g = models.Gaussian2D(1, fake_sources['y_mean'][0], fake_sources['x_mean'][0], stddev, stddev)
     for source in fake_sources[1:]:
-        g += models.Gaussian2D(1, source['y_mean'],
-                               source['x_mean'], stddev, stddev)
+        g += models.Gaussian2D(1, source['y_mean'], source['x_mean'], stddev, stddev)
 
     data += g(xx, yy)
 
-    nm = NikaMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs,
-                 unit=u.Jy / u.beam, fake_sources=fake_sources)
+    nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam, fake_sources=fake_sources)
 
     nm.x = fake_sources['x_mean']
     nm.y = fake_sources['y_mean']
@@ -286,27 +272,25 @@ def single_source_mask():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
     shape = (27, 27)
-    pixsize = 1 / 3
+    pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
-    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
-    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
+    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize
     wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
 
     xx, yy = np.indices(shape)
-    mask = np.sqrt((xx - (shape[1] - 1) / 2)**2 +
-                   (yy - (shape[0] - 1) / 2)**2) > 10
+    mask = np.sqrt((xx-(shape[1]-1)/2)**2 + (yy-(shape[0]-1)/2)**2) > 10
 
     data[mask] = np.nan
 
-    nm = NikaMap(data, uncertainty=np.ones_like(data) / 4,
-                 mask=mask, wcs=wcs, unit=u.Jy / u.beam)
+    nm = NikaMap(data, uncertainty=np.ones_like(data)/4, mask=mask, wcs=wcs, unit=u.Jy/u.beam)
 
     # Additionnal attribute just for the tests...
-    nm.x = np.asarray([shape[1] / 2 - 0.5])
-    nm.y = np.asarray([shape[0] / 2 - 0.5])
-    nm.add_gaussian_sources(nsources=1, peak_flux=1 * u.Jy,
-                            within=(1 / 2, 1 / 2))
+    nm.x = np.asarray([shape[1]/2 - 0.5])
+    nm.y = np.asarray([shape[0]/2 - 0.5])
+    nm.add_gaussian_sources(nsources=1, peak_flux=1*u.Jy,
+                            within=(1/2, 1/2))
     return nm
 
 
@@ -317,22 +301,19 @@ def grid_sources():
     # Shape was too small to allow for a proper background estimation
     # shape = (28, 28)
     shape = (60, 60)
-    pixsize = 1 / 3
+    pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
-    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
-    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
+    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize
     wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
 
-    nm = NikaMap(data, uncertainty=np.ones_like(
-        data) / 4, wcs=wcs, unit=u.Jy / u.beam)
+    nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam)
 
     # Additionnal attribute just for the tests...
-    nm.add_gaussian_sources(nsources=2**2, peak_flux=1 *
-                            u.Jy, pos_gen=pos_gridded, within=(1 / 4, 3 / 4))
+    nm.add_gaussian_sources(nsources=2**2, peak_flux=1*u.Jy, pos_gen=pos_gridded, within=(1/4, 3/4))
 
-    x, y = nm.wcs.wcs_world2pix(
-        nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
+    x, y = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
 
     nm.x = x
     nm.y = y
@@ -345,23 +326,20 @@ def wobble_grid_sources():
     # Even Larger shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
     shape = (60, 60)
-    pixsize = 1 / 3
+    pixsize = 1/3
     data = np.zeros(shape)
     wcs = WCS()
-    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
-    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
+    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize
     wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
 
-    nm = NikaMap(data, uncertainty=np.ones_like(
-        data) / 4, wcs=wcs, unit=u.Jy / u.beam)
+    nm = NikaMap(data, uncertainty=np.ones_like(data)/4, wcs=wcs, unit=u.Jy/u.beam)
 
     np.random.seed(0)
     # Additionnal attribute just for the tests...
-    nm.add_gaussian_sources(nsources=2**2, peak_flux=1 * u.Jy,
-                            pos_gen=pos_gridded, wobble=True, wobble_frac=0.2)
+    nm.add_gaussian_sources(nsources=2**2, peak_flux=1*u.Jy, pos_gen=pos_gridded, wobble=True, wobble_frac=0.2)
 
-    x, y = nm.wcs.wcs_world2pix(
-        nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
+    x, y = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
 
     nm.x = x
     nm.y = y
@@ -379,20 +357,19 @@ def generate_fits(tmpdir_factory):
     np.random.seed(0)
 
     shape = (256, 256)
-    pixsize = 1 / 3 * u.deg
+    pixsize = 1/3 * u.deg
     peak_flux = 1 * u.Jy
     noise_level = 0.1 * u.Jy / u.beam
     fwhm = 1 * u.deg
     nsources = 1
 
     wcs = WCS()
-    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
-    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
+    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize
     wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
 
     xx, yy = np.indices(shape)
-    mask = np.sqrt((xx - (shape[1] - 1) / 2)**2 +
-                   (yy - (shape[0] - 1) / 2)**2) > shape[0] / 2
+    mask = np.sqrt((xx-(shape[1]-1)/2)**2 + (yy-(shape[0]-1)/2)**2) > shape[0]/2
 
     sources = Table(masked=True)
     sources['amplitude'] = np.ones(nsources) * peak_flux
@@ -407,8 +384,7 @@ def generate_fits(tmpdir_factory):
     data = make_gaussian_sources_image(shape, sources)
 
     hits = np.ones(shape=shape, dtype=np.float)
-    uncertainty = np.ones(shape, dtype=np.float) * \
-        noise_level.to(u.Jy / u.beam).value
+    uncertainty = np.ones(shape, dtype=np.float) * noise_level.to(u.Jy/u.beam).value
     data += np.random.normal(loc=0, scale=1, size=shape) * uncertainty
     data[mask] = np.nan
     hits[mask] = 0
@@ -419,25 +395,19 @@ def generate_fits(tmpdir_factory):
 
     primary_header = fits.header.Header()
     primary_header['f_sampli'] = 10., 'Fake the f_sampli keyword'
-    primary_header['FWHM_260'] = fwhm.to(
-        u.arcsec).value, '[arcsec] Fake the FWHM_260 keyword'
-    primary_header['FWHM_150'] = fwhm.to(
-        u.arcsec).value, '[arcsec] Fake the FWHM_150 keyword'
+    primary_header['FWHM_260'] = fwhm.to(u.arcsec).value, '[arcsec] Fake the FWHM_260 keyword'
+    primary_header['FWHM_150'] = fwhm.to(u.arcsec).value, '[arcsec] Fake the FWHM_150 keyword'
 
     primary_header['nsources'] = 1, 'Number of fake sources'
-    primary_header['noise'] = noise_level.to(
-        u.Jy / u.beam).value, '[Jy/beam] noise level per map'
+    primary_header['noise'] = noise_level.to(u.Jy/u.beam).value, '[Jy/beam] noise level per map'
 
     primary = fits.hdu.PrimaryHDU(header=primary_header)
 
     hdus = fits.hdu.HDUList(hdus=[primary])
     for band in ['1mm', '2mm']:
-        hdus.append(fits.hdu.ImageHDU(data, header=header,
-                                      name='Brightness_{}'.format(band)))
-        hdus.append(fits.hdu.ImageHDU(
-            uncertainty, header=header, name='Stddev_{}'.format(band)))
-        hdus.append(fits.hdu.ImageHDU(
-            hits, header=header, name='Nhits_{}'.format(band)))
+        hdus.append(fits.hdu.ImageHDU(data, header=header, name='Brightness_{}'.format(band)))
+        hdus.append(fits.hdu.ImageHDU(uncertainty, header=header, name='Stddev_{}'.format(band)))
+        hdus.append(fits.hdu.ImageHDU(hits, header=header, name='Nhits_{}'.format(band)))
         hdus.append(fits.hdu.BinTableHDU(sources, name="fake_sources"))
 
     hdus.writeto(filename, overwrite=True)
@@ -480,8 +450,7 @@ def test_nikamap_add_gaussian_sources(nms):
     else:
         npt.assert_allclose(nm.data[~nm.mask], g(xx, yy)[~nm.mask])
 
-    x, y = nm.wcs.wcs_world2pix(
-        nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
+    x, y = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
     # We are actually only testing the tolerance on x,y -> ra, dec -> x, y
     npt.assert_allclose([x, y], [nm.x, nm.y], atol=1e-13)
 
@@ -497,8 +466,7 @@ def test_nikamap_detect_sources(nms):
     npt.assert_allclose(nm.fake_sources['dec'], nm.sources['dec'][ordering])
     npt.assert_allclose(nm.sources['SNR'], [4] * len(nm.sources))
 
-    x_fake, y_fake = nm.wcs.wcs_world2pix(
-        nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
+    x_fake, y_fake = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
     x, y = nm.wcs.wcs_world2pix(nm.sources['ra'], nm.sources['dec'], 0)
 
     # Tolerance coming from round wcs transformations
@@ -518,13 +486,11 @@ def test_nikamap_phot_sources(nms):
     nm.detect_sources()
     nm.phot_sources(peak=True, psf=False)
     # Relative and absolute tolerance are really bad here for the case where the sources are not centered on pixels... Otherwise it give perfect answer when there is no noise
-    npt.assert_allclose(nm.sources['flux_peak'].to(u.Jy).value, [
-                        1] * len(nm.sources), atol=1e-1, rtol=1e-1)
+    npt.assert_allclose(nm.sources['flux_peak'].to(u.Jy).value, [1] * len(nm.sources), atol=1e-1, rtol=1e-1)
 
     nm.phot_sources(peak=False, psf=True)
     # Relative tolerance is rather low to pass the case of multiple sources...
-    npt.assert_allclose(nm.sources['flux_psf'].to(
-        u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
+    npt.assert_allclose(nm.sources['flux_psf'].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
 
 
 def test_nikamap_match_filter(nms):
@@ -535,15 +501,11 @@ def test_nikamap_match_filter(nms):
     x_idx = np.floor(nm.x + 0.5).astype(int)
     y_idx = np.floor(nm.y + 0.5).astype(int)
 
-    npt.assert_allclose(mf_nm.data[y_idx, x_idx],
-                        nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
-    npt.assert_allclose(
-        (nm.beam.fwhm * np.sqrt(2)).to(u.arcsec), mf_nm.beam.fwhm.to(u.arcsec))
+    npt.assert_allclose(mf_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
+    npt.assert_allclose((nm.beam.fwhm*np.sqrt(2)).to(u.arcsec), mf_nm.beam.fwhm.to(u.arcsec))
 
-    mh_nm = nm.match_filter(MexicanHat2DKernel(
-        nm.beam.fwhm_pix.value * gaussian_fwhm_to_sigma))
-    npt.assert_allclose(mh_nm.data[y_idx, x_idx],
-                        nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
+    mh_nm = nm.match_filter(MexicanHat2DKernel(nm.beam.fwhm_pix.value * gaussian_fwhm_to_sigma))
+    npt.assert_allclose(mh_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
     assert mh_nm.beam.fwhm is None
 
 
@@ -597,8 +559,7 @@ def test_nikamap_plot_SNR(nms):
 def test_nikamap_plot_SNR_ax(nms):
 
     nm = nms
-    fig, axes = plt.subplots(nrows=2, ncols=2, subplot_kw={
-                             'projection': nm.wcs})
+    fig, axes = plt.subplots(nrows=2, ncols=2, subplot_kw={'projection': nm.wcs})
     axes = axes.flatten()
     nm.plot_SNR(ax=axes[0], title="title", clim=(-3, 3))
     nm.plot_SNR(ax=axes[1], levels=(1, 5))
@@ -660,12 +621,10 @@ def test_nikamap_read(generate_fits):
     assert np.all(data._data[~data.mask] == data_2mm._data[~data_2mm.mask])
 
     assert data.beam.fwhm.to(u.arcsec).value == primary_header['FWHM_260']
-    assert np.all(data.time[~data.mask].value == (
-        (primary_header['F_SAMPLI'] * u.Hz)**-1).to(u.h).value)
+    assert np.all(data.time[~data.mask].value == ((primary_header['F_SAMPLI']*u.Hz)**-1).to(u.h).value)
 
     data_revert = NikaMap.read(filename, revert=True)
-    assert np.all(data_revert._data[~data_revert.mask]
-                  == -1 * data._data[~data.mask])
+    assert np.all(data_revert._data[~data_revert.mask] == -1 * data._data[~data.mask])
 
 
 def test_blended_sources(blended_sources):
@@ -679,8 +638,7 @@ def test_blended_sources(blended_sources):
 
     # But still prior photometry can recover the flux
     nm.phot_sources(nm.fake_sources)
-    npt.assert_allclose(nm.fake_sources['flux_psf'].to(
-        u.Jy).value, [1] * len(nm.fake_sources))
+    npt.assert_allclose(nm.fake_sources['flux_psf'].to(u.Jy).value, [1] * len(nm.fake_sources))
 
 
 def test_get_square_slice(single_source_mask):
@@ -690,9 +648,8 @@ def test_get_square_slice(single_source_mask):
 
     radius = 10
     assert np.floor(np.sqrt(2) * radius) == islice.stop - islice.start - 1
-    assert np.floor(nm.shape[0] / 2 - np.sqrt(2) * radius / 2) == islice.start
-    assert np.floor(nm.shape[0] / 2 + np.sqrt(2) *
-                    radius / 2 + 1) == islice.stop
+    assert np.floor(nm.shape[0] / 2 - np.sqrt(2)*radius / 2) == islice.start
+    assert np.floor(nm.shape[0] / 2 + np.sqrt(2)*radius / 2 + 1) == islice.stop
 
 
 def test_get_square_slice_start(single_source_mask):
@@ -707,6 +664,5 @@ def test_get_square_slice_start(single_source_mask):
 
     radius = 10
     assert np.floor(np.sqrt(2) * radius) == islice.stop - islice.start - 1
-    assert np.floor(nm.shape[0] / 2 - np.sqrt(2) * radius / 2) == islice.start
-    assert np.floor(nm.shape[0] / 2 + np.sqrt(2) *
-                    radius / 2 + 1) == islice.stop
+    assert np.floor(nm.shape[0] / 2 - np.sqrt(2)*radius / 2) == islice.start
+    assert np.floor(nm.shape[0] / 2 + np.sqrt(2)*radius / 2 + 1) == islice.stop
