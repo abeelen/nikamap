@@ -41,8 +41,9 @@ print(nm)
 #
 print(nm.wcs)
 
-################################################################################
-# NikaMap objects support slicing like numpy arrays, thus one can access part of the dataset
+##########################################################################
+# NikaMap objects support slicing like numpy arrays, thus one can access
+# part of the dataset
 
 print(nm[96:128, 96:128])
 

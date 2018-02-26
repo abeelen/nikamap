@@ -16,8 +16,7 @@ __all__ = ['jackknife', 'bootstrap']
 def check_filenames(filenames, band="1mm"):
     """Check the existence and compatibility of a list of NIKA IDL fits"""
 
-    assert band in ['1mm', '2mm', '1', '2',
-                    '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+    assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
 
     # Chek for existence
     checked_filenames = []
@@ -36,8 +35,7 @@ def check_filenames(filenames, band="1mm"):
         _header = fits.getheader(filename, 'Brightness_{}'.format(band))
         assert WCS(header).wcs == WCS(
             _header).wcs, '{} has a different header'.format(filename)
-        assert header['UNIT'] == _header['UNIT'], '{} has a different uni'.format(
-            filename)
+        assert header['UNIT'] == _header['UNIT'], '{} has a different uni'.format(filename)
         assert WCS(header)._naxis1 == WCS(
             _header)._naxis1, '{} has a different shape'.format(filename)
         assert WCS(header)._naxis2 == WCS(
@@ -79,8 +77,7 @@ class jackknife:
         assert len(filenames) > 1, 'Less than 2 existing files in filenames'
 
         if len(filenames) % 2 and n is not None:
-            warnings.warn(
-                'Even number of files, dropping the last one', UserWarning)
+            warnings.warn('Even number of files, dropping the last one', UserWarning)
             filenames = filenames[:-1]
 
         self.filenames = filenames
@@ -97,8 +94,7 @@ class jackknife:
 
         # This is low_mem=False case ...
         datas = np.zeros((len(filenames), header['NAXIS2'], header['NAXIS1']))
-        weights = np.zeros(
-            (len(filenames), header['NAXIS2'], header['NAXIS1']))
+        weights = np.zeros((len(filenames), header['NAXIS2'], header['NAXIS1']))
         time = np.zeros((header['NAXIS2'], header['NAXIS1'])) * u.h
 
         for i, filename in enumerate(filenames):
@@ -216,8 +212,7 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False):
                                                   weights=weights[shuffled_index, :, :],
                                                   axis=0, returned=False)
         else:
-            bs_array[index, :, :] = np.mean(
-                datas[shuffled_index, :, :], axis=0)
+            bs_array[index, :, :] = np.mean(datas[shuffled_index, :, :], axis=0)
 
     data = np.mean(bs_array, axis=0)
     e_data = np.std(bs_array, axis=0, ddof=1)

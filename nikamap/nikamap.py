@@ -90,7 +90,8 @@ class NikaBeam(Kernel2D):
 
     @property
     def sigma_pix(self):
-        return self._fwhm.to(u.pixel, equivalencies=self._pixel_scale) * gaussian_fwhm_to_sigma
+        return self._fwhm.to(
+            u.pixel, equivalencies=self._pixel_scale) * gaussian_fwhm_to_sigma
 
     @property
     def area(self):
@@ -218,12 +219,10 @@ class NikaMap(NDDataArray):
                 self._uncertainty = value
             elif isinstance(value, np.ndarray):
                 if value.shape != self.shape:
-                    raise ValueError("uncertainty must have same shape as "
-                                     "data.")
+                    raise ValueError("uncertainty must have same shape as data.")
                 self._uncertainty = StdDevUncertainty(value)
             else:
-                raise TypeError("uncertainty must be an instance of a "
-                                "StdDevUncertainty object or a numpy array.")
+                raise TypeError("uncertainty must be an instance of a StdDevUncertainty object or a numpy array.")
             self._uncertainty.parent_nddata = self
         else:
             self._uncertainty = value
@@ -269,7 +268,14 @@ class NikaMap(NDDataArray):
         return kwargs  # these must be returned
 
     def trim(self):
-        """Remove masked region on the edges"""
+        """Remove masked region on the edges
+
+        Returns
+        -------
+        :class:`NikaMap`
+            return a trimmed NikaMap object
+
+        """
 
         mask = self.mask
         axis_slice = []
@@ -355,17 +361,22 @@ class NikaMap(NDDataArray):
         if self.mask is not None:
                 # Make sure that there is no detection on the edge of the map
             box_kernel = Box2DKernel(box_size)
-            detect_mask = ~np.isclose(signal.fftconvolve(
-                ~self.mask, box_kernel, mode='same'), 1)
+            detect_mask = ~np.isclose(signal.fftconvolve(~self.mask, box_kernel, mode='same'), 1)
             detect_on[detect_mask] = 0
 
-        # TODO: Have a look at  ~photutils.psf.IterativelySubtractedPSFPhotometry
+        # TODO: Have a look at
+        # ~photutils.psf.IterativelySubtractedPSFPhotometry
 
         # To avoid bad fit warnings...
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', AstropyWarning)
             sources = photutils.find_peaks(
-                detect_on, threshold=threshold, mask=self.mask, wcs=self.wcs, subpixel=True, box_size=box_size)
+                detect_on,
+                threshold=threshold,
+                mask=self.mask,
+                wcs=self.wcs,
+                subpixel=True,
+                box_size=box_size)
 
         if len(sources) > 0:
             # Transform to masked Table here to avoid future warnings
@@ -374,11 +385,9 @@ class NikaMap(NDDataArray):
             sources.meta['threshold'] = threshold
 
             # pixels values are irrelevant
-            sources.remove_columns(
-                ['x_centroid', 'y_centroid', 'x_peak', 'y_peak'])
+            sources.remove_columns(['x_centroid', 'y_centroid', 'x_peak', 'y_peak'])
             # Only keep fitted value
-            sources.remove_columns(
-                ['icrs_ra_peak', 'icrs_dec_peak', 'peak_value'])
+            sources.remove_columns(['icrs_ra_peak', 'icrs_dec_peak', 'peak_value'])
 
             # Rename usefull columns
             sources.rename_column('icrs_ra_centroid', 'ra')
@@ -401,25 +410,19 @@ class NikaMap(NDDataArray):
             dist_threshold = self.beam.fwhm / 3
 
             if len(sources) == 0:
-                fake_sources['find_peak'] = MaskedColumn(
-                    np.ones(len(fake_sources)), mask=True)
+                fake_sources['find_peak'] = MaskedColumn(np.ones(len(fake_sources)), mask=True)
             else:
 
-                fake_SkyCoord = SkyCoord(
-                    fake_sources['ra'], fake_sources['dec'])
+                fake_SkyCoord = SkyCoord(fake_sources['ra'], fake_sources['dec'])
                 sources_SkyCoord = SkyCoord(sources['ra'], sources['dec'])
 
-                idx, sep2d, _ = match_coordinates_sky(
-                    fake_SkyCoord, sources_SkyCoord)
+                idx, sep2d, _ = match_coordinates_sky(fake_SkyCoord, sources_SkyCoord)
                 mask = sep2d > dist_threshold
-                fake_sources['find_peak'] = MaskedColumn(
-                    sources[idx]['ID'], mask=mask)
+                fake_sources['find_peak'] = MaskedColumn(sources[idx]['ID'], mask=mask)
 
-                idx, sep2d, _ = match_coordinates_sky(
-                    sources_SkyCoord, fake_SkyCoord)
+                idx, sep2d, _ = match_coordinates_sky(sources_SkyCoord, fake_SkyCoord)
                 mask = sep2d > dist_threshold
-                sources['fake_sources'] = MaskedColumn(
-                    fake_sources[idx]['ID'], mask=mask)
+                sources['fake_sources'] = MaskedColumn(fake_sources[idx]['ID'], mask=mask)
 
         if len(sources) > 0:
             self.sources = sources
@@ -435,10 +438,8 @@ class NikaMap(NDDataArray):
             catalogs = [catalogs]
 
         for cat, ref_cat in product([self.sources], catalogs):
-            cat_SkyCoord = SkyCoord(cat['ra'], cat['dec'], unit=(
-                cat['ra'].unit, cat['dec'].unit))
-            ref_SkyCoord = SkyCoord(ref_cat['ra'], ref_cat['dec'], unit=(
-                ref_cat['ra'].unit, ref_cat['dec'].unit))
+            cat_SkyCoord = SkyCoord(cat['ra'], cat['dec'], unit=(cat['ra'].unit, cat['dec'].unit))
+            ref_SkyCoord = SkyCoord(ref_cat['ra'], ref_cat['dec'], unit=(ref_cat['ra'].unit, ref_cat['dec'].unit))
             idx, sep2d, _ = match_coordinates_sky(cat_SkyCoord, ref_SkyCoord)
             mask = sep2d > dist_threshold
             cat[ref_cat.meta['name']] = MaskedColumn(idx, mask=mask)
@@ -457,10 +458,8 @@ class NikaMap(NDDataArray):
             # Crude Peak Photometry
             # From pixel indexes to array indexing
 
-            sources['flux_peak'] = Column(
-                self.data[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
-            sources['eflux_peak'] = Column(
-                self.uncertainty.array[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
+            sources['flux_peak'] = Column(self.data[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
+            sources['eflux_peak'] = Column(self.uncertainty.array[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
 
         if psf:
             # BasicPSFPhotometry with fixed positions
@@ -479,9 +478,12 @@ class NikaMap(NDDataArray):
             daogroup = DAOGroup(3 * self.beam.fwhm_pix.value)
             mmm_bkg = MedianBackground()
 
-            photometry = BasicPSFPhotometry(group_maker=daogroup, bkg_estimator=mmm_bkg,
-                                            psf_model=psf_model, fitter=LevMarLSQFitter(),
-                                            fitshape=9)
+            photometry = BasicPSFPhotometry(
+                group_maker=daogroup,
+                bkg_estimator=mmm_bkg,
+                psf_model=psf_model,
+                fitter=LevMarLSQFitter(),
+                fitshape=9)
 
             positions = Table([Column(xx, name="x_0"),
                                Column(yy, name="y_0"),
@@ -493,13 +495,12 @@ class NikaMap(NDDataArray):
             # sources['flux_psf'] = Column(
             #     result_tab['flux_fit'] / (2 * np.pi * sigma_psf**2), unit=self.unit * u.beam).to(u.mJy)
             # sources['eflux_psf'] = Column(
-            #     result_tab['flux_unc'] / (2 * np.pi * sigma_psf**2), unit=self.unit * u.beam).to(u.mJy)
+            # result_tab['flux_unc'] / (2 * np.pi * sigma_psf**2),
+            # unit=self.unit * u.beam).to(u.mJy)
 
             result_tab.sort('id')
-            sources['flux_psf'] = Column(
-                result_tab['flux_fit'] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
-            sources['eflux_psf'] = Column(
-                result_tab['flux_unc'] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
+            sources['flux_psf'] = Column(result_tab['flux_fit'] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
+            sources['eflux_psf'] = Column(result_tab['flux_unc'] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
             sources['group_id'] = result_tab['group_id']
 
         self.sources = sources
@@ -531,14 +532,12 @@ class NikaMap(NDDataArray):
 
         # Assuming the same pixel_scale
         if isinstance(beam.model, models.Gaussian2D) & isinstance(kernel.model, models.Gaussian2D):
-            fwhm = np.sqrt(beam.model.x_fwhm**2 +
-                           kernel.model.x_fwhm**2) * u.pixel
+            fwhm = np.sqrt(beam.model.x_fwhm**2 + kernel.model.x_fwhm**2) * u.pixel
             fwhm = fwhm.to(u.arcsec, equivalencies=beam._pixel_scale)
             mf_beam = NikaBeam(fwhm, pixel_scale=beam._pixel_scale)
         else:
             # Using scipy.signal.convolve to extend the beam if necessary
-            mf_beam = NikaBeam(array=signal.convolve(
-                beam.array, kernel.array), pixel_scale=beam._pixel_scale)
+            mf_beam = NikaBeam(array=signal.convolve(beam.array, kernel.array), pixel_scale=beam._pixel_scale)
 
         # Convolve the mask and retrieve the fully sampled region, this
         # will remove one kernel width on the edges
@@ -553,8 +552,7 @@ class NikaMap(NDDataArray):
         # with warnings.catch_warnings():
         #     warnings.simplefilter('ignore', AstropyWarning)
         #     mf_time = convolve(self.time, kernel, normalize_kernel=False)*self.time.unit
-        mf_time = signal.fftconvolve(self.__t_array__().filled(0),
-                                     kernel, mode='same') * self.time.unit
+        mf_time = signal.fftconvolve(self.__t_array__().filled(0), kernel, mode='same') * self.time.unit
 
         if mf_mask is not None:
             mf_time[mf_mask] = 0
@@ -571,19 +569,24 @@ class NikaMap(NDDataArray):
         # with np.errstate(divide='ignore'):
         #     mf_uncertainty = np.sqrt(convolve(weights, kernel_sqr, normalize_kernel=False))**-1
         with np.errstate(invalid='ignore', divide='ignore'):
-            mf_uncertainty = np.sqrt(signal.fftconvolve(weights,
-                                                        kernel_sqr, mode='same'))**-1
+            mf_uncertainty = np.sqrt(signal.fftconvolve(weights, kernel_sqr, mode='same'))**-1
         if mf_mask is not None:
             mf_uncertainty[mf_mask] = np.nan
 
         # Units are not propagated in masked arrays...
         # mf_data = convolve(weights*data, kernel, normalize_kernel=False) * mf_uncertainty**2
-        mf_data = signal.fftconvolve(weights * self.__array__().filled(0),
-                                     kernel, mode='same') * mf_uncertainty**2
+        mf_data = signal.fftconvolve(weights * self.__array__().filled(0), kernel, mode='same') * mf_uncertainty**2
 
-        mf_data = NikaMap(mf_data, unit=self.unit, mask=mf_mask, time=mf_time,
-                          uncertainty=StdDevUncertainty(mf_uncertainty), wcs=self.wcs,
-                          meta=self.meta, fake_sources=self.fake_sources, beam=mf_beam)
+        mf_data = NikaMap(
+            mf_data,
+            unit=self.unit,
+            mask=mf_mask,
+            time=mf_time,
+            uncertainty=StdDevUncertainty(mf_uncertainty),
+            wcs=self.wcs,
+            meta=self.meta,
+            fake_sources=self.fake_sources,
+            beam=mf_beam)
 
         return mf_data
 
@@ -648,8 +651,7 @@ class NikaMap(NDDataArray):
 
         # In case of fake sources, overplot them
         if self.fake_sources:
-            x, y = self.wcs.wcs_world2pix(
-                self.fake_sources['_ra'], self.fake_sources['_dec'], 0)
+            x, y = self.wcs.wcs_world2pix(self.fake_sources['_ra'], self.fake_sources['_dec'], 0)
             ax.scatter(x, y, marker='o', c='red', alpha=0.8)
 
         if cat is True:
@@ -751,8 +753,7 @@ class NikaMap(NDDataArray):
             data = np.ma.array(self.data * self.unit, mask=self.mask)
 
         res = (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale)
-        powspec, bin_edges = powspec_k(
-            data, res=res, bins=bins, range=range, apod_size=apod_size)
+        powspec, bin_edges = powspec_k(data, res=res, bins=bins, range=range, apod_size=apod_size)
 
         if snr:
             powspec /= res**2
@@ -789,8 +790,7 @@ class NikaMap(NDDataArray):
         if start is None:
             start = np.asarray(self.shape) // 2
         else:
-            assert isinstance(start, (list, tuple, np.ndarray)
-                              ), "start should have a length of 2"
+            assert isinstance(start, (list, tuple, np.ndarray)), "start should have a length of 2"
             assert len(start) == 2, "start should have a length of 2"
 
         islice = slice(*(np.asarray(start) + [0, 1]))
@@ -838,8 +838,7 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
          use if to return -1 * data
     """
 
-    assert band in ['1mm', '2mm', '1', '2',
-                    '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+    assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
 
     f_sampling, bmaj = retrieve_primary_keys(filename, band, **kwd)
 
@@ -864,8 +863,7 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
     if revert:
         data *= -1
 
-    data = NikaMap(data, mask=unobserved, uncertainty=StdDevUncertainty(
-        e_data), unit=header['UNIT'], wcs=WCS(header), meta=header, time=time)
+    data = NikaMap(data, mask=unobserved, uncertainty=StdDevUncertainty(e_data), unit=header['UNIT'], wcs=WCS(header), meta=header, time=time)
 
     return data
 

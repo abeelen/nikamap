@@ -21,18 +21,23 @@ mJypb = u.mJy / u.beam
 
 np.random.seed(1)
 
-#################################################################################
+##########################################################################
 # Create a fake dataset
 # ---------------------
 #
 # Create a fake dataset with uniformly distributed point sources
+#
+# .. note:: This is mostly inspired by :func:`NikaMap.fake_data`
 
 
-def create_dataset(shape=(512, 512), fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
+def create_dataset(shape=(512, 512),
+                   fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
+                   noise_level=1 * mJypb,
                    n_sources=50, flux_min=1 * mJypb, flux_max=10 * mJypb,
-                   noise_level=1 * mJypb, filename='fake_map.fits'):
+                   filename='fake_map.fits'):
 
-    hits, uncertainty, mask = create_ancillary(shape, fwhm=None, noise_level=1 * mJypb)
+    hits, uncertainty, mask = create_ancillary(
+        shape, fwhm=None, noise_level=1 * mJypb)
     wcs = create_wcs(shape, pixsize=2 * u.arcsec, center=None)
 
     beam_std_pix = (fwhm / pixsize).decompose().value * gaussian_fwhm_to_sigma
@@ -41,11 +46,12 @@ def create_dataset(shape=(512, 512), fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
     sources_map = make_gaussian_sources_image(shape, sources) * sources['amplitude'].unit
 
     data = add_noise(sources_map, uncertainty)
-    hdus = create_hdulist(data, hits, uncertainty, mask, wcs, sources, fwhm, noise_level)
+    hdus = create_hdulist(data, hits, uncertainty, mask,
+                          wcs, sources, fwhm, noise_level)
 
     hdus.writeto(filename, overwrite=True)
 
-################################################################################
+##########################################################################
 # Define the hits and uncertainty map
 #
 
@@ -58,15 +64,16 @@ def create_ancillary(shape, fwhm=None, noise_level=1 * mJypb):
     hits = np.exp(-((x_idx - shape[1] / 2)**2 / (2 * (gaussian_fwhm_to_sigma * fwhm[1])**2) +
                     (y_idx - shape[0] / 2)**2 / (2 * (gaussian_fwhm_to_sigma * fwhm[0])**2)))
 
-    uncertainty = noise_level.to(u.Jy/u.beam).value / np.sqrt(hits)
+    uncertainty = noise_level.to(u.Jy / u.beam).value / np.sqrt(hits)
 
     # with a circle for the mask
     xx, yy = np.indices(shape)
-    mask = np.sqrt((xx-(shape[1]-1)/2)**2 + (yy-(shape[0]-1)/2)**2) > shape[0]/2
+    mask = np.sqrt((xx - (shape[1] - 1) / 2)**2 +
+                   (yy - (shape[0] - 1) / 2)**2) > shape[0] / 2
 
     return hits, uncertainty, mask
 
-################################################################################
+##########################################################################
 # and a fake WCS
 
 
@@ -76,19 +83,20 @@ def create_wcs(shape, pixsize=2 * u.arcsec, center=None):
 
     wcs = WCS(naxis=2)
     wcs.wcs.crval = center.to(u.deg).value
-    wcs.wcs.crpix = np.asarray(shape)/2-0.5  # Center of pixel
-    wcs.wcs.cdelt = np.asarray([-1, 1])*pixsize.to(u.deg)
+    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize.to(u.deg)
     wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
 
     return wcs
 
-################################################################################
+##########################################################################
 # Construct a fake source catalog
 # -------------------------------
 #
 
 
-def create_fake_source(shape, wcs, beam_std_pix, flux_min=1 * mJypb, flux_max=10 * mJypb, n_sources=1):
+def create_fake_source(shape, wcs, beam_std_pix,
+                       flux_min=1 * mJypb, flux_max=10 * mJypb, n_sources=1):
 
     peak_fluxes = np.random.uniform(flux_min.to(Jypb).value, flux_max.to(Jypb).value, n_sources) * Jypb
 
@@ -115,7 +123,7 @@ def create_fake_source(shape, wcs, beam_std_pix, flux_min=1 * mJypb, flux_max=10
 
     return sources
 
-################################################################################
+##########################################################################
 # Construct the map with noise
 # ----------------------------
 #
@@ -126,7 +134,7 @@ def add_noise(sources_map, uncertainty):
     return data
 
 
-################################################################################
+##########################################################################
 # Pack everything into hdulist
 #
 
@@ -148,7 +156,7 @@ def create_hdulist(data, hits, uncertainty, mask, wcs, sources, fwhm, noise_leve
 
     # Traceback of the fake sources
     primary_header['nsources'] = len(sources), 'Number of fake sources'
-    primary_header['noise'] = noise_level.to(u.Jy/u.beam).value, '[Jy/beam] noise level per map'
+    primary_header['noise'] = noise_level.to(u.Jy / u.beam).value, '[Jy/beam] noise level per map'
 
     primary = fits.hdu.PrimaryHDU(header=primary_header)
 

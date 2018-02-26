@@ -56,9 +56,7 @@ class CircularGaussianPSF(Fittable2DModel):
         return ((int(self.y_0 - halfwidth), int(self.y_0 + halfwidth)),
                 (int(self.x_0 - halfwidth), int(self.x_0 + halfwidth)))
 
-    def __init__(self, sigma=sigma.default,
-                 x_0=x_0.default, y_0=y_0.default, flux=flux.default,
-                 **kwargs):
+    def __init__(self, sigma=sigma.default, x_0=x_0.default, y_0=y_0.default, flux=flux.default, **kwargs):
         if self._erf is None:
             from scipy.special import erf
             self.__class__._erf = erf
@@ -149,8 +147,9 @@ def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold
         pos = pos[0:nsources]
 
     if i_loop == max_loop and len(pos) < nsources:
-        warnings.warn("Maximum of loops reached, only have {} positions".format(
-            len(pos)), UserWarning)
+        warnings.warn(
+            "Maximum of loops reached, only have {} positions".format(
+                len(pos)), UserWarning)
 
     return pos[:, 1], pos[:, 0]
 
@@ -173,13 +172,11 @@ def pos_gridded(nsources=2**2, shape=None, within=(0, 1), mask=None, wobble=Fals
 
     # square distribution with step margin on the side
     within_step = (within[1] - within[0]) / (sq_sources + 1)
-    pos = np.indices([sq_sources] * 2, dtype=np.float) * \
-        within_step + within[0] + within_step
+    pos = np.indices([sq_sources] * 2, dtype=np.float) * within_step + within[0] + within_step
 
     if wobble:
         # With some wobbling if needed
-        pos += np.random.normal(0, within_step *
-                                wobble_frac * gaussian_fwhm_to_sigma, pos.shape)
+        pos += np.random.normal(0, within_step * wobble_frac * gaussian_fwhm_to_sigma, pos.shape)
 
     pos = pos.reshape(2, nsources).T
 
@@ -208,10 +205,8 @@ def pos_list(nsources=1, shape=None, within=(0, 1), mask=None, x_mean=None, y_me
     requested number of sources might not be returned"""
 
     assert x_mean is not None and y_mean is not None, 'you must provide x_mean & y_mean'
-    assert len(x_mean) == len(
-        y_mean), 'x_mean and y_mean must have the same dimension'
-    assert nsources <= len(
-        x_mean), 'x_mean must contains at least {} sources'.format(nsources)
+    assert len(x_mean) == len(y_mean), 'x_mean and y_mean must have the same dimension'
+    assert nsources <= len(x_mean), 'x_mean must contains at least {} sources'.format(nsources)
 
     pos = np.array([y_mean, x_mean]).T
 
@@ -231,8 +226,11 @@ def pos_list(nsources=1, shape=None, within=(0, 1), mask=None, x_mean=None, y_me
     return pos[:, 1], pos[:, 0]
 
 
-def fake_data(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec, NEFD=50e-3 * Jy_beam * u.s**0.5,
-              nsources=32, peak_flux=None, time_fwhm=1. / 5, jk_data=None, e_data=None, pos_gen=pos_uniform, **kwargs):
+def fake_data(shape=(512, 512),
+              beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
+              NEFD=50e-3 * Jy_beam * u.s**0.5, time_fwhm=1. / 5,
+              jk_data=None, e_data=None,
+              nsources=32, peak_flux=None, pos_gen=pos_uniform, **kwargs):
     """Build fake dataset"""
 
     # To avoid import loops
@@ -277,12 +275,19 @@ def fake_data(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
     header['NEFD'] = (NEFD.to(Jy_beam * u.s**0.5).value,
                       '[Jy/beam sqrt(s)], NEFD')
 
-    # min flux which should be recoverable at the center of the field at 3 sigma
+    # min flux which should be recoverable at the center of the field at 3
+    # sigma
     if peak_flux is None:
         peak_flux = 3 * (NEFD / np.sqrt(np.nanmax(time)) * u.beam).to(u.mJy)
 
-    data = NikaMap(data, mask=mask, unit=Jy_beam, uncertainty=StdDevUncertainty(
-        e_data), wcs=WCS(header), meta=header, time=time)
+    data = NikaMap(
+        data,
+        mask=mask,
+        unit=Jy_beam,
+        uncertainty=StdDevUncertainty(e_data),
+        wcs=WCS(header),
+        meta=header,
+        time=time)
 
     if nsources:
         data.add_gaussian_sources(
@@ -352,7 +357,8 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
         img_unit = img.unit
     elif isinstance(img, np.ma.MaskedArray):
 
-        # TODO: apodization will change the absolute level of the powerspectra, check how to correct
+        # TODO: apodization will change the absolute level of the powerspectra,
+        # check how to correct
         if apod_size is not None:
             apod_data = fft_2D_hanning(img.mask, apod_size)
             img *= apod_data
@@ -372,7 +378,8 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
     # http://docs.scipy.org/doc/numpy/reference/routines.fft.html#implementation-details
     # Also see the definition of Power Spectral density
     # https://en.wikipedia.org/wiki/Spectral_density
-    # Note that the factor 2 is accounted for the fact that we count each frequency twice...
+    # Note that the factor 2 is accounted for the fact that we count each
+    # frequency twice...
     pow_sqr = np.absolute(np.fft.fft2(img))**2 / (npix_x * npix_y) * res**2
 
     # Define corresponding fourier modes
