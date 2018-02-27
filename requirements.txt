@@ -1,6 +1,6 @@
-numpy
+numpy>=1.11
 scipy
-matplotlib
-astropy
-photutils
+matplotlib>=1.5
+astropy>=2.0
+photutils>=0.2
 scikit-image

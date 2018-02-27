@@ -395,9 +395,7 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
         hist /= norm
 
     # Histogram remove the units so put it back here
-    hist *= img_unit**2
-    hist *= pix_unit**2
-
-    bin_edges *= pix_unit**-1
+    hist = hist * img_unit**2 * pix_unit**2
+    bin_edges = bin_edges * pix_unit**-1
 
     return hist, bin_edges

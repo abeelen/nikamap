@@ -180,14 +180,14 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False):
 
     shape = (header['NAXIS2'], header['NAXIS1'])
 
-    datas = np.zeros((n_scans, *shape), dtype=np.float)
+    datas = np.zeros((n_scans,) + tuple(shape), dtype=np.float)
     hits = np.zeros(shape, dtype=np.float)
 
-    bs_array = np.zeros((n_bootstrap, *shape), dtype=np.float)
+    bs_array = np.zeros((n_bootstrap,) + tuple(shape), dtype=np.float)
 
     # To avoid large memory allocation
     if wmean:
-        weights = np.zeros((n_scans, *shape))
+        weights = np.zeros((n_scans,) + tuple(shape))
 
     for index, filename in enumerate(filenames):
         with fits.open(filename, 'readonly') as fits_file:

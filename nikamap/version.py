@@ -26,13 +26,13 @@ CLASSIFIERS = ["Development Status :: 3 - Alpha",
                "Topic :: Scientific/Engineering"]
 
 # Description should be a one-liner:
-description = "nikamap: a template for small scientific Python projects"
+description = "nikamap: a package to manipulate data produced by the IDL NIKA2 pipeline"
 # Long description will go up on the pypi page
 long_description = """
 
 Nikamap
 ========
-Nikamap is a project for manipulating NIKA2 Maps.
+Nikamap is a  python package to manipulate data produced by the IDL NIKA2 pipeline.
 
 To get started using these components in your own software, please go to the
 repository README_.
@@ -68,4 +68,6 @@ MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {'nikamap': [pjoin('data', '*')]}
-REQUIRES = ["numpy", "scipy", "astropy", "photutils"]
+REQUIRES = ["numpy", "scipy", "matplotlib", "astropy", "photutils"]
+SETUP_REQUIRES = ['pytest-runner']
+TESTS_REQUIRE = ['pytest', 'pytest-mpl']
