@@ -2,15 +2,15 @@ NikaMap
 =======
 |pypi| |license| |wheels| |format| |pyversions| |rtd|
 
-`NikaMap` is a python package to manipulate data produced by the IDL NIKA2 pipeline.
+:mod:`nikamap` is a python package to manipulate data produced by the IDL NIKA2 pipeline.
 
 .. code:: python
-
     from nikamap import NikaMap
 
     nm = NikaMap.read('map.fits')
     nm.plot()
 
+Read the documentation on `readthedoc <http://nikamap.readthedocs.io>`_.
 
 Features
 --------
@@ -19,6 +19,33 @@ Features
 - match filtering, point source detection and photometry
 - powspec spectra estimation
 - bootstraping and jackknife
+
+Requirements
+------------
+You need python 3.4 or later to run `nikamap`. You will also need `numpy`, `scipy`, `matplotlib`, `astropy>=2.0` and `photutils`.
+
+Installation
+------------
+`nikamap` will soon be on `PyPI`, and thus you will be able to install it with
+
+.. code:: bash
+
+    pip install nikamap
+
+In the meantime you can clone the git repository, and install it
+
+.. code:: bash
+
+    git clone https://gitlab.lam.fr/N2CLS/NikaMap.git
+    cd NikaMap
+    pip install -e .
+
+or directly install it from git
+
+.. code:: bash
+
+    pip install https://gitlab.lam.fr/N2CLS/NikaMap.git
+
 
 License
 -------

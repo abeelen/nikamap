@@ -311,8 +311,7 @@ class NikaMap(NDDataArray):
 
         # Crude check to be within the finite part of the map
         if self.mask is not None:
-            within_coverage = ~self.mask[sources['y_mean'].astype(
-                int), sources['x_mean'].astype(int)]
+            within_coverage = ~self.mask[sources['y_mean'].astype(int), sources['x_mean'].astype(int)]
             sources = sources[within_coverage]
 
         # Gaussian sources...
@@ -543,8 +542,7 @@ class NikaMap(NDDataArray):
         # will remove one kernel width on the edges
         # mf_mask = ~np.isclose(convolve(~self.mask, kernel, normalize_kernel=False), 1)
         if self.mask is not None:
-            mf_mask = ~np.isclose(signal.fftconvolve(
-                ~self.mask, kernel, mode='same'), 1)
+            mf_mask = ~np.isclose(signal.fftconvolve(~self.mask, kernel, mode='same'), 1)
         else:
             mf_mask = None
 

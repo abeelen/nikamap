@@ -13,16 +13,14 @@ Classes
 
    NikaBeam
    NikaMap
+   Jackknife
 
+Functions
+---------
 
-..
-   Functions
-   ---------
+.. autosummary::
+    :template: function.rst
+    :toctree: gen_api
 
-   .. autosummary::
-      :template: function.rst
-      :toctree: gen_api
-
-      transform_data
-      cumgauss
-      opt_err_func
+    bootstrap
+    fake_data

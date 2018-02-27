@@ -7,10 +7,11 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from astropy import units as u
 from astropy.nddata import StdDevUncertainty
+from astropy.utils.console import ProgressBar
 
 from .nikamap import retrieve_primary_keys, NikaMap
 
-__all__ = ['jackknife', 'bootstrap']
+__all__ = ['Jackknife', 'bootstrap']
 
 
 def check_filenames(filenames, band="1mm"):
@@ -33,18 +34,15 @@ def check_filenames(filenames, band="1mm"):
     # Checking all header for consistency
     for filename in filenames:
         _header = fits.getheader(filename, 'Brightness_{}'.format(band))
-        assert WCS(header).wcs == WCS(
-            _header).wcs, '{} has a different header'.format(filename)
+        assert WCS(header).wcs == WCS(_header).wcs, '{} has a different header'.format(filename)
         assert header['UNIT'] == _header['UNIT'], '{} has a different uni'.format(filename)
-        assert WCS(header)._naxis1 == WCS(
-            _header)._naxis1, '{} has a different shape'.format(filename)
-        assert WCS(header)._naxis2 == WCS(
-            _header)._naxis2, '{} has a different shape'.format(filename)
+        assert WCS(header)._naxis1 == WCS(_header)._naxis1, '{} has a different shape'.format(filename)
+        assert WCS(header)._naxis2 == WCS(_header)._naxis2, '{} has a different shape'.format(filename)
 
     return filenames
 
 
-class jackknife:
+class Jackknife:
     """A class to create weighted Jackknife maps from a list of fits files.
 
     This acts as a python generator.
@@ -164,7 +162,7 @@ class jackknife:
         return data
 
 
-def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False):
+def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False, ipython_widget=False):
     """Perform Bootstrap analysis on a set of IDL nika files"""
 
     filenames = check_filenames(filenames, band=band)
@@ -204,7 +202,7 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False):
         weights[mask] = 0
 
     # This is where the magic happens
-    for index in np.arange(n_bootstrap):
+    for index in ProgressBar(np.arange(n_bootstrap), ipython_widget=ipython_widget):
         shuffled_index = np.floor(np.random.uniform(
             0, n_scans, n_scans)).astype(np.int)
         if wmean:

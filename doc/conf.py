@@ -70,15 +70,19 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # --- Sphinx Gallery ---
+from sphinx_gallery.sorting import ExplicitOrder
 sphinx_gallery_conf = {
     # path to your examples scripts
     'examples_dirs': '../examples',
+    'subsection_order': ExplicitOrder(['../examples/fake_data',
+                                       '../examples/G2', ]),
     # path where to save gallery generated examples
     'gallery_dirs': 'auto_examples',
     # To auto-generate example sections in the API
     'doc_module': ('nikamap',),
     # Auto-generated mini-galleries go here
-    'backreferences_dir': 'gen_api'
+    'backreferences_dir': 'gen_api',
+    'reference_url': {'nikamap': None, }
 }
 
 # Automatically generate stub pages for API

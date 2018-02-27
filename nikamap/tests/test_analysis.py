@@ -14,12 +14,12 @@ from photutils.datasets import make_gaussian_sources_image
 import numpy.testing as npt
 
 
-# from nikamap.nikamap import NikaMap, jackknifey
+# from nikamap.nikamap import NikaMap, Jackknifey
 
 # import nikamap as nm
 # data_path = op.join(nm.__path__[0], 'data')
 
-from ..analysis import jackknife, bootstrap
+from ..analysis import Jackknife, bootstrap
 
 
 @pytest.fixture(scope='session')
@@ -113,62 +113,62 @@ def generate_nikamaps(tmpdir_factory):
     return filenames
 
 
-def test_jackknife_average(generate_nikamaps):
+def test_Jackknife_average(generate_nikamaps):
     filenames = generate_nikamaps
 
     primary_header = fits.getheader(filenames[0], 0)
     weighted_noise = primary_header['NOISE'] / np.sqrt(primary_header['NMAPS'])
 
     # Weighted average
-    data = next(jackknife(filenames, n=None))
+    data = next(Jackknife(filenames, n=None))
     assert np.all(data.uncertainty.array[~data.mask] == weighted_noise)
 
 
-def test_jackknife_one(generate_nikamaps):
+def test_Jackknife_one(generate_nikamaps):
     filenames = generate_nikamaps
 
     primary_header = fits.getheader(filenames[0], 0)
     weighted_noise = primary_header['NOISE'] / np.sqrt(primary_header['NMAPS'])
 
-    # Produce one jackknife
-    data = next(jackknife(filenames, n=1))
+    # Produce one Jackknife
+    data = next(Jackknife(filenames, n=1))
     assert np.all(data.uncertainty.array[~data.mask] == weighted_noise)
     npt.assert_allclose(np.std(data.data[~data.mask]), weighted_noise, rtol=1e-2)
 
 
-def test_jackknife_iterator(generate_nikamaps):
+def test_Jackknife_iterator(generate_nikamaps):
     filenames = generate_nikamaps
 
-    iterator = jackknife(filenames, n=10)
+    iterator = Jackknife(filenames, n=10)
     assert len(list(iterator)) == 10
 
     with pytest.raises(StopIteration):
         next(iterator)
 
 
-def test_jackknife_odd(generate_nikamaps):
+def test_Jackknife_odd(generate_nikamaps):
     filenames = generate_nikamaps
 
     # Odd number
     with pytest.warns(UserWarning):
-        iterator = jackknife(filenames[1:], n=1)
+        iterator = Jackknife(filenames[1:], n=1)
 
 
-def test_jackknife_absent(generate_nikamaps):
+def test_Jackknife_absent(generate_nikamaps):
     filenames = generate_nikamaps
 
     # Non existent files
     with pytest.warns(UserWarning):
-        iterator = jackknife([filenames[0], filenames[1], 'toto.fits'], n=1)
+        iterator = Jackknife([filenames[0], filenames[1], 'toto.fits'], n=1)
 
     # Non existent files
     with pytest.raises(AssertionError):
-        iterator = jackknife([filenames[0]], n=1)
+        iterator = Jackknife([filenames[0]], n=1)
 
     # Non existent files
     with pytest.warns(UserWarning):
         with pytest.raises(AssertionError):
-            iterator = jackknife([filenames[0], 'toto.fits'], n=1)
+            iterator = Jackknife([filenames[0], 'toto.fits'], n=1)
 
 
 def test_bootstrap(generate_nikamaps):

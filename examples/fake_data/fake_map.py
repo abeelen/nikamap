@@ -27,7 +27,7 @@ np.random.seed(1)
 #
 # Create a fake dataset with uniformly distributed point sources
 #
-# .. note:: This is mostly inspired by :func:`NikaMap.fake_data`
+# .. note:: This is mostly inspired by :func:`nikamap.fake_data`
 
 
 def create_dataset(shape=(512, 512),
@@ -74,7 +74,7 @@ def create_ancillary(shape, fwhm=None, noise_level=1 * mJypb):
     return hits, uncertainty, mask
 
 ##########################################################################
-# and a fake WCS
+# and a fake :class:`astropy.wcs.WCS`
 
 
 def create_wcs(shape, pixsize=2 * u.arcsec, center=None):
@@ -93,6 +93,7 @@ def create_wcs(shape, pixsize=2 * u.arcsec, center=None):
 # Construct a fake source catalog
 # -------------------------------
 #
+# This define an uniformly distribued catalog of sources in a disk as an :class:`astropy.table.Table`
 
 
 def create_fake_source(shape, wcs, beam_std_pix,
@@ -135,7 +136,7 @@ def add_noise(sources_map, uncertainty):
 
 
 ##########################################################################
-# Pack everything into hdulist
+# Pack everything into :class:`astropy.io.fits.HDUList`
 #
 
 def create_hdulist(data, hits, uncertainty, mask, wcs, sources, fwhm, noise_level):
@@ -169,6 +170,9 @@ def create_hdulist(data, hits, uncertainty, mask, wcs, sources, fwhm, noise_leve
 
     return hdus
 
+
+##########################################################################
+#  Finally, run the :func:`create_dataset` function, only if called directly
 
 if __name__ == '__main__':
     create_dataset()
