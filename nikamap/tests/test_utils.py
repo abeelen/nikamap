@@ -4,9 +4,11 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 
-from ..utils import pos_in_mask
+from ..utils import pos_in_mask, cat_to_SkyCoord
 from ..utils import pos_uniform, pos_gridded, pos_list
 from ..utils import fft_2D_hanning, powspec_k
+
+from astropy.table import Table
 
 
 def test_pos_in_mask():
@@ -19,6 +21,24 @@ def test_pos_in_mask():
 
     result = pos_in_mask(pos, mask)
     npt.assert_equal(result, pos[1:])
+
+
+def test_cat_to_SkyCoord():
+
+    cat = Table(data=[[0, 1], [0, 1]], names=['ra', 'dec'], dtype=[float, float])
+    cat['ra'].unit = "deg"
+    cat['dec'].unit = "deg"
+    coords = cat_to_SkyCoord(cat)
+    npt.assert_equal(coords.ra.deg, cat['ra'].data)
+    npt.assert_equal(coords.dec.deg, cat['dec'].data)
+
+    cat['_ra'] = cat['ra'] * 2
+    cat['_dec'] = cat['dec'] * 2
+
+    # _ra/_dec superseed ra/dec
+    coords = cat_to_SkyCoord(cat)
+    npt.assert_equal(coords.ra.deg, cat['_ra'].data)
+    npt.assert_equal(coords.dec.deg, cat['_dec'].data)
 
 
 def test_pos_uniform():

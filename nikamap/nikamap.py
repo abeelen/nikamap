@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from astropy.io import fits, registry
 from astropy import units as u
 from astropy.wcs import WCS
-from astropy.coordinates import SkyCoord, match_coordinates_sky
+from astropy.coordinates import match_coordinates_sky
 from astropy.nddata import NDDataArray, StdDevUncertainty, NDUncertainty
 from astropy.modeling import models
 from astropy.modeling.fitting import LevMarLSQFitter
@@ -33,7 +33,7 @@ import warnings
 from astropy.utils.exceptions import AstropyWarning
 
 from .utils import CircularGaussianPSF, _round_up_to_odd_integer
-from .utils import pos_uniform, pos_gridded
+from .utils import pos_uniform, cat_to_SkyCoord
 from .utils import powspec_k
 
 Jy_beam = u.Jy / u.beam
@@ -413,8 +413,8 @@ class NikaMap(NDDataArray):
                 fake_sources['find_peak'] = MaskedColumn(np.ones(len(fake_sources)), mask=True)
             else:
 
-                fake_SkyCoord = SkyCoord(fake_sources['ra'], fake_sources['dec'])
-                sources_SkyCoord = SkyCoord(sources['ra'], sources['dec'])
+                fake_SkyCoord = cat_to_SkyCoord(fake_sources)
+                sources_SkyCoord = cat_to_SkyCoord(sources)
 
                 idx, sep2d, _ = match_coordinates_sky(fake_SkyCoord, sources_SkyCoord)
                 mask = sep2d > dist_threshold
@@ -438,8 +438,8 @@ class NikaMap(NDDataArray):
             catalogs = [catalogs]
 
         for cat, ref_cat in product([self.sources], catalogs):
-            cat_SkyCoord = SkyCoord(cat['ra'], cat['dec'], unit=(cat['ra'].unit, cat['dec'].unit))
-            ref_SkyCoord = SkyCoord(ref_cat['ra'], ref_cat['dec'], unit=(ref_cat['ra'].unit, ref_cat['dec'].unit))
+            cat_SkyCoord = cat_to_SkyCoord(cat)
+            ref_SkyCoord = cat_to_SkyCoord(ref_cat)
             idx, sep2d, _ = match_coordinates_sky(cat_SkyCoord, ref_SkyCoord)
             mask = sep2d > dist_threshold
             cat[ref_cat.meta['name']] = MaskedColumn(idx, mask=mask)
@@ -660,7 +660,7 @@ class NikaMap(NDDataArray):
         if cat is not None:
             for _cat, _mark in list(cat):
                 label = _cat.meta.get('method') or _cat.meta.get('name') or 'Unknown'
-                cat_SkyCoord = SkyCoord(_cat['_ra'], _cat['_dec'], unit=(_cat['_ra'].unit, _cat['_dec'].unit))
+                cat_SkyCoord = cat_to_SkyCoord(_cat)
                 x, y = self.wcs.wcs_world2pix(cat_SkyCoord.ra, cat_SkyCoord.dec, 0)
                 ax.scatter(x, y, marker=_mark, alpha=0.8, label=label)
 

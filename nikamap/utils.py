@@ -6,6 +6,7 @@ import warnings
 from astropy.io import fits
 from astropy import units as u
 from astropy.wcs import WCS
+from astropy.coordinates import SkyCoord
 from astropy.modeling import Parameter, Fittable2DModel
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
 from astropy.nddata import StdDevUncertainty
@@ -97,6 +98,34 @@ def fake_header(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcse
     header['BMIN'] = (beam_fwhm.to(u.deg).value, '[deg],  Beam major axis')
 
     return header
+
+
+def cat_to_SkyCoord(cat):
+    """Extract positions from cat and return corresponding SkyCoord
+
+    Parameters
+    ----------
+    cat : :class:`astropy.table.Table`
+        a table containing sky columns with units
+
+    Returns
+    -------
+    :class:`astropy.coordinates.SkyCoord`
+        the corresponding SkyCoord object
+
+    Notes
+    -----
+    Look for _ra/_dec first and then ra/dec
+    """
+
+    if '_ra' in cat.keys() and '_dec' in cat.keys():
+        cols = ['_ra', '_dec']
+    elif 'ra' in cat.keys() and 'dec' in cat.keys():
+        cols = ['ra', 'dec']
+
+    coords = SkyCoord(cat[cols[0]], cat[cols[1]], unit=(cat[cols[0]].unit, cat[cols[1]].unit))
+
+    return coords
 
 
 def pos_in_mask(pos, mask=None):
