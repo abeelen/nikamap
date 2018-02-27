@@ -99,6 +99,24 @@ def fake_header(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcse
     return header
 
 
+def pos_in_mask(pos, mask=None):
+    """Check if pos is in mask
+
+    Parameters
+    ----------
+    pos : array_like (2, N)
+        pixel indexes (y, x) to be checked in mask
+    mask : 2D boolean array_like
+        corresponding mask
+    """
+    if mask is not None:
+        pos = np.asarray(pos)
+        pos_idx = np.floor(pos + 0.5).astype(int)
+        inside = ~mask[pos_idx[:, 0], pos_idx[:, 1]]
+        pos = pos[inside]
+    return pos
+
+
 def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold=0, max_loop=10):
     """Generate x, y uniform position within a mask, with a minimum distance between them
 
@@ -118,10 +136,7 @@ def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold
             within[0], within[1], (nsources, 2)) * np.asarray(shape) - 0.5))
 
         # Filter sources inside the mask
-        if mask is not None:
-            pos_idx = np.floor(pos + 0.5).astype(int)
-            inside = ~mask[pos_idx[:, 0], pos_idx[:, 1]]
-            pos = pos[inside]
+        pos = pos_in_mask(pos, mask)
 
         # Removing too close sources
         dist_mask = np.ones(len(pos), dtype=np.bool)
@@ -186,10 +201,7 @@ def pos_gridded(nsources=2**2, shape=None, within=(0, 1), mask=None, wobble=Fals
 
     pos = pos * np.asarray(shape) - 0.5
 
-    if mask is not None:
-        pos_idx = np.floor(pos + 0.5).astype(int)
-        inside = ~mask[pos_idx[:, 0], pos_idx[:, 1]]
-        pos = pos[inside]
+    pos = pos_in_mask(pos, mask)
 
     if len(pos) < nsources:
         warnings.warn("Only {} positions".format(len(pos)), UserWarning)
@@ -215,10 +227,7 @@ def pos_list(nsources=1, shape=None, within=(0, 1), mask=None, x_mean=None, y_me
     inside = np.sum((pos >= limits[0]) & (pos <= limits[1] - 1), 1) == 2
     pos = pos[inside]
 
-    if mask is not None:
-        pos_idx = np.floor(pos + 0.5).astype(int)
-        inside = ~mask[pos_idx[:, 0], pos_idx[:, 1]]
-        pos = pos[inside]
+    pos = pos_in_mask(pos, mask)
 
     if len(pos) < nsources:
         warnings.warn("Only {} positions".format(len(pos)), UserWarning)

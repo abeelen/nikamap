@@ -4,8 +4,21 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 
+from ..utils import pos_in_mask
 from ..utils import pos_uniform, pos_gridded, pos_list
 from ..utils import fft_2D_hanning, powspec_k
+
+
+def test_pos_in_mask():
+
+    mask = np.asarray([[True, False], [False, False]])
+    pos = [[0, 0], [0.5, 0.5], [1, 1]]
+
+    result = pos_in_mask(pos)
+    npt.assert_equal(result, pos)
+
+    result = pos_in_mask(pos, mask)
+    npt.assert_equal(result, pos[1:])
 
 
 def test_pos_uniform():
