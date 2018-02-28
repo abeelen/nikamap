@@ -154,7 +154,7 @@ def test_Jackknife_odd(generate_nikamaps):
         iterator = Jackknife(filenames[1:], n=1)
 
 
-def test_Jackknife_absent(generate_nikamaps):
+def test_Jackknife_assert(generate_nikamaps):
     filenames = generate_nikamaps
 
     # Non existent files
@@ -169,6 +169,10 @@ def test_Jackknife_absent(generate_nikamaps):
     with pytest.warns(UserWarning):
         with pytest.raises(AssertionError):
             iterator = Jackknife([filenames[0], 'toto.fits'], n=1)
+
+    # Wrong size type
+    with pytest.raises(AssertionError):
+        iterator = Jackknife(filenames, n=(100,))
 
 
 def test_bootstrap(generate_nikamaps):

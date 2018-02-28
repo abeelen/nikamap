@@ -673,7 +673,7 @@ class NikaMap(NDDataArray):
 
     def plot_SNR(self, vmin=-3, vmax=5, **kwargs):
         """Convenience method to plot the signal to noise map"""
-        return self.plot(snr=True, vmin=-3, vmax=5, **kwargs)
+        return self.plot(snr=True, vmin=vmin, vmax=vmax, **kwargs)
 
     def check_SNR(self, ax=None, bins=100):
         """Perform normality test on SNR map

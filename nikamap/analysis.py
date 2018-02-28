@@ -73,6 +73,7 @@ class Jackknife:
 
         filenames = check_filenames(filenames, band=band)
         assert len(filenames) > 1, 'Less than 2 existing files in filenames'
+        assert isinstance(n, (int, np.int32, np.int64)) or n is None, 'n must be an int'
 
         if len(filenames) % 2 and n is not None:
             warnings.warn('Even number of files, dropping the last one', UserWarning)
@@ -122,6 +123,10 @@ class Jackknife:
         self.mask = unobserved
         self.jk_weights = jk_weights
 
+    def __len__(self):
+        # to retrieve the legnth of the iterator, enable ProgressBar on it
+        return self.n
+
     def __iter__(self):
         # Iterators are iterables too.
         # Adding this functions to make them so.
@@ -144,9 +149,8 @@ class Jackknife:
             self.i += 1
             np.random.shuffle(self.jk_weights)
             with np.errstate(invalid='ignore', divide='ignore'):
-                e_data = np.sum(self.weights, axis=0)**(-0.5)
-                data = np.sum(self.datas * self.weights *
-                              self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
+                e_data = 1 / np.sqrt(np.sum(self.weights, axis=0))
+                data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
 
         else:
             raise StopIteration()
