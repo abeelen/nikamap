@@ -14,7 +14,7 @@ from astropy.convolution import CustomKernel, convolve_fft
 
 Jy_beam = u.Jy / u.beam
 
-__all__ = ['fake_data']
+__all__ = ['fake_data', 'cat_to_SkyCoord', 'CircularGaussianPSF', 'pos_uniform', 'pos_gridded', 'pos_list', 'powspec_k']
 
 
 # Forking from astropy.convolution.kernels
