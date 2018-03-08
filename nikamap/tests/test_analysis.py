@@ -28,7 +28,7 @@ def generate_nikamaps(tmpdir_factory):
 
     tmpdir = tmpdir_factory.mktemp("nm_maps")
 
-    shape = (60, 60)
+    shape = (61, 61)
     pixsize = 1 / 3 * u.deg
     noise_level = 1 * u.Jy / u.beam
     nmaps = 10
@@ -41,7 +41,8 @@ def generate_nikamaps(tmpdir_factory):
     wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
 
     # Fake sources for all maps
-    np.random.seed(3)
+    np.random.seed(0)
+
     sources = Table(masked=True)
     sources['amplitude'] = np.random.uniform(1, 10, size=nsources) * u.Jy
     sources['x_mean'] = np.random.uniform(1 / 4, 3 / 4, size=nsources) * shape[1]
@@ -61,9 +62,25 @@ def generate_nikamaps(tmpdir_factory):
     sources.reverse()
     sources.add_column(Column(np.arange(len(sources)), name='ID'), 0)
 
-    xx, yy = np.indices(shape)
-    mask = np.sqrt((xx - shape[1] / 2)**2 +
-                   (yy - shape[0] / 2)**2) >= shape[0] / 2
+    # Elliptical gaussian mask
+    def mask_rot(shape, sigma, theta, limit):
+        xx, yy = np.indices(shape)
+
+        xx_arr = (xx - (shape[1] - 1) / 2)
+        yy_arr = (yy - (shape[0] - 1) / 2)
+
+        c, s = np.cos(theta), np.sin(theta)
+        rot = np.array(((c, -s), (s, c)))
+
+        xx_arr, yy_arr = np.dot(rot, [xx_arr.flatten(), yy_arr.flatten()])
+
+        xx_arr = (xx_arr.reshape(shape) / (2 * sigma[1]**2))**2
+        yy_arr = (yy_arr.reshape(shape) / (2 * sigma[0]**2))**2
+
+        mask = np.sqrt(xx_arr + yy_arr) > limit
+        return mask
+
+    #  mask = mask_rot(shape, (np.sqrt(0.5), np.sqrt(0.5)), 0, (shape[0] - 1) / 2)
 
     primary_header = fits.header.Header()
     primary_header['f_sampli'] = 10., 'Fake the f_sampli keyword'
@@ -82,6 +99,10 @@ def generate_nikamaps(tmpdir_factory):
     filenames = []
 
     for i_map in range(nmaps):
+
+        # Rotated asymetric mask
+        mask = mask_rot(shape, (np.sqrt(1 / 2), np.sqrt(2 / 5)),
+                        i_map * np.pi / 4, (shape[0] - 1) / 2)
 
         filename = str(tmpdir.join('map_{}.fits'.format(i_map)))
 
@@ -120,20 +141,43 @@ def test_Jackknife_average(generate_nikamaps):
     weighted_noise = primary_header['NOISE'] / np.sqrt(primary_header['NMAPS'])
 
     # Weighted average
-    data = next(Jackknife(filenames, n=None))
+    jk = Jackknife(filenames, n=None)
+    data = next(jk)
     assert np.all(data.uncertainty.array[~data.mask] == weighted_noise)
 
+    data_call = jk()
+    npt.assert_equal(data.data[~data.mask], data_call.data[~data_call.mask])
 
-def test_Jackknife_one(generate_nikamaps):
+
+def test_Jackknife_call(generate_nikamaps):
     filenames = generate_nikamaps
 
     primary_header = fits.getheader(filenames[0], 0)
     weighted_noise = primary_header['NOISE'] / np.sqrt(primary_header['NMAPS'])
 
     # Produce one Jackknife
-    data = next(Jackknife(filenames, n=1))
+    jk = Jackknife(filenames, n=1)
+    data = jk(parity_threshold=1)
     assert np.all(data.uncertainty.array[~data.mask] == weighted_noise)
     npt.assert_allclose(np.std(data.data[~data.mask]), weighted_noise, rtol=1e-2)
+
+
+def test_Jackknife_parity(generate_nikamaps):
+    filenames = generate_nikamaps
+
+    primary_header = fits.getheader(filenames[0], 0)
+    weighted_noises = primary_header['NOISE'] / np.sqrt(np.arange(1, primary_header['NMAPS'] + 1))
+
+    jk = Jackknife(filenames, n=None)
+    data = jk(parity_threshold=0)
+    uncertainties = np.unique(data.uncertainty.array[~data.mask])
+
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
+
+    data = jk(parity_threshold=0.5)
+    uncertainties = np.unique(data.uncertainty.array[~data.mask])
+
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
 
 
 def test_Jackknife_iterator(generate_nikamaps):

@@ -43,9 +43,9 @@ def check_filenames(filenames, band="1mm"):
 
 
 class Jackknife:
-    """A class to create weighted Jackknife maps from a list of fits files.
+    """A class to create weighted Jackknife maps from a list of IDL fits files.
 
-    This acts as a python generator.
+    This acts as a python lazy iterator and/or a callable
 
     Parameters
     ----------
@@ -63,13 +63,11 @@ class Jackknife:
     A crude check is made on the wcs of each map when instanciated
     """
 
-    def __init__(self, filenames, band='1mm', n=10, low_mem=False, **kwd):
+    def __init__(self, filenames, band='1mm', n=10, **kwd):
 
-        self._iter = iter(self)  # Py2-style
         self.i = 0
         self.n = n
         self.band = band
-        self.low_mem = False
 
         filenames = check_filenames(filenames, band=band)
         assert len(filenames) > 1, 'Less than 2 existing files in filenames'
@@ -90,11 +88,13 @@ class Jackknife:
         header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
 
         self.header = header
+        self.shape = (header['NAXIS2'], header['NAXIS1'])
 
-        # This is low_mem=False case ...
-        datas = np.zeros((len(filenames), header['NAXIS2'], header['NAXIS1']))
-        weights = np.zeros((len(filenames), header['NAXIS2'], header['NAXIS1']))
-        time = np.zeros((header['NAXIS2'], header['NAXIS1'])) * u.h
+        # This is a low_mem=False case ...
+        # TODO: How to refactor that for low_mem=True ?
+        datas = np.zeros((len(filenames),) + self.shape)
+        weights = np.zeros((len(filenames),) + self.shape)
+        time = np.zeros(self.shape) * u.h
 
         for i, filename in enumerate(filenames):
 
@@ -115,7 +115,11 @@ class Jackknife:
         unobserved = time == 0
         # Base jackknife weights
         jk_weights = np.ones(len(filenames))
-        jk_weights[::2] *= -1
+
+        if n is not None:
+            jk_weights[::2] *= -1
+        else:
+            self.n = 1
 
         self.datas = datas
         self.weights = weights
@@ -132,42 +136,56 @@ class Jackknife:
         # Adding this functions to make them so.
         return self
 
-    def next(self):  # pragma: no cover        # Py2-style
-        return self._iter.__next__()
+    def __call__(self, parity_threshold=1):
+        """Compute a jackknifed dataset
 
-    def __next__(self):
-        if self.n is None:
-            # No Jackknife, just co-addition
-            self.i = self.n = 0
-            with np.errstate(invalid='ignore', divide='ignore'):
-                e_data = np.sum(self.weights, axis=0)**(-0.5)
-                data = np.sum(self.datas * self.weights, axis=0) * e_data**2
+        Parameters
+        ----------
+        parity_threshold : float
+            mask threshold between 0 and 1 to keep partial jackknife area
+            * 1 fully jackknifed
+            * 0 keep everything
 
-        elif self.i < self.n:
+        Returns
+        -------
+        :class:`nikamap.NikaMap`
+            a jackknifed data set
+        """
+        parity = np.zeros(self.shape)
+        np.random.shuffle(self.jk_weights)
 
-            # Produce Jackkife data until last iter
-            self.i += 1
-            np.random.shuffle(self.jk_weights)
-            with np.errstate(invalid='ignore', divide='ignore'):
-                e_data = 1 / np.sqrt(np.sum(self.weights, axis=0))
-                data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
+        with np.errstate(invalid='ignore', divide='ignore'):
+            e_data = 1 / np.sqrt(np.sum(self.weights, axis=0))
+            data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
+            parity = np.mean((self.weights != 0), axis=0)
 
-        else:
-            raise StopIteration()
+        mask = (parity < parity_threshold) | self.mask
 
-        data[self.mask] = np.nan
-        e_data[self.mask] = np.nan
+        data[mask] = np.nan
+        e_data[mask] = np.nan
 
-        data = NikaMap(data, mask=self.mask,
+        # TBC: time will have a different mask here....
+        data = NikaMap(data, mask=mask,
                        uncertainty=StdDevUncertainty(e_data),
                        unit=self.header['UNIT'], wcs=WCS(self.header),
                        meta=self.header, time=self.time)
 
         return data
 
+    def __next__(self, **kwargs):
+        """Iterator on the Jackknife object"""
+        if self.i < self.n:
+            # Produce Jackkife data until last iter
+            self.i += 1
+            data = self.__call__(**kwargs)
+        else:
+            raise StopIteration()
+
+        return data
+
 
 def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False, ipython_widget=False):
-    """Perform Bootstrap analysis on a set of IDL nika files"""
+    """Perform Bootstrap analysis on a set of IDL nika fits files"""
 
     filenames = check_filenames(filenames, band=band)
 
