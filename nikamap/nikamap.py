@@ -35,6 +35,7 @@ from astropy.utils.exceptions import AstropyWarning
 from .utils import CircularGaussianPSF, _round_up_to_odd_integer
 from .utils import pos_uniform, cat_to_SkyCoord
 from .utils import powspec_k
+from .utils import update_header
 
 Jy_beam = u.Jy / u.beam
 
@@ -289,24 +290,19 @@ class NikaMap(NDDataArray):
 
         shape = self.shape
 
-        # TODO: Non gaussian beam
-        beam_std_pix = self.beam.sigma_pix.value
+        x_mean, y_mean = pos_gen(nsources=nsources, shape=shape, within=within, mask=self.mask, **kwargs)
 
-        x_mean, y_mean = pos_gen(
-            nsources=nsources, shape=shape, within=within, mask=self.mask, **kwargs)
-
-        nsources = len(x_mean)
+        nsources = x_mean.shape[0]
 
         sources = Table(masked=True)
 
-        sources['amplitude'] = (
-            np.ones(nsources) * peak_flux).to(self.unit * u.beam)
+        sources['amplitude'] = (np.ones(nsources) * peak_flux).to(self.unit * u.beam)
 
         sources['x_mean'] = x_mean
         sources['y_mean'] = y_mean
 
-        sources['x_stddev'] = np.ones(nsources) * beam_std_pix
-        sources['y_stddev'] = np.ones(nsources) * beam_std_pix
+        sources['x_stddev'] = np.ones(nsources) * self.beam.sigma_pix.value
+        sources['y_stddev'] = np.ones(nsources) * self.beam.sigma_pix.value
         sources['theta'] = np.zeros(nsources)
 
         # Crude check to be within the finite part of the map
@@ -498,8 +494,8 @@ class NikaMap(NDDataArray):
             # unit=self.unit * u.beam).to(u.mJy)
 
             result_tab.sort('id')
-            sources['flux_psf'] = Column(result_tab['flux_fit'] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
-            sources['eflux_psf'] = Column(result_tab['flux_unc'] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
+            for _source, _tab in zip(['flux_psf', 'eflux_psf'], ['flux_fit', 'flux_unc']):
+                sources[_source] = Column(result_tab[_tab] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
             sources['group_id'] = result_tab['group_id']
 
         self.sources = sources
@@ -866,9 +862,7 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
         e_data = hdus['Stddev_{}'.format(band)].data
         hits = hdus['Nhits_{}'.format(band)].data
 
-    if 'BMAJ' not in header:  # pragma: no cover  # old file format
-        header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
-        header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
+    header = update_header(header, bmaj)
 
     time = (hits / f_sampling).to(u.h)
 

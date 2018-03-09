@@ -100,6 +100,15 @@ def fake_header(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcse
     return header
 
 
+def update_header(header, bmaj):
+    """Update header if 'BMAJ' not present"""
+    if 'BMAJ' not in header:  # pragma: no cover  # old file format
+        header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
+        header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
+
+    return header
+
+
 def cat_to_SkyCoord(cat):
     """Extract positions from cat and return corresponding SkyCoord
 
@@ -128,21 +137,33 @@ def cat_to_SkyCoord(cat):
     return coords
 
 
-def pos_in_mask(pos, mask=None):
-    """Check if pos is in mask
+def pos_in_mask(pos, mask=None, nsources=1):
+    """Check if pos is in mask, issue warning with less than nsources
 
     Parameters
     ----------
-    pos : array_like (2, N)
+    pos : array_like (N, 2)
         pixel indexes (y, x) to be checked in mask
     mask : 2D boolean array_like
         corresponding mask
+    nsources : int
+        the requested number of sources
+
+    Returns
+    -------
+    :class:`numpy.ndarray`
+        the pixel indexes within the mask
     """
+    pos = np.asarray(pos)
+
     if mask is not None:
-        pos = np.asarray(pos)
         pos_idx = np.floor(pos + 0.5).astype(int)
         inside = ~mask[pos_idx[:, 0], pos_idx[:, 1]]
         pos = pos[inside]
+
+    if pos.shape[0] < nsources:
+        warnings.warn("Only {} positions".format(pos.shape[0]), UserWarning)
+
     return pos
 
 
@@ -165,7 +186,7 @@ def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold
             within[0], within[1], (nsources, 2)) * np.asarray(shape) - 0.5))
 
         # Filter sources inside the mask
-        pos = pos_in_mask(pos, mask)
+        pos = pos_in_mask(pos, mask, 0)
 
         # Removing too close sources
         dist_mask = np.ones(len(pos), dtype=np.bool)
@@ -230,10 +251,7 @@ def pos_gridded(nsources=2**2, shape=None, within=(0, 1), mask=None, wobble=Fals
 
     pos = pos * np.asarray(shape) - 0.5
 
-    pos = pos_in_mask(pos, mask)
-
-    if len(pos) < nsources:
-        warnings.warn("Only {} positions".format(len(pos)), UserWarning)
+    pos = pos_in_mask(pos, mask, nsources)
 
     return pos[:, 1], pos[:, 0]
 
@@ -256,10 +274,7 @@ def pos_list(nsources=1, shape=None, within=(0, 1), mask=None, x_mean=None, y_me
     inside = np.sum((pos >= limits[0]) & (pos <= limits[1] - 1), 1) == 2
     pos = pos[inside]
 
-    pos = pos_in_mask(pos, mask)
-
-    if len(pos) < nsources:
-        warnings.warn("Only {} positions".format(len(pos)), UserWarning)
+    pos = pos_in_mask(pos, mask, nsources)
 
     return pos[:, 1], pos[:, 0]
 
@@ -398,8 +413,7 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
         # TODO: apodization will change the absolute level of the powerspectra,
         # check how to correct
         if apod_size is not None:
-            apod_data = fft_2D_hanning(img.mask, apod_size)
-            img *= apod_data
+            img *= fft_2D_hanning(img.mask, apod_size)
 
         if isinstance(img.data, u.Quantity):
             img_unit = img.data.unit

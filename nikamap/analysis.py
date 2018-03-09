@@ -10,14 +10,32 @@ from astropy.nddata import StdDevUncertainty
 from astropy.utils.console import ProgressBar
 
 from .nikamap import retrieve_primary_keys, NikaMap
+from .utils import update_header
 
 __all__ = ['Jackknife', 'bootstrap']
 
 
-def check_filenames(filenames, band="1mm"):
-    """Check the existence and compatibility of a list of NIKA IDL fits"""
+def check_filenames(filenames, band="1mm", n=None):
+    """Check the existence and compatibility of a list of NIKA IDL fits
+
+    Parameters
+    ----------
+    filenames : list
+        the list of NIKA fits files
+    band : str (1mm | 2mm | 1 | 2 | 3)
+        the requested band
+    n : int or None, optionnal
+        if not None check parity of filenames
+
+    Returns
+    -------
+    line
+        the curated list of filenames
+    """
 
     assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+
+    assert isinstance(n, (int, np.int32, np.int64)) or n is None, 'n must be an int or None'
 
     # Chek for existence
     checked_filenames = []
@@ -38,6 +56,10 @@ def check_filenames(filenames, band="1mm"):
         assert header['UNIT'] == _header['UNIT'], '{} has a different uni'.format(filename)
         assert WCS(header)._naxis1 == WCS(_header)._naxis1, '{} has a different shape'.format(filename)
         assert WCS(header)._naxis2 == WCS(_header)._naxis2, '{} has a different shape'.format(filename)
+
+    if n is not None and len(filenames) % 2:
+        warnings.warn('Even number of files, dropping the last one', UserWarning)
+        filenames = filenames[:-1]
 
     return filenames
 
@@ -69,13 +91,8 @@ class Jackknife:
         self.n = n
         self.band = band
 
-        filenames = check_filenames(filenames, band=band)
+        filenames = check_filenames(filenames, band=band, n=n)
         assert len(filenames) > 1, 'Less than 2 existing files in filenames'
-        assert isinstance(n, (int, np.int32, np.int64)) or n is None, 'n must be an int'
-
-        if len(filenames) % 2 and n is not None:
-            warnings.warn('Even number of files, dropping the last one', UserWarning)
-            filenames = filenames[:-1]
 
         self.filenames = filenames
 
@@ -83,9 +100,7 @@ class Jackknife:
 
         # Retrieve common keywords
         f_sampling, bmaj = retrieve_primary_keys(filenames[0], band, **kwd)
-
-        header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
-        header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
+        header = update_header(header, bmaj)
 
         self.header = header
         self.shape = (header['NAXIS2'], header['NAXIS1'])
@@ -187,16 +202,13 @@ class Jackknife:
 def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False, ipython_widget=False):
     """Perform Bootstrap analysis on a set of IDL nika fits files"""
 
-    filenames = check_filenames(filenames, band=band)
-
-    f_sampling, bmaj = retrieve_primary_keys(filenames[0], band)
+    filenames = check_filenames(filenames, band=band, n=None)
 
     n_scans = len(filenames)
     header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
 
-    if 'BMAJ' not in header:  # pragma: no cover  # old file format
-        header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
-        header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
+    f_sampling, bmaj = retrieve_primary_keys(filenames[0], band)
+    header = update_header(header, bmaj)
 
     shape = (header['NAXIS2'], header['NAXIS1'])
 
