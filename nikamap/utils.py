@@ -167,6 +167,50 @@ def pos_in_mask(pos, mask=None, nsources=1):
     return pos
 
 
+def pos_too_close(pos, dist_threshold=0):
+    """Remove sources which are too close
+
+    Parameters
+    ----------
+    pos : array_like (N, 2)
+        pixel indexes (y, x) to be checked in mask
+    dist_threshold : float
+        the distance threshold to remove the sources
+
+    Returns
+    -------
+    :class:`numpy.ndarray`
+        the filtered positions
+
+    Notes
+    -----
+    Based on Euclidian distances
+    """
+    dist_mask = np.ones(len(pos), dtype=np.bool)
+
+    while not np.all(~dist_mask):
+        # Computing pixel distances between all sources
+        dist = np.sqrt(np.sum((pos.reshape(len(pos), 1, 2) - pos)**2, 2))
+
+        # Filter 0 distances and find minima
+        i = np.arange(len(pos))
+        dist[i, i] = np.inf
+        arg_min_dist = np.argmin(dist, 1)
+        min_dist = dist[i, arg_min_dist]
+
+        # This will mask pair of sources with dist < dist_threshold
+        dist_mask = min_dist < dist_threshold
+
+        # un-mask the second source
+        for idx, arg_min in enumerate(arg_min_dist):
+            if dist_mask[idx]:
+                dist_mask[arg_min] = False
+
+        pos = pos[~dist_mask]
+
+    return pos
+
+
 def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold=0, max_loop=10):
     """Generate x, y uniform position within a mask, with a minimum distance between them
 
@@ -182,32 +226,13 @@ def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold
         i_loop += 1
 
         # note that these are pixels 0-indexes
-        pos = np.concatenate((pos, np.random.uniform(
-            within[0], within[1], (nsources, 2)) * np.asarray(shape) - 0.5))
+        pos = np.concatenate((pos, np.random.uniform(within[0], within[1], (nsources, 2)) * np.asarray(shape) - 0.5))
 
         # Filter sources inside the mask
         pos = pos_in_mask(pos, mask, 0)
 
         # Removing too close sources
-        dist_mask = np.ones(len(pos), dtype=np.bool)
-        while not np.all(~dist_mask):
-            # Computing pixel distances between all sources
-            dist = np.sqrt(np.sum((pos.reshape(len(pos), 1, 2) - pos)**2, 2))
-
-            # Filter 0 distances and find minima
-            i = np.arange(len(pos))
-            dist[i, i] = np.inf
-            arg_min_dist = np.argmin(dist, 1)
-            min_dist = dist[i, arg_min_dist]
-            # This will mask pair of sources with dist < dist_threshold
-            dist_mask = min_dist < dist_threshold
-
-            # un-mask the second source
-            for idx, arg_min in enumerate(arg_min_dist):
-                if dist_mask[idx]:
-                    dist_mask[arg_min] = False
-
-            pos = pos[~dist_mask]
+        pos = pos_too_close(pos, dist_threshold)
 
         pos = pos[0:nsources]
 
