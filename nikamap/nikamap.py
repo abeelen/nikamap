@@ -507,13 +507,32 @@ class NikaMap(NDDataArray):
     def match_filter(self, kernel):
         """Return a matched filtered version of the map
 
+        Parameters
+        ----------
+        kernel : :class:`nikamap.NikaBeam`
+            the kernel used for filtering
+
+        Returns
+        -------
+        :class:`nikamap.NikaMap`
+            the resulting match filtered nikamap object
+
+
         Notes
         -----
+        This compute the match filtered :math:`MF` map as :
+
+        .. math::
+
+            MF = \\frac{B * (W M)}{B^2 * W}
+
+        with :math:`B` the beam, :math:`W` the weights (inverse variance) and :math:`M` the signal map
+
         Peak photometry is conserved for data and e_data
+
         Resultings maps have a different mask
 
-        >>> npix = 500
-        >>> std = 4
+        >>> npix, std = 500, 4
         >>> kernel = Gaussian2DKernel(std)
         >>> mask = np.zeros((npix,npix))
         >>> data = np.random.normal(0, 1, size=mask.shape)
@@ -567,7 +586,7 @@ class NikaMap(NDDataArray):
         # with np.errstate(divide='ignore'):
         #     mf_uncertainty = np.sqrt(convolve(weights, kernel_sqr, normalize_kernel=False))**-1
         with np.errstate(invalid='ignore', divide='ignore'):
-            mf_uncertainty = np.sqrt(signal.fftconvolve(weights, kernel_sqr, mode='same'))**-1
+            mf_uncertainty = 1 / np.sqrt(signal.fftconvolve(weights, kernel_sqr, mode='same'))
         if mf_mask is not None:
             mf_uncertainty[mf_mask] = np.nan
 
