@@ -571,9 +571,9 @@ def test_nikamap_match_sources_list(nms):
 def test_nikamap_plot(nms):
 
     nm = nms
-    fig = nm.plot()
+    cax = nm.plot()
 
-    return fig
+    return cax.get_figure()
 
 
 # Different Freetype version on travis... 2.8.0 vs 2.6.1
@@ -581,9 +581,9 @@ def test_nikamap_plot(nms):
 def test_nikamap_plot_SNR(nms):
 
     nm = nms
-    fig = nm.plot_SNR(cbar=True)
+    cax = nm.plot_SNR(cbar=True)
 
-    return fig
+    return cax.get_figure()
 
 
 # Different Freetype version on travis... 2.8.0 vs 2.6.1

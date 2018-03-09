@@ -626,8 +626,7 @@ class NikaMap(NDDataArray):
 
         Returns
         -------
-        fig (:class:`matplotlib.pyplot.figure`), optionnal
-            fix ax is None, return the newly created figure
+        image : `~matplotlib.image.AxesImage`
 
         Notes
         -----
@@ -646,8 +645,6 @@ class NikaMap(NDDataArray):
         if not ax:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection=self.wcs)
-        else:
-            fig = None
 
         if title is not None:
             ax.set_title(title)
@@ -683,8 +680,7 @@ class NikaMap(NDDataArray):
         if cat is not None:
             ax.legend(loc='best', frameon=False)
 
-        if fig:
-            return fig
+        return cax
 
     def plot_SNR(self, vmin=-3, vmax=5, **kwargs):
         """Convenience method to plot the signal to noise map"""
