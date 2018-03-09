@@ -48,14 +48,15 @@ def check_filenames(filenames, band="1mm", n=None):
 
     filenames = checked_filenames
     header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
+    w = WCS(header)
 
     # Checking all header for consistency
     for filename in filenames:
         _header = fits.getheader(filename, 'Brightness_{}'.format(band))
-        assert WCS(header).wcs == WCS(_header).wcs, '{} has a different header'.format(filename)
+        _w = WCS(_header)
+        assert w.wcs == _w.wcs, '{} has a different header'.format(filename)
         assert header['UNIT'] == _header['UNIT'], '{} has a different uni'.format(filename)
-        assert WCS(header)._naxis1 == WCS(_header)._naxis1, '{} has a different shape'.format(filename)
-        assert WCS(header)._naxis2 == WCS(_header)._naxis2, '{} has a different shape'.format(filename)
+        assert (w._naxis1, w._naxis2) == (_w._naxis1, _w._naxis2), '{} has a different shape'.format(filename)
 
     if n is not None and len(filenames) % 2:
         warnings.warn('Even number of files, dropping the last one', UserWarning)

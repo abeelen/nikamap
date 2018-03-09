@@ -405,7 +405,8 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
     Jy**2 / arcsec**2
 
     """
-    img_unit = 1
+    img_unit, pix_unit = 1, 1
+
     if isinstance(img, u.Quantity):
         img_unit = img.unit
     elif isinstance(img, np.ma.MaskedArray):
@@ -420,7 +421,6 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
 
         img = img.filled(0)
 
-    pix_unit = 1
     if isinstance(res, u.Quantity):
         pix_unit = res.unit
 
@@ -440,8 +440,7 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
 
     k_freq = np.sqrt(u_freq[:, np.newaxis]**2 + v_freq**2)
 
-    hist, bin_edges = np.histogram(
-        k_freq, bins=bins, range=range, weights=pow_sqr)
+    hist, bin_edges = np.histogram(k_freq, bins=bins, range=range, weights=pow_sqr)
     norm, _ = np.histogram(k_freq, bins=bins, range=range)
     with np.errstate(invalid='ignore'):
         hist /= norm
