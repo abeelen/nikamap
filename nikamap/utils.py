@@ -3,6 +3,8 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import warnings
 
+from scipy import signal
+
 from astropy.io import fits
 from astropy import units as u
 from astropy.wcs import WCS
@@ -14,7 +16,7 @@ from astropy.convolution import CustomKernel, convolve_fft
 
 Jy_beam = u.Jy / u.beam
 
-__all__ = ['fake_data', 'cat_to_SkyCoord', 'CircularGaussianPSF', 'pos_uniform', 'pos_gridded', 'pos_list', 'powspec_k']
+__all__ = ['fake_data', 'cat_to_sc', 'CircularGaussianPSF', 'pos_uniform', 'pos_gridded', 'pos_list', 'powspec_k']
 
 
 # Forking from astropy.convolution.kernels
@@ -109,7 +111,7 @@ def update_header(header, bmaj):
     return header
 
 
-def cat_to_SkyCoord(cat):
+def cat_to_sc(cat):
     """Extract positions from cat and return corresponding SkyCoord
 
     Parameters
@@ -306,7 +308,7 @@ def pos_list(nsources=1, shape=None, within=(0, 1), mask=None, x_mean=None, y_me
 
 def fake_data(shape=(512, 512),
               beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
-              NEFD=50e-3 * Jy_beam * u.s**0.5, time_fwhm=1. / 5,
+              nefd=50e-3 * Jy_beam * u.s**0.5, time_fwhm=1. / 5,
               jk_data=None, e_data=None,
               nsources=32, peak_flux=None, pos_gen=pos_uniform, **kwargs):
     """Build fake dataset"""
@@ -325,7 +327,7 @@ def fake_data(shape=(512, 512),
     elif e_data is not None:
         # Only gave e_data
         mask = np.isnan(e_data)
-        time = ((e_data / NEFD)**(-1. / 0.5)).to(u.h)
+        time = ((e_data / nefd)**(-1. / 0.5)).to(u.h)
         e_data = e_data.to(Jy_beam).value
 
         data = np.random.normal(0, 1, size=shape) * e_data
@@ -344,19 +346,19 @@ def fake_data(shape=(512, 512),
         mask = time < 1 * u.s
         time[mask] = np.nan
 
-        e_data = (NEFD * time**(-0.5)).to(Jy_beam).value
+        e_data = (nefd * time**(-0.5)).to(Jy_beam).value
 
         # White noise plus source
         data = np.random.normal(0, 1, size=shape) * e_data
 
     header = fake_header(shape, beam_fwhm, pixsize)
-    header['NEFD'] = (NEFD.to(Jy_beam * u.s**0.5).value,
+    header['NEFD'] = (nefd.to(Jy_beam * u.s**0.5).value,
                       '[Jy/beam sqrt(s)], NEFD')
 
     # min flux which should be recoverable at the center of the field at 3
     # sigma
     if peak_flux is None:
-        peak_flux = 3 * (NEFD / np.sqrt(np.nanmax(time)) * u.beam).to(u.mJy)
+        peak_flux = 3 * (nefd / np.sqrt(np.nanmax(time)) * u.beam).to(u.mJy)
 
     data = NikaMap(
         data,
@@ -374,7 +376,29 @@ def fake_data(shape=(512, 512),
     return data
 
 
-def fft_2D_hanning(mask, size=2):
+def shrink_mask(mask, kernel):
+    """Shrink mask wrt to a kernel
+
+    Parameters
+    ----------
+    mask : 2D boolean array_like
+        the mask to be shrinked by...
+    kernel : 2D float array_like
+        ... the corresponding array
+
+    Returns
+    -------
+    2D boolean array
+        the corresponding shrunk mask
+
+    Notes
+    -----
+    The kernel sum must be normalized
+    """
+    return ~np.isclose(signal.fftconvolve(~mask, kernel, mode='same'), 1)
+
+
+def fft_2d_hanning(mask, size=2):
 
     assert np.min(mask.shape) > size * 2 + 1
     assert size > 1
@@ -389,8 +413,7 @@ def fft_2D_hanning(mask, size=2):
     hann_kernel.normalize('integral')
 
     # Reduce mask size to apodize on the edge
-    apod = np.isclose(convolve_fft((~mask).astype(
-        np.float), hann_kernel), 1).astype(np.float)
+    apod = ~shrink_mask(mask, hann_kernel)
 
     # Final convolution goes to 0 on the edge
     apod = convolve_fft(apod, hann_kernel)
@@ -439,7 +462,7 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
         # TODO: apodization will change the absolute level of the powerspectra,
         # check how to correct
         if apod_size is not None:
-            img *= fft_2D_hanning(img.mask, apod_size)
+            img *= fft_2d_hanning(img.mask, apod_size)
 
         if isinstance(img.data, u.Quantity):
             img_unit = img.data.unit

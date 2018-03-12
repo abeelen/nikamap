@@ -1,5 +1,7 @@
+dist: trusty
+sudo: required
 language: python
-sudo: false
+
 deploy:
   provider: pypi
   user: abeelen
@@ -8,6 +10,14 @@ deploy:
   on:
     tags: true
     repo: abeelen/nikamap
+
+addons:
+  sonarcloud:
+    organization: "abeelen-github"
+    token:
+      secure: "J5jeO/6I3y+4jHbsBP0Lp6Zqfq4plQNcU5spUpVUH+F6EIfOYPfNiiBjSp0H/YUsQlOWSKzM1DobATKjaqjxAEANRqXUMrfh6jwZmIKiXJqePdMqkYxGU3NhgXXRizkXnEuDyKf42OQuBY/OvA8m7/w5S4LWIrjeizpk8yGuNZYL888kE9wquqBdWTYU+6gpwwe6iodWe2avHv0beCpTAC9flRITxK1TwVlrMys+zU6LQ+mE6JGqSQmbtVCPSffSyy+u7UGumJdXRHVUec3My35OFbDG6O1VRnH8JBh1fg+pO80O+YTWO6In2KYZhPFZvKReYKwim2Rmaig0lwSnSNolqNRK8hqj3kHRZvTtpBs1K+EdvCxIBNfEoyAZZOqWG/KNcN0e+eSB8nbSwO7QfSS4ph7pj8jzQ/QvxyVOtPsJ1OYSBtdx8RM4Gx3bvbGmv7VYDpZSre0BbIaDlDieXjGT6XVwLqofZbmFb0atE5pI/lBUup9lr3hmj9ZBf337T2I+OM4+FaV8mPbxkqbnymeZS05K6RS4v4mpclXXEUViLltA4+nDXGBRIcij4AEFvNJ19UAwRsihn4BueNBrKDtLFbOQ1KAtHfWV5kJ6WqVAsjZna9YyQl18Flq0Dpty+ANlgek8r2IVHz5Fxi/uX6e72VdmTrQoCdrW2VuYvWA="
+
+
 env:
   matrix:
     - ASTROPY_VERSION=2.0.4
@@ -34,6 +44,7 @@ install:
 script:
   - flake8 --ignore N802,N806,E501,F841,F401 `find . -name \*.py | grep -v setup.py | grep -v version.py | grep -v __init__.py | grep -v /doc/`
   -  MPLBACKEND="agg" python setup.py test
+  - sonar-scanner
 
 after_success:
   - coveralls

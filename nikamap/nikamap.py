@@ -25,7 +25,6 @@ from photutils.background import MedianBackground
 import photutils
 from photutils.datasets import make_gaussian_sources_image
 
-# from scipy.signal import convolve
 from scipy import signal
 from scipy.optimize import curve_fit
 
@@ -33,9 +32,10 @@ import warnings
 from astropy.utils.exceptions import AstropyWarning
 
 from .utils import CircularGaussianPSF, _round_up_to_odd_integer
-from .utils import pos_uniform, cat_to_SkyCoord
+from .utils import pos_uniform, cat_to_sc
 from .utils import powspec_k
 from .utils import update_header
+from .utils import shrink_mask
 
 Jy_beam = u.Jy / u.beam
 
@@ -356,7 +356,7 @@ class NikaMap(NDDataArray):
         if self.mask is not None:
                 # Make sure that there is no detection on the edge of the map
             box_kernel = Box2DKernel(box_size)
-            detect_mask = ~np.isclose(signal.fftconvolve(~self.mask, box_kernel, mode='same'), 1)
+            detect_mask = shrink_mask(self.mask, box_kernel)
             detect_on[detect_mask] = 0
 
         # TODO: Have a look at
@@ -408,14 +408,14 @@ class NikaMap(NDDataArray):
                 fake_sources['find_peak'] = MaskedColumn(np.ones(len(fake_sources)), mask=True)
             else:
 
-                fake_SkyCoord = cat_to_SkyCoord(fake_sources)
-                sources_SkyCoord = cat_to_SkyCoord(sources)
+                fake_sc = cat_to_sc(fake_sources)
+                sources_sc = cat_to_sc(sources)
 
-                idx, sep2d, _ = match_coordinates_sky(fake_SkyCoord, sources_SkyCoord)
+                idx, sep2d, _ = match_coordinates_sky(fake_sc, sources_sc)
                 mask = sep2d > dist_threshold
                 fake_sources['find_peak'] = MaskedColumn(sources[idx]['ID'], mask=mask)
 
-                idx, sep2d, _ = match_coordinates_sky(sources_SkyCoord, fake_SkyCoord)
+                idx, sep2d, _ = match_coordinates_sky(sources_sc, fake_sc)
                 mask = sep2d > dist_threshold
                 sources['fake_sources'] = MaskedColumn(fake_sources[idx]['ID'], mask=mask)
 
@@ -433,9 +433,9 @@ class NikaMap(NDDataArray):
             catalogs = [catalogs]
 
         for cat, ref_cat in product([self.sources], catalogs):
-            cat_SkyCoord = cat_to_SkyCoord(cat)
-            ref_SkyCoord = cat_to_SkyCoord(ref_cat)
-            idx, sep2d, _ = match_coordinates_sky(cat_SkyCoord, ref_SkyCoord)
+            cat_sc = cat_to_sc(cat)
+            ref_sc = cat_to_sc(ref_cat)
+            idx, sep2d, _ = match_coordinates_sky(cat_sc, ref_sc)
             mask = sep2d > dist_threshold
             cat[ref_cat.meta['name']] = MaskedColumn(idx, mask=mask)
 
@@ -486,12 +486,6 @@ class NikaMap(NDDataArray):
 
             result_tab = photometry(image=np.ma.array(
                 self.data, mask=self.mask).filled(0), init_guesses=positions)
-
-            # sources['flux_psf'] = Column(
-            #     result_tab['flux_fit'] / (2 * np.pi * sigma_psf**2), unit=self.unit * u.beam).to(u.mJy)
-            # sources['eflux_psf'] = Column(
-            # result_tab['flux_unc'] / (2 * np.pi * sigma_psf**2),
-            # unit=self.unit * u.beam).to(u.mJy)
 
             result_tab.sort('id')
             for _source, _tab in zip(['flux_psf', 'eflux_psf'], ['flux_fit', 'flux_unc']):
@@ -557,7 +551,7 @@ class NikaMap(NDDataArray):
         # will remove one kernel width on the edges
         # mf_mask = ~np.isclose(convolve(~self.mask, kernel, normalize_kernel=False), 1)
         if self.mask is not None:
-            mf_mask = ~np.isclose(signal.fftconvolve(~self.mask, kernel, mode='same'), 1)
+            mf_mask = shrink_mask(self.mask, kernel)
         else:
             mf_mask = None
 
@@ -579,15 +573,12 @@ class NikaMap(NDDataArray):
         if self.mask is not None:
             weights[self.mask] = 0
 
-        # with np.errstate(divide='ignore'):
-        #     mf_uncertainty = np.sqrt(convolve(weights, kernel_sqr, normalize_kernel=False))**-1
         with np.errstate(invalid='ignore', divide='ignore'):
             mf_uncertainty = 1 / np.sqrt(signal.fftconvolve(weights, kernel_sqr, mode='same'))
         if mf_mask is not None:
             mf_uncertainty[mf_mask] = np.nan
 
         # Units are not propagated in masked arrays...
-        # mf_data = convolve(weights*data, kernel, normalize_kernel=False) * mf_uncertainty**2
         mf_data = signal.fftconvolve(weights * self.__array__().filled(0), kernel, mode='same') * mf_uncertainty**2
 
         mf_data = NikaMap(
@@ -603,7 +594,7 @@ class NikaMap(NDDataArray):
 
         return mf_data
 
-    def plot(self, snr=False, ax=None, title=None, cbar=False, cat=None, levels=None, **kwargs):
+    def plot(self, snr=False, ax=None, cbar=False, cat=None, levels=None, **kwargs):
         """Convenience routine to plot the dataset
 
         Parameters
@@ -612,8 +603,6 @@ class NikaMap(NDDataArray):
             Plot the signal to noise ratio instead of the signal (default: False)
         ax : :class:`matplotlib.axes.Axes`, optional
             Axe to plot the power spectrum
-        title : string, optionnal
-            Title of the plot
         cbar: boolean, optionnal
             Draw a colorbar (ax must be None)
         cat : boolean of list of tuple [(cat, symbol)], optionnal
@@ -646,9 +635,6 @@ class NikaMap(NDDataArray):
             fig = plt.figure()
             ax = fig.add_subplot(111, projection=self.wcs)
 
-        if title is not None:
-            ax.set_title(title)
-
         cax = ax.imshow(data, origin='lower', interpolation='none', **kwargs)
 
         if levels is not None:
@@ -670,8 +656,8 @@ class NikaMap(NDDataArray):
         if cat is not None:
             for _cat, _mark in list(cat):
                 label = _cat.meta.get('method') or _cat.meta.get('name') or 'Unknown'
-                cat_SkyCoord = cat_to_SkyCoord(_cat)
-                x, y = self.wcs.wcs_world2pix(cat_SkyCoord.ra, cat_SkyCoord.dec, 0)
+                cat_sc = cat_to_sc(_cat)
+                x, y = self.wcs.wcs_world2pix(cat_sc.ra, cat_sc.dec, 0)
                 ax.scatter(x, y, marker=_mark, alpha=0.8, label=label)
 
         ax.set_xlim(0, self.shape[1])

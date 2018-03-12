@@ -82,9 +82,9 @@ This project is licensed under the MIT license.
     :target: https://travis-ci.org/abeelen/nikamap
 
 
-.. |codeclimate| image:: https://codeclimate.com/github/abeelen/nikamap/badges/gpa.svg
-   :alt: Code Climate
-   :target: https://codeclimate.com/github/abeelen/nikamap
+.. |codeclimate| image:: https://api.codeclimate.com/v1/badges/708805538fddec5ef127/maintainability
+   :target: https://codeclimate.com/github/abeelen/nikamap/maintainability
+   :alt: Maintainability
 
 
 .. |codehealth| image:: https://landscape.io/github/abeelen/nikamap/master/landscape.svg?style=flat
@@ -92,7 +92,7 @@ This project is licensed under the MIT license.
    :target: https://landscape.io/github/abeelen/nikamap/master
 
 
-.. |sonarqube| image:: https://sonarcloud.io//api/badges/gate?key=nikamap&metric=code_smells
+.. |sonarqube| image:: https://sonarcloud.io/api/project_badges/measure?project=nikamap&metric=alert_status
    :alt: SonarQube
    :target: https://sonarcloud.io/dashboard/index/nikamap
 

@@ -9,8 +9,8 @@ flake8:
 	@echo "flake8 passed"
 
 test:
-	py.test --pyargs nikamap --cov-report term-missing --cov=nikamap --mpl
+	py.test-3 --pyargs nikamap --cov-report term-missing --cov=nikamap --mpl
 
 
 png:
-	py.test --mpl-generate-path=nikamap/tests/baseline
+	py.test-3 --mpl-generate-path=nikamap/tests/baseline

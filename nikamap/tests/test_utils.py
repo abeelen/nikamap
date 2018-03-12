@@ -4,11 +4,35 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 
-from ..utils import pos_in_mask, cat_to_SkyCoord
+from ..utils import pos_in_mask, cat_to_sc
 from ..utils import pos_uniform, pos_gridded, pos_list
-from ..utils import fft_2D_hanning, powspec_k
+from ..utils import fft_2d_hanning, powspec_k
+from ..utils import fake_data
+from ..utils import shrink_mask
 
 from astropy.table import Table
+
+
+def test_shrink_mask():
+
+    kernel_size = 3
+    mask_size = 48
+
+    mask = np.ones((2 * mask_size, 2 * mask_size), bool)
+    center_slice = slice(mask_size - mask_size // 3, mask_size + mask_size // 3)
+    mask[center_slice, center_slice] = False
+
+    result = np.ones((2 * mask_size, 2 * mask_size), bool)
+    center_slice = slice(mask_size - mask_size // 3 + kernel_size, mask_size + mask_size // 3 - kernel_size)
+    result[center_slice, center_slice] = False
+
+    xx = np.arange(2 * kernel_size + 1) - kernel_size
+    kernel = np.exp(-(xx**2 + xx[:, np.newaxis]**2) / 2)
+    kernel /= kernel.sum()
+
+    shrinked_mask = shrink_mask(mask, kernel)
+
+    assert np.all(result == shrinked_mask)
 
 
 def test_pos_in_mask():
@@ -23,12 +47,12 @@ def test_pos_in_mask():
     npt.assert_equal(result, pos[1:])
 
 
-def test_cat_to_SkyCoord():
+def test_cat_to_sc():
 
     cat = Table(data=[[0, 1], [0, 1]], names=['ra', 'dec'], dtype=[float, float])
     cat['ra'].unit = "deg"
     cat['dec'].unit = "deg"
-    coords = cat_to_SkyCoord(cat)
+    coords = cat_to_sc(cat)
     npt.assert_equal(coords.ra.deg, cat['ra'].data)
     npt.assert_equal(coords.dec.deg, cat['dec'].data)
 
@@ -36,7 +60,7 @@ def test_cat_to_SkyCoord():
     cat['_dec'] = cat['dec'] * 2
 
     # _ra/_dec superseed ra/dec
-    coords = cat_to_SkyCoord(cat)
+    coords = cat_to_sc(cat)
     npt.assert_equal(coords.ra.deg, cat['_ra'].data)
     npt.assert_equal(coords.dec.deg, cat['_dec'].data)
 
@@ -125,6 +149,7 @@ def test_pos_list():
         x, y = pos_list(nsources=nsources, shape=shape, x_mean=x_mean, y_mean=y_mean, within=(1 / 4, 3 / 4))
 
     assert np.all(x == x_mean[shape[1] // 4:shape[1] * 3 // 4]), 'should be identical'
+
     x_mean = np.linspace(-1, 18, nsources)
 
     with pytest.warns(UserWarning):
@@ -133,19 +158,19 @@ def test_pos_list():
     assert np.all(x == x_mean[1:]), 'should be identical'
 
 
-def test_fft_2D_hanning_assertion():
+def test_fft_2d_hanning_assertion():
 
     shape = 5
     mask = np.ones((shape, shape), dtype=bool)
 
     with pytest.raises(AssertionError):
-        fft_2D_hanning(mask, size=2)
+        fft_2d_hanning(mask, size=2)
 
     with pytest.raises(AssertionError):
-        fft_2D_hanning(mask, size=1)
+        fft_2d_hanning(mask, size=1)
 
 
-def test_fft_2D_hanning():
+def test_fft_2d_hanning():
 
     # Min hann filter is 5 x 5
     shape = 15
@@ -157,7 +182,7 @@ def test_fft_2D_hanning():
                    ((shape - 1) + (size - 1)) // 2 + 1)
     mask[islice, islice] = False
 
-    apod = fft_2D_hanning(mask, size=apod_size)
+    apod = fft_2d_hanning(mask, size=apod_size)
     # Nothing outside the mask
     assert np.all((apod > 1e-15) == ~mask)
     # Only unchanged pixel at the center
@@ -173,7 +198,7 @@ def test_fft_2D_hanning():
     islice = slice(((shape - 1) - (size - 1)) // 2,
                    ((shape - 1) + (size - 1)) // 2 + 1)
     mask[islice, islice] = False
-    apod = fft_2D_hanning(mask, size=2)
+    apod = fft_2d_hanning(mask, size=2)
 
     assert np.all((apod > 1e-15) == ~mask)
     unchanged = slice(((shape - 1) - (size - 1) + (apod_size * 2 + 1 - 1)) // 2,
@@ -225,3 +250,9 @@ def test_powspec_k():
     # plt.plot(bin_centers[1:], P(bin_centers[1:]))
 
     assert np.all((mean_Pk[1:] - P(bin_centers[1:])) < std_Pk[1:])
+
+
+def test_fake_data():
+
+    # Dummy test for now
+    nm = fake_data()
