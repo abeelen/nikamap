@@ -286,17 +286,32 @@ class NikaMap(NDDataArray):
 
         return self[axis_slice[0], axis_slice[1]]
 
-    def add_gaussian_sources(self, nsources=10, peak_flux=1 * u.mJy, within=(0, 1), pos_gen=pos_uniform, **kwargs):
+    def add_gaussian_sources(self, within=(0, 1), cat_gen=pos_uniform, **kwargs):
+        """Add gaussian sources into the map
 
+        Parameters
+        ----------
+        within : tuple of 2 int
+            force the sources within this relative range in the map
+        cat_gen : function (`pos_uniform`|`pos_gridded`|`pos_list`|...)
+            the function used to generate the pixel positions and flux of the sources (see Notes below)
+        **kwargs
+            any keyword arguments to be passed to the `cat_gen` function
+
+        Notes
+        -----
+        the `cat_gen` function is used to generate the list of x, y pixel positions and fluxes
+        and must at least support the `shape=None, within=(0, 1), mask=None` arguments.
+        """
         shape = self.shape
 
-        x_mean, y_mean = pos_gen(nsources=nsources, shape=shape, within=within, mask=self.mask, **kwargs)
+        x_mean, y_mean, peak_flux = cat_gen(shape=shape, within=within, mask=self.mask, **kwargs)
 
         nsources = x_mean.shape[0]
 
         sources = Table(masked=True)
 
-        sources['amplitude'] = (np.ones(nsources) * peak_flux).to(self.unit * u.beam)
+        sources['amplitude'] = peak_flux.to(self.unit * u.beam)
 
         sources['x_mean'] = x_mean
         sources['y_mean'] = y_mean
