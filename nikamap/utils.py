@@ -213,7 +213,7 @@ def pos_too_close(pos, dist_threshold=0):
     return pos
 
 
-def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold=0, max_loop=10):
+def pos_uniform(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * u.mJy, dist_threshold=0, max_loop=10):
     """Generate x, y uniform position within a mask, with a minimum distance between them
 
     Notes
@@ -243,10 +243,10 @@ def pos_uniform(nsources=1, shape=None, within=(0, 1), mask=None, dist_threshold
             "Maximum of loops reached, only have {} positions".format(
                 len(pos)), UserWarning)
 
-    return pos[:, 1], pos[:, 0]
+    return pos[:, 1], pos[:, 0], np.repeat(peak_flux, nsources)
 
 
-def pos_gridded(nsources=2**2, shape=None, within=(0, 1), mask=None, wobble=False, wobble_frac=1):
+def pos_gridded(shape=None, within=(0, 1), mask=None, nsources=2**2, peak_flux=1 * u.mJy, wobble=False, wobble_frac=1):
     """Generate x, y gridded position within a mask
 
     Parameters
@@ -280,10 +280,10 @@ def pos_gridded(nsources=2**2, shape=None, within=(0, 1), mask=None, wobble=Fals
 
     pos = pos_in_mask(pos, mask, nsources)
 
-    return pos[:, 1], pos[:, 0]
+    return pos[:, 1], pos[:, 0], np.repeat(peak_flux, nsources)
 
 
-def pos_list(nsources=1, shape=None, within=(0, 1), mask=None, x_mean=None, y_mean=None):
+def pos_list(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * u.mJy, x_mean=None, y_mean=None):
     """Return positions within a mask
 
     Notes
@@ -303,7 +303,7 @@ def pos_list(nsources=1, shape=None, within=(0, 1), mask=None, x_mean=None, y_me
 
     pos = pos_in_mask(pos, mask, nsources)
 
-    return pos[:, 1], pos[:, 0]
+    return pos[:, 1], pos[:, 0], np.repeat(peak_flux, nsources)
 
 
 def fake_data(shape=(512, 512),
@@ -371,7 +371,7 @@ def fake_data(shape=(512, 512),
 
     if nsources:
         data.add_gaussian_sources(
-            nsources=nsources, peak_flux=peak_flux, pos_gen=pos_gen, **kwargs)
+            nsources=nsources, cat_gen=pos_gen, peak_flux=peak_flux, **kwargs)
 
     return data
 

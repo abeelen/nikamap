@@ -323,7 +323,7 @@ def grid_sources():
     nm = NikaMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam)
 
     # Additionnal attribute just for the tests...
-    nm.add_gaussian_sources(nsources=2**2, peak_flux=1 * u.Jy, pos_gen=pos_gridded, within=(1 / 4, 3 / 4))
+    nm.add_gaussian_sources(nsources=2**2, peak_flux=1 * u.Jy, cat_gen=pos_gridded, within=(1 / 4, 3 / 4))
 
     x, y = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
 
@@ -349,7 +349,7 @@ def wobble_grid_sources():
 
     np.random.seed(0)
     # Additionnal attribute just for the tests...
-    nm.add_gaussian_sources(nsources=2**2, peak_flux=1 * u.Jy, pos_gen=pos_gridded, wobble=True, wobble_frac=0.2)
+    nm.add_gaussian_sources(nsources=2**2, peak_flux=1 * u.Jy, cat_gen=pos_gridded, wobble=True, wobble_frac=0.2)
 
     x, y = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
 
