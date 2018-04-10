@@ -230,7 +230,10 @@ class NikaMap(NDDataArray):
 
     @property
     def SNR(self):
-        return np.ma.array(self.data / self.uncertainty.array, mask=self.mask)
+        return np.ma.array((self.data * self.unit /
+                            (self.uncertainty.array * self.uncertainty.unit))
+                           .decompose().to_value(),
+                           mask=self.mask)
 
     @property
     def beam(self):
