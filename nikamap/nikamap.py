@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from astropy.io import fits, registry
 from astropy import units as u
-from astropy.wcs import WCS
+from astropy.wcs import WCS, InconsistentAxisTypesError
 from astropy.coordinates import match_coordinates_sky
 from astropy.nddata import NDDataArray, StdDevUncertainty, NDUncertainty
 from astropy.modeling import models
@@ -386,16 +386,20 @@ class NikaMap(NDDataArray):
         # TODO: Have a look at
         # ~photutils.psf.IterativelySubtractedPSFPhotometry
 
-        # To avoid bad fit warnings...
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', AstropyWarning)
-            sources = photutils.find_peaks(
-                detect_on,
-                threshold=threshold,
-                mask=self.mask,
-                wcs=self.wcs,
-                subpixel=True,
-                box_size=box_size)
+        # See #667 of photutils
+        try:
+            # To avoid bad fit warnings...
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', AstropyWarning)
+                sources = photutils.find_peaks(
+                    detect_on,
+                    threshold=threshold,
+                    mask=self.mask,
+                    wcs=self.wcs,
+                    subpixel=True,
+                    box_size=box_size)
+        except InconsistentAxisTypesError:
+            sources = []
 
         if len(sources) > 0:
             # Transform to masked Table here to avoid future warnings

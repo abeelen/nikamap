@@ -186,6 +186,30 @@ def test_nikamap_compressed():
 
 
 @pytest.fixture()
+def no_source():
+    # Large shape to allow for psf fitting
+    # as beam needs to be much smaller than the map at some point..
+    np.random.seed(0)
+    shape = (27, 27)
+    pixsize = 1 / 3
+    data = np.random.normal(size=shape)
+    wcs = WCS()
+    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
+    wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
+
+    nm = NikaMap(data, uncertainty=np.ones(shape), wcs=wcs, unit=u.Jy / u.beam)
+
+    return nm
+
+
+def test_no_source(no_source):
+    nm = no_source
+    nm.detect_sources(threshold=5)
+    assert nm.sources is None
+
+
+@pytest.fixture()
 def single_source():
     # Large shape to allow for psf fitting
     # as beam needs to be much smaller than the map at some point..
