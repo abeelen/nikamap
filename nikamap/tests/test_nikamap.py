@@ -19,7 +19,7 @@ import numpy.testing as npt
 
 import matplotlib.pyplot as plt
 
-# from nikamap.nikamap import NikaMap, jk_nikamap
+# from nikamap.nikamapNDDataArray, import NikaMap, jk_nikamap
 
 # import nikamap as nm
 # data_path = op.join(nm.__path__[0], 'data')
@@ -144,6 +144,7 @@ def test_nikamap_init_uncertainty():
     nm = NikaMap(data, uncertainty=uncertainty)
     assert isinstance(nm.uncertainty, StdDevUncertainty)
     assert np.all(nm.uncertainty.array == np.array([1, 1, 1]))
+    assert nm.unit == nm.uncertainty.unit
 
     nm_mean = nm.add(nm).divide(2)
     assert np.all(nm_mean.data == nm.data)
@@ -157,10 +158,16 @@ def test_nikamap_init_uncertainty():
     with pytest.raises(TypeError):
         nm = NikaMap(data, uncertainty=list(uncertainty))
 
+    # Different Units
+    st_uncertainty = StdDevUncertainty(uncertainty * 1e-3, unit=u.Jy)
+    nm = NikaMap(data * u.mJy, uncertainty=st_uncertainty)
+    assert nm.uncertainty.unit == nm.unit
+    npt.assert_equal(nm.uncertainty.array, uncertainty)
+
 
 def test_nikamap_compressed():
     data = np.array([1, 2, 3])
-    uncertainty = np.array([10, 1, 1])
+    uncertainty = np.array([10, 1, 1], dtype=float)
     mask = np.array([True, False, False])
     time = np.ones(3) * u.h
 
