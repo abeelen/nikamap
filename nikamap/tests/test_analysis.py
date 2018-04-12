@@ -13,7 +13,6 @@ from photutils.datasets import make_gaussian_sources_image
 
 import numpy.testing as npt
 
-
 # from nikamap.nikamap import NikaMap, Jackknifey
 
 # import nikamap as nm
@@ -158,8 +157,15 @@ def test_Jackknife_call(generate_nikamaps):
     # Produce one Jackknife
     jk = Jackknife(filenames, n=1)
     data = jk(parity_threshold=1)
-    assert np.all(data.uncertainty.array[~data.mask] == weighted_noise)
-    npt.assert_allclose(np.std(data.data[~data.mask]), weighted_noise, rtol=1e-2)
+
+    shape = data.shape
+    norm = data.time.value / data.time.value[(shape[1] - 1) // 2, (shape[0] - 1) // 2]
+    npt.assert_allclose((data.uncertainty.array * norm**0.5)[~data.mask], weighted_noise)
+
+# import py.path
+# tmpdir = py.path.local()
+# tmpdir.mktemp = tmpdir.mkdir
+# filenames = generate_nikamaps(tmpdir)
 
 
 def test_Jackknife_parity(generate_nikamaps):

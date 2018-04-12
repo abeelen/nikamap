@@ -173,9 +173,9 @@ class Jackknife:
         with np.errstate(invalid='ignore', divide='ignore'):
             e_data = 1 / np.sqrt(np.sum(self.weights, axis=0))
             data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
-            parity = np.mean((self.weights != 0), axis=0)
+            parity = np.mean((self.weights != 0) * self.jk_weights[:, np.newaxis, np.newaxis], axis=0)
 
-        mask = (parity < parity_threshold) | self.mask
+        mask = (1 - np.abs(parity) < 1) | self.mask
 
         data[mask] = np.nan
         e_data[mask] = np.nan
