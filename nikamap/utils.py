@@ -243,7 +243,7 @@ def pos_uniform(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * 
             "Maximum of loops reached, only have {} positions".format(
                 len(pos)), UserWarning)
 
-    return pos[:, 1], pos[:, 0], np.repeat(peak_flux, nsources)
+    return pos[:, 1], pos[:, 0], np.repeat(peak_flux, len(pos))
 
 
 def pos_gridded(shape=None, within=(0, 1), mask=None, nsources=2**2, peak_flux=1 * u.mJy, wobble=False, wobble_frac=1):
@@ -280,7 +280,7 @@ def pos_gridded(shape=None, within=(0, 1), mask=None, nsources=2**2, peak_flux=1
 
     pos = pos_in_mask(pos, mask, nsources)
 
-    return pos[:, 1], pos[:, 0], np.repeat(peak_flux, nsources)
+    return pos[:, 1], pos[:, 0], np.repeat(peak_flux, len(pos))
 
 
 def pos_list(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * u.mJy, x_mean=None, y_mean=None):
@@ -303,7 +303,7 @@ def pos_list(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * u.m
 
     pos = pos_in_mask(pos, mask, nsources)
 
-    return pos[:, 1], pos[:, 0], np.repeat(peak_flux, nsources)
+    return pos[:, 1], pos[:, 0], np.repeat(peak_flux, len(pos))
 
 
 def fake_data(shape=(512, 512),
