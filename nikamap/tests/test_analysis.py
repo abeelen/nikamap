@@ -144,7 +144,7 @@ def test_Jackknife_average(generate_nikamaps):
     data = next(jk)
     assert np.all(data.uncertainty.array[~data.mask] == weighted_noise)
 
-    data_call = jk()
+    data_call = jk(parity_threshold=0)
     npt.assert_equal(data.data[~data.mask], data_call.data[~data_call.mask])
 
 
