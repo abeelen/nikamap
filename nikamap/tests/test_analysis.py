@@ -13,8 +13,6 @@ from photutils.datasets import make_gaussian_sources_image
 
 import numpy.testing as npt
 
-# from nikamap.nikamap import NikaMap, Jackknifey
-
 # import nikamap as nm
 # data_path = op.join(nm.__path__[0], 'data')
 
@@ -140,11 +138,11 @@ def test_Jackknife_average(generate_nikamaps):
     weighted_noise = primary_header['NOISE'] / np.sqrt(primary_header['NMAPS'])
 
     # Weighted average
-    jk = Jackknife(filenames, n=None)
+    jk = Jackknife(filenames, n=None, parity_threshold=0)
     data = next(jk)
     assert np.all(data.uncertainty.array[~data.mask] == weighted_noise)
 
-    data_call = jk(parity_threshold=0)
+    data_call = jk()
     npt.assert_equal(data.data[~data.mask], data_call.data[~data_call.mask])
 
 
@@ -155,12 +153,31 @@ def test_Jackknife_call(generate_nikamaps):
     weighted_noise = primary_header['NOISE'] / np.sqrt(primary_header['NMAPS'])
 
     # Produce one Jackknife
-    jk = Jackknife(filenames, n=1)
-    data = jk(parity_threshold=1)
+    jk = Jackknife(filenames, n=1, parity_threshold=1)
+    data = jk()
 
     shape = data.shape
     norm = data.time.value / data.time.value[(shape[1] - 1) // 2, (shape[0] - 1) // 2]
     npt.assert_allclose((data.uncertainty.array * norm**0.5)[~data.mask], weighted_noise)
+
+
+def test_Jackknife_parity_set(generate_nikamaps):
+    filenames = generate_nikamaps
+
+    jk = Jackknife(filenames, parity_threshold=0)
+    assert jk.parity_threshold == 0
+
+    jk = Jackknife(filenames, parity_threshold=0.4)
+    assert jk.parity_threshold == 0.4
+
+    jk = Jackknife(filenames)
+    assert jk.parity_threshold == 1
+
+    with pytest.raises(TypeError):
+        jk = Jackknife(filenames, parity_threshold=-0.1)
+
+    with pytest.raises(TypeError):
+        jk = Jackknife(filenames, parity_threshold=1.1)
 
 # import py.path
 # tmpdir = py.path.local()
@@ -174,13 +191,14 @@ def test_Jackknife_parity(generate_nikamaps):
     primary_header = fits.getheader(filenames[0], 0)
     weighted_noises = primary_header['NOISE'] / np.sqrt(np.arange(1, primary_header['NMAPS'] + 1))
 
-    jk = Jackknife(filenames, n=None)
-    data = jk(parity_threshold=0)
+    jk = Jackknife(filenames, n=None, parity_threshold=0)
+    data = jk()
     uncertainties = np.unique(data.uncertainty.array[~data.mask])
 
     assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
 
-    data = jk(parity_threshold=0.5)
+    jk.parity_threshold = 0.5
+    data = jk()
     uncertainties = np.unique(data.uncertainty.array[~data.mask])
 
     assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])

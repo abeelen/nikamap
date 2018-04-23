@@ -80,17 +80,22 @@ class Jackknife:
         the number of Jackknifes maps to be produced
 
             if set to `None`, produce one weighted average of the maps
+    parity_threshold : float
+        mask threshold between 0 and 1 to keep partially jackknifed area
+        * 0 pure jackknifed
+        * 1 partially jackknifed, keep all
 
     Notes
     -----
     A crude check is made on the wcs of each map when instanciated
     """
 
-    def __init__(self, filenames, band='1mm', n=10, **kwd):
+    def __init__(self, filenames, band='1mm', n=1, parity_threshold=1, **kwd):
 
         self.i = 0
         self.n = n
         self.band = band
+        self.parity_threshold = parity_threshold
 
         filenames = check_filenames(filenames, band=band, n=n)
         assert len(filenames) > 1, 'Less than 2 existing files in filenames'
@@ -143,6 +148,17 @@ class Jackknife:
         self.mask = unobserved
         self.jk_weights = jk_weights
 
+    @property
+    def parity_threshold(self):
+        return self._parity
+
+    @parity_threshold.setter
+    def parity_threshold(self, value):
+        if value is not None and isinstance(value, (int, float)) and 0 <= value <= 1:
+            self._parity = value
+        else:
+            raise TypeError("parity must be between 0 and 1")
+
     def __len__(self):
         # to retrieve the legnth of the iterator, enable ProgressBar on it
         return self.n
@@ -152,15 +168,8 @@ class Jackknife:
         # Adding this functions to make them so.
         return self
 
-    def __call__(self, parity_threshold=1):
+    def __call__(self):
         """Compute a jackknifed dataset
-
-        Parameters
-        ----------
-        parity_threshold : float
-            mask threshold between 0 and 1 to keep partial jackknife area
-            * 0 pure jackknifed
-            * 1 partially jackknifed
 
         Returns
         -------
@@ -175,7 +184,7 @@ class Jackknife:
             data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
             parity = np.mean((self.weights != 0) * self.jk_weights[:, np.newaxis, np.newaxis], axis=0)
 
-        mask = ((1 - np.abs(parity)) > parity_threshold) | self.mask
+        mask = ((1 - np.abs(parity)) > self.parity_threshold) | self.mask
 
         data[mask] = np.nan
         e_data[mask] = np.nan
@@ -189,16 +198,11 @@ class Jackknife:
         return data
 
     def __next__(self):
-        """Iterator on the Jackknife object
-
-        Notes
-        -----
-        The `parity_threshold` is set to 0, ie. keep only the purely jackknifed area
-        """
+        """Iterator on the Jackknife object"""
         if self.i < self.n:
             # Produce Jackkife data until last iter
             self.i += 1
-            data = self.__call__(parity_threshold=0)
+            data = self.__call__()
         else:
             raise StopIteration()
 
