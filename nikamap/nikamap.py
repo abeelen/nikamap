@@ -670,6 +670,8 @@ class NikaMap(NDDataArray):
             ax.contour(data, levels=-levels[::-1], alpha=0.8, colors='w', linestyles='dashed')
 
         if cbar:
+            if 'fig' not in locals():
+                fig = plt.gcf()
             cbar = fig.colorbar(cax)
             cbar.set_label(cbar_label)
 
