@@ -338,6 +338,49 @@ def single_source_mask():
 
 
 @pytest.fixture()
+def single_source_mask_edge():
+    # Large shape to allow for psf fitting
+    # as beam needs to be much smaller than the map at some point..
+    shape = (27, 27)
+    pixsize = 1 / 3
+    data = np.zeros(shape)
+    wcs = WCS()
+    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
+    wcs.wcs.ctype = ('RA---TAN', 'DEC--TAN')
+
+    mask = np.zeros(shape, dtype=bool)
+    mask[0:(shape[0] - 1) // 2, :] = True
+
+    data[mask] = np.nan
+
+    fake_sources = Table(masked=True)
+    fake_sources['ID'] = [1]
+    fake_sources['x_mean'] = [13]
+    fake_sources['y_mean'] = [13]
+
+    ra, dec = wcs.wcs_pix2world(fake_sources['x_mean'], fake_sources['y_mean'], 0)
+    fake_sources['ra'] = ra * u.deg
+    fake_sources['dec'] = dec * u.deg
+
+    fake_sources['_ra'] = fake_sources['ra']
+    fake_sources['_dec'] = fake_sources['dec']
+
+    xx, yy = np.indices(shape)
+    stddev = 1 / pixsize * gaussian_fwhm_to_sigma
+    g = models.Gaussian2D(1, fake_sources['y_mean'], fake_sources['x_mean'], stddev, stddev)
+
+    data += g(xx, yy)
+
+    nm = NikaMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, mask=mask, fake_sources=fake_sources)
+
+    nm.x = fake_sources['x_mean']
+    nm.y = fake_sources['y_mean']
+
+    return nm
+
+
+@pytest.fixture()
 def grid_sources():
     # Larger shape to allow for wobbling
     # as beam needs to be much smaller than the map at some point..
@@ -459,6 +502,21 @@ def generate_fits(tmpdir_factory):
     return filename
 
 
+# Special case to avoid detection, which would fail here (ShrinkMask)
+def test_nikamap_phot_mask_edge(single_source_mask_edge):
+    nm = single_source_mask_edge
+    nm.sources = nm.fake_sources
+    nm.phot_sources(peak=True, psf=False)
+    # Relative and absolute tolerance are really bad here for the case where
+    # the sources are not centered on pixels... Otherwise it give perfect
+    # answer when there is no noise
+    npt.assert_allclose(nm.sources['flux_peak'].to(u.Jy).value, [1] * len(nm.sources), atol=1e-1, rtol=1e-1)
+
+    nm.phot_sources(peak=False, psf=True)
+    # Relative tolerance is rather low to pass the case of multiple sources...
+    npt.assert_allclose(nm.sources['flux_psf'].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
+
+
 @pytest.fixture(
     params=[
         'single_source',
@@ -517,6 +575,17 @@ def test_nikamap_detect_sources(nms):
 
     x_fake, y_fake = nm.wcs.wcs_world2pix(nm.fake_sources['ra'], nm.fake_sources['dec'], 0)
     x, y = nm.wcs.wcs_world2pix(nm.sources['ra'], nm.sources['dec'], 0)
+    nm = nms
+    nm.detect_sources()
+    nm.phot_sources(peak=True, psf=False)
+    # Relative and absolute tolerance are really bad here for the case where
+    # the sources are not centered on pixels... Otherwise it give perfect
+    # answer when there is no noise
+    npt.assert_allclose(nm.sources['flux_peak'].to(u.Jy).value, [1] * len(nm.sources), atol=1e-1, rtol=1e-1)
+
+    nm.phot_sources(peak=False, psf=True)
+    # Relative tolerance is rather low to pass the case of multiple sources...
+    npt.assert_allclose(nm.sources['flux_psf'].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
 
     # Tolerance coming from round wcs transformations
     npt.assert_allclose(x_fake, x[ordering], atol=1e-11)

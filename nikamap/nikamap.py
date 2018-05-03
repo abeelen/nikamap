@@ -381,7 +381,7 @@ class NikaMap(NDDataArray):
                 # Make sure that there is no detection on the edge of the map
             box_kernel = Box2DKernel(box_size)
             detect_mask = shrink_mask(self.mask, box_kernel)
-            detect_on[detect_mask] = 0
+            detect_on[detect_mask] = np.nan
 
         # TODO: Have a look at
         # ~photutils.psf.IterativelySubtractedPSFPhotometry
@@ -512,8 +512,12 @@ class NikaMap(NDDataArray):
                                Column(yy, name="y_0"),
                                Column(self.data[y_idx, x_idx], name="flux_0")])
 
-            result_tab = photometry(image=np.ma.array(
-                self.data, mask=self.mask).filled(0), init_guesses=positions)
+            # Fill the mask with nan to perform correct photometry on the edge
+            # of the mask, and catch numpy & astropy warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', AstropyWarning)
+                warnings.simplefilter('ignore', RuntimeWarning)
+                result_tab = photometry(image=np.ma.array(self.data, mask=self.mask).filled(np.nan), init_guesses=positions)
 
             result_tab.sort('id')
             for _source, _tab in zip(['flux_psf', 'eflux_psf'], ['flux_fit', 'flux_unc']):
