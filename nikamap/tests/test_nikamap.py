@@ -805,3 +805,32 @@ def test_get_square_slice_start(single_source_mask):
     assert np.floor(np.sqrt(2) * radius) == islice.stop - islice.start - 1
     assert np.floor(nm.shape[0] / 2 - np.sqrt(2) * radius / 2) == islice.start
     assert np.floor(nm.shape[0] / 2 + np.sqrt(2) * radius / 2 + 1) == islice.stop
+
+
+def test_surface():
+    shape = (2, 2)
+    data = np.ones(shape)
+    mask = np.zeros(shape, dtype=bool)
+    mask[0, :] = True
+    wcs = WCS()
+    wcs.wcs.cdelt = np.array([-2 / 60**2, 2 / 60**2])
+    wcs.wcs.ctype = ["RA---AIR", "DEC--AIR"]
+
+    nm = NikaMap(data=data, mask=mask, wcs=wcs)
+    surface = nm.surface()
+    assert np.isclose(surface.to_value(u.arcsec**2), 8)
+
+
+def test_surface_shrink():
+    shape = (5, 5)
+    data = np.ones(shape)
+    mask = np.ones(shape, dtype=bool)
+    mask[1:-1, 1:-1] = False
+
+    wcs = WCS()
+    wcs.wcs.cdelt = np.array([-2 / 60**2, 2 / 60**2])
+    wcs.wcs.ctype = ["RA---AIR", "DEC--AIR"]
+
+    nm = NikaMap(data=data, mask=mask, wcs=wcs)
+    surface = nm.surface(box_size=1.001)
+    assert np.isclose(surface.to_value(u.arcsec**2), 4)
