@@ -207,6 +207,37 @@ class NikaMap(NDDataArray):
         """Retrieve time array as maskedQuantity"""
         return np.ma.array(self.time, mask=self.mask, fill_value=0)
 
+    def surface(self, box_size=None):
+        """Retrieve surface covered by unmasked pixels
+        Parameters
+        ----------
+        box_size : scalar or tuple, optional
+            The edge of the map is cropped by the box_size if not None.
+            Default is None.
+
+        Returns
+        -------
+        :class:`astropy.units.Quantity`
+            Surface covered by unmasked pixels
+
+        Notes
+        -------
+            Default value for box_size in detect_sources is 5"""
+
+        nvalid = np.prod(self.data.shape)
+
+        if self.mask is not None:
+            mask = self.mask
+            if box_size is not None:
+                box_kernel = Box2DKernel(box_size)
+                mask = shrink_mask(mask, box_kernel)
+
+            nvalid = np.sum(~mask)
+
+        conversion = (u.pix.to(u.arcsec, equivalencies=self._pixel_scale))**2
+
+        return nvalid * conversion * u.arcsec**2
+
     @property
     def uncertainty(self):
         return self._uncertainty
