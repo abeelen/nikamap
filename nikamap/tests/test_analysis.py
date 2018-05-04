@@ -138,7 +138,7 @@ def test_Jackknife_average(generate_nikamaps):
     weighted_noise = primary_header['NOISE'] / np.sqrt(primary_header['NMAPS'])
 
     # Weighted average
-    jk = Jackknife(filenames, n=None, parity_threshold=0)
+    jk = Jackknife(filenames, n=None, parity_threshold=1)
     data = next(jk)
     assert np.all(data.uncertainty.array[~data.mask] == weighted_noise)
 
@@ -192,6 +192,18 @@ def test_Jackknife_parity(generate_nikamaps):
     weighted_noises = primary_header['NOISE'] / np.sqrt(np.arange(1, primary_header['NMAPS'] + 1))
 
     jk = Jackknife(filenames, n=None, parity_threshold=0)
+    data = jk()
+    uncertainties = np.unique(data.uncertainty.array[~data.mask])
+
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
+
+    jk.parity_threshold = 0.5
+    data = jk()
+    uncertainties = np.unique(data.uncertainty.array[~data.mask])
+
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
+
+    jk = Jackknife(filenames, n=1, parity_threshold=0)
     data = jk()
     uncertainties = np.unique(data.uncertainty.array[~data.mask])
 

@@ -80,10 +80,11 @@ class Jackknife:
         the number of Jackknifes maps to be produced
 
             if set to `None`, produce one weighted average of the maps
+
     parity_threshold : float
         mask threshold between 0 and 1 to keep partially jackknifed area
-        * 0 pure jackknifed
-        * 1 partially jackknifed, keep all
+        * 1 pure jackknifed
+        * 0 partially jackknifed, keep all
 
     Notes
     -----
@@ -139,8 +140,6 @@ class Jackknife:
 
         if n is not None:
             jk_weights[::2] *= -1
-        else:
-            self.n = 1
 
         self.datas = datas
         self.weights = weights
@@ -184,7 +183,12 @@ class Jackknife:
             data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
             parity = np.mean((self.weights != 0) * self.jk_weights[:, np.newaxis, np.newaxis], axis=0)
 
-        mask = ((1 - np.abs(parity)) > self.parity_threshold) | self.mask
+        if self.n is not None:
+            mask = ((1 - np.abs(parity)) < self.parity_threshold)
+        else:
+            mask = parity < self.parity_threshold
+
+        mask = mask | self.mask
 
         data[mask] = np.nan
         e_data[mask] = np.nan
@@ -199,7 +203,7 @@ class Jackknife:
 
     def __next__(self):
         """Iterator on the Jackknife object"""
-        if self.i < self.n:
+        if self.n is None or self.i < self.n:
             # Produce Jackkife data until last iter
             self.i += 1
             data = self.__call__()
