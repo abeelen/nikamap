@@ -464,7 +464,7 @@ class NikaMap(NDDataArray):
             dist_threshold = self.beam.fwhm / 3
 
             if len(sources) == 0:
-                fake_sources['find_peak'] = MaskedColumn(np.ones(len(fake_sources)), mask=True)
+                fake_sources['find_peak'] = MaskedColumn(np.ones(len(fake_sources), dtype=np.int), mask=True)
             else:
 
                 fake_sc = cat_to_sc(fake_sources)
