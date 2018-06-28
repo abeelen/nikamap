@@ -114,25 +114,25 @@ def test_nikamap_init_time():
 
 def test_nikamap_init_meta():
     data = np.array([1, 2, 3])
-    meta = fits.header.Header()
+    header = fits.header.Header()
 
-    meta['CDELT1'] = -1. / 3600, 'pixel size used for pixel_scale'
-    meta['BMAJ'] = 1. / 3600, 'Beam Major Axis'
-    nm = NikaMap(data, meta=meta)
+    header['CDELT1'] = -1. / 3600, 'pixel size used for pixel_scale'
+    header['BMAJ'] = 1. / 3600, 'Beam Major Axis'
+    nm = NikaMap(data, meta={'header': header})
     assert (1 * u.pixel).to(u.deg, equivalencies=nm._pixel_scale) == 1 * u.arcsec
     assert nm.beam.fwhm == 1 * u.arcsec
 
     # Full header
-    meta['CRPIX1'] = 1
-    meta['CRPIX2'] = 2
-    meta['CDELT1'] = -1 / 3600
-    meta['CDELT2'] = 1 / 3600
-    meta['CRVAL1'] = 0
-    meta['CRVAL2'] = 0
-    meta['CTYPE1'] = 'RA---TAN'
-    meta['CTYPE2'] = 'DEC--TAN'
+    header['CRPIX1'] = 1
+    header['CRPIX2'] = 2
+    header['CDELT1'] = -1 / 3600
+    header['CDELT2'] = 1 / 3600
+    header['CRVAL1'] = 0
+    header['CRVAL2'] = 0
+    header['CTYPE1'] = 'RA---TAN'
+    header['CTYPE2'] = 'DEC--TAN'
 
-    nm = NikaMap(data, meta=meta, wcs=WCS(meta))
+    nm = NikaMap(data, meta={'header': header}, wcs=WCS(header))
     assert nm.wcs is not None
 
 
@@ -763,6 +763,19 @@ def test_nikamap_read(generate_fits):
     data_revert = NikaMap.read(filename, revert=True)
     assert np.all(data_revert._data[~data_revert.mask] ==
                   -1 * data._data[~data.mask])
+
+
+def test_nikamap_write(generate_fits):
+    filename = generate_fits
+
+    data = NikaMap.read(filename)
+    data_2mm = NikaMap.read(filename, band="2mm")
+    data_1mm = NikaMap.read(filename, band="1mm")
+
+    outfilename = filename.replace('map.fits', 'map2.fits')
+    data.write(outfilename)
+    data_1mm.write(outfilename, overwrite=True)
+    data_2mm.write(outfilename, append=True)
 
 
 def test_blended_sources(blended_sources):

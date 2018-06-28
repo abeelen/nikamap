@@ -163,7 +163,7 @@ class NikaMap(NDDataArray):
         if isinstance(self.wcs, WCS):
             pixsize = np.abs(self.wcs.wcs.cdelt[0]) * u.deg
         else:
-            pixsize = np.abs(self.meta.get('CDELT1', 1)) * u.deg
+            pixsize = np.abs(self.meta.get('header', {'CDELT': 1}).get('CDELT1', 1)) * u.deg
 
         self._pixel_scale = u.pixel_scale(pixsize / u.pixel)
 
@@ -174,7 +174,7 @@ class NikaMap(NDDataArray):
 
         if beam is None:
             # Default gaussian beam
-            bmaj = self.meta.get('BMAJ', 1) * u.deg
+            bmaj = self.meta.get('header', {'BMAJ': 1}).get('BMAJ', 1) * u.deg
             self.beam = NikaBeam(bmaj, pixel_scale=self._pixel_scale)
         else:
             self.beam = beam
@@ -889,8 +889,8 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
 
     Parameters
     ----------
-    filenames : list
-        the list of fits files to produce the Jackknifes
+    filename : str
+        the fits filename
     band : str (1mm | 2mm | 1 | 2 | 3)
         the requested band
     revert : boolean
@@ -902,7 +902,7 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
     f_sampling, bmaj = retrieve_primary_keys(filename, band, **kwd)
 
     with fits.open(filename, **kwd) as hdus:
-
+        primary_header = hdus[0].header
         data = hdus['Brightness_{}'.format(band)].data
         header = hdus['Brightness_{}'.format(band)].header
         e_data = hdus['Stddev_{}'.format(band)].data
@@ -920,11 +920,65 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
     if revert:
         data *= -1
 
-    data = NikaMap(data, mask=unobserved, uncertainty=StdDevUncertainty(e_data), unit=header['UNIT'], wcs=WCS(header), meta=header, time=time)
+    data = NikaMap(data, mask=unobserved,
+                   uncertainty=StdDevUncertainty(e_data),
+                   unit=header['UNIT'], wcs=WCS(header),
+                   meta={'header': header, 'primary_header': primary_header},
+                   time=time)
 
     return data
 
 
+def fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
+    """Write NikaMap object on IDL Pipeline fits file format
+
+    Parameters
+    ----------
+    filename : str
+        the fits filename
+    band : str (1mm | 2mm | 1 | 2 | 3)
+        the output band
+    append : boolean
+        append nikamap to file
+    """
+
+    assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+
+    if append:
+        hdus = fits.HDUList.fromfile(filename, mode='update')
+    else:
+        hdus = [fits.PrimaryHDU(None, nm_data.meta.get('primary_header', None))]
+
+    if isinstance(nm_data.meta['header'], fits.Header):
+        header = nm_data.meta['header'].copy()
+    else:
+        header = fits.Header()
+
+    if nm_data.wcs:
+        header.extend(nm_data.wcs.to_header(), update=True)
+
+    if nm_data.data is not None:
+        hdus.append(fits.ImageHDU(nm_data.data, header,
+                                  name='Brightness_{}'.format(band)))
+    if nm_data.uncertainty is not None:
+        hdus.append(fits.ImageHDU(nm_data.uncertainty.array, header,
+                                  name='Stddev_{}'.format(band)))
+
+    if nm_data.time is not None:
+        f_sampling = nm_data.meta.get('primaty_header',
+                                      {'f_sampli': 1}).get('f_sampli') * u.Hz
+        hdus.append(fits.ImageHDU(np.asarray((nm_data.time * f_sampling).decompose()),
+                                  header,
+                                  name='Nhits_{}'.format(band)))
+
+    if append:
+        hdus.flush()
+    else:
+        hdus = fits.HDUList(hdus)
+        hdus.writeto(filename, **kwd)
+
+
 with registry.delay_doc_updates(NikaMap):
     registry.register_reader('fits', NikaMap, fits_nikamap_reader)
+    registry.register_writer('fits', NikaMap, fits_nikamap_writer)
     registry.register_identifier('fits', NikaMap, fits.connect.is_fits)

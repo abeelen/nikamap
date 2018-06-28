@@ -103,6 +103,8 @@ class Jackknife:
 
         self.filenames = filenames
 
+        self.primary_header = fits.getheader(filenames[0])
+
         header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
 
         # Retrieve common keywords
@@ -197,7 +199,8 @@ class Jackknife:
         data = NikaMap(data, mask=mask,
                        uncertainty=StdDevUncertainty(e_data),
                        unit=self.header['UNIT'], wcs=WCS(self.header),
-                       meta=self.header, time=self.time)
+                       meta={'header': self.header, 'primary_header': self.primary_header},
+                       time=self.time)
 
         return data
 
@@ -220,6 +223,7 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False, ipython_widge
 
     n_scans = len(filenames)
     header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
+    primary_header = fits.getheader(filenames[0])
 
     f_sampling, bmaj = retrieve_primary_keys(filenames[0], band)
     header = update_header(header, bmaj)
@@ -270,7 +274,10 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False, ipython_widge
     data[unobserved] = np.nan
     e_data[unobserved] = np.nan
 
-    data = NikaMap(data, mask=unobserved, uncertainty=StdDevUncertainty(
-        e_data), unit=header['UNIT'], wcs=WCS(header), meta=header, time=time)
+    data = NikaMap(data, mask=unobserved,
+                   uncertainty=StdDevUncertainty(e_data), unit=header['UNIT'],
+                   wcs=WCS(header),
+                   meta={'header': header, 'primary_header': primary_header},
+                   time=time)
 
     return data
