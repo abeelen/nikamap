@@ -21,15 +21,19 @@ addons:
 env:
   matrix:
     # - ASTROPY_VERSION=3.0
-    - NUMPY_VERSION=1.10.4
-    - NUMPY_VERSION=1.14.5
-    - NUMPY_VERSION=1.13.3
-    - NUMPY_VERSION=1.11.3
-    - NUMPY_VERSION=1.12.1
+    # - ASTROPY_VERSION=2.0.4
+    # - NUMPY_VERSION=1.10.4
+    # - NUMPY_VERSION=1.14.5
+    # - NUMPY_VERSION=1.13.3
+    # - NUMPY_VERSION=1.11.3
+    # - NUMPY_VERSION=1.12.1
+    - SCIPY_VERSION=1.1.0
+    - SCIPY_VERSION=1.0.0
+    - SCIPY_VERSION=0.19-1
 
   global:
   - PIP_DEPS="pytest coveralls pytest-cov flake8 pytest-mpl matplotlib"
-  - ASTROPY_VERSION=2.0.4
+  # - ASTROPY_VERSION=2.0.4
 
 python:
   # - "3.4"
@@ -43,8 +47,9 @@ matrix:
 
 install:
   - travis_retry pip install $PIP_DEPS
-  - travis_retry pip install -q numpy==$NUMPY_VERSION
-  - travis_retry pip install -q astropy==$ASTROPY_VERSION
+  # - travis_retry pip install -q numpy==$NUMPY_VERSION
+  - travis_retry pip install -q scipy==$SCIPY_VERSION
+  # - travis_retry pip install -q astropy==$ASTROPY_VERSION
   - travis_retry pip install -r requirements.txt
   - travis_retry pip install .
 
