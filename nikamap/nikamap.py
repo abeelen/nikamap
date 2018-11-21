@@ -18,12 +18,12 @@ from astropy.convolution import Kernel2D, Box2DKernel
 
 from astropy.table import Table, MaskedColumn, Column
 
+import photutils
 from photutils.psf import BasicPSFPhotometry
 from photutils.psf import DAOGroup
 from photutils.background import MedianBackground
-
-import photutils
 from photutils.datasets import make_gaussian_sources_image
+from photutils.centroids import centroid_2dg
 
 from scipy import signal
 from scipy.optimize import curve_fit
@@ -427,7 +427,7 @@ class NikaMap(NDDataArray):
                     threshold=threshold,
                     mask=self.mask,
                     wcs=self.wcs,
-                    subpixel=True,
+                    centroid_func=centroid_2dg,  # or centroid_com for faster/less precise values (see phoutils #655)
                     box_size=box_size)
         except InconsistentAxisTypesError:
             sources = []
@@ -441,18 +441,19 @@ class NikaMap(NDDataArray):
             # pixels values are irrelevant
             sources.remove_columns(['x_centroid', 'y_centroid', 'x_peak', 'y_peak'])
             # Only keep fitted value
-            sources.remove_columns(['icrs_ra_peak', 'icrs_dec_peak', 'peak_value'])
+            sources.remove_columns(['skycoord_peak'])
 
-            # Rename usefull columns
-            sources.rename_column('icrs_ra_centroid', 'ra')
-            sources.rename_column('icrs_dec_centroid', 'dec')
+            # Copy column for compatibility, as "Skycoord object does not support item assignement"
+            sources['ra'] = sources['skycoord_centroid'].ra
+            sources['dec'] = sources['skycoord_centroid'].dec
+            sources.remove_columns(['skycoord_centroid'])
 
-            # Copy column for compatibility
+            # For compatibility issues
             sources['_ra'] = sources['ra']
             sources['_dec'] = sources['dec']
 
             # Sort by decreasing SNR
-            sources['fit_peak_value'].name = 'SNR'
+            sources.rename_column('peak_value', 'SNR')
             sources.sort('SNR')
             sources.reverse()
 

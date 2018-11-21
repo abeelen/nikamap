@@ -191,7 +191,7 @@ def test_fft_2d_hanning():
     # Only unchanged pixel at the center
     unchanged = slice(((shape - 1) - (size - 1) + (apod_size * 2 + 1 - 1)) // 2,
                       ((shape - 1) + (size - 1) - (apod_size * 2 + 1 - 1)) // 2 + 1)
-    npt.assert_equal(apod[unchanged, unchanged], 1)
+    npt.assert_allclose(apod[unchanged, unchanged], 1)
 
     shape = 45
     size = 15

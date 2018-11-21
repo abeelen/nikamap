@@ -55,7 +55,7 @@ install:
   - travis_retry pip install .
 
 script:
-  - flake8 --ignore N802,N806,E501,F841,F401 `find . -name \*.py | grep -v setup.py | grep -v version.py | grep -v __init__.py | grep -v /doc/`
+  - flake8 --ignore N802,N806,E501,F841,F401,W504 `find . -name \*.py | grep -v setup.py | grep -v version.py | grep -v __init__.py | grep -v /doc/`
   - pip freeze
   - MPLBACKEND="agg" python setup.py test
   - sonar-scanner
