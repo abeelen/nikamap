@@ -6,19 +6,19 @@ Welcome to NikaMap's documentation!
 
 .. code:: python
 
-    from nikamap import NikaMap
+  from nikamap import NikaMap
 
-    nm = NikaMap.read('map.fits', band='1mm')
-    nm.plot()
+  nm = NikaMap.read('map.fits', band='1mm')
+  nm.plot()
 
 or alternatively
 
 .. code:: python
 
-   from nikamap import NikaFits
+  from nikamap import NikaFits
 
-    data = NikaFits.read('map.fits')
-    data['1mm'].plot()
+  data = NikaFits.read('map.fits')
+  data['1mm'].plot()
 
 
 Features
