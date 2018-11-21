@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 # import nikamap as nm
 # data_path = op.join(nm.__path__[0], 'data')
 
-from ..nikamap import NikaMap, NikaBeam
+from ..nikamap import NikaMap, NikaBeam, NikaFits, retrieve_primary_keys
 from ..utils import pos_gridded
 
 
@@ -749,6 +749,21 @@ def test_nikamap_check_SNR_ax(generate_fits):
     return fig
 
 
+def test_retrieve_primary_keys(generate_fits):
+
+    filename = generate_fits
+
+    with pytest.raises(AssertionError):
+        retrieve_primary_keys(filename, band="toto")
+
+    f_sampling, bmaj = retrieve_primary_keys(filename, band="1mm")
+    assert f_sampling == 10. * u.Hz
+    assert bmaj == 3600. * u.arcsec
+    f_sampling, bmaj = retrieve_primary_keys(filename, band="2mm")
+    assert f_sampling == 10. * u.Hz
+    assert bmaj == 3600. * u.arcsec
+
+
 def test_nikamap_read(generate_fits):
 
     filename = generate_fits
@@ -781,6 +796,19 @@ def test_nikamap_write(generate_fits):
     data.write(outfilename)
     data_1mm.write(outfilename, overwrite=True)
     data_2mm.write(outfilename, append=True)
+
+
+def test_nikafits_read(generate_fits):
+    filename = generate_fits
+    primary_header = fits.getheader(filename, 0)
+
+    data = NikaFits.read(filename)
+    assert data.primary_header == primary_header
+    assert len(data) == 5
+    assert isinstance(data['1mm'], NikaMap)
+    assert list(data.keys()) == ['1mm', '2mm', '1', '2', '3']
+    nm = NikaMap.read(filename, band="1mm")
+    assert np.nanstd((data['1mm'].subtract(nm))) == 0
 
 
 def test_blended_sources(blended_sources):

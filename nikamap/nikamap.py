@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 from itertools import product
+from collections import MutableMapping
 
 import numpy as np
 
@@ -39,7 +40,7 @@ from .utils import shrink_mask
 
 Jy_beam = u.Jy / u.beam
 
-__all__ = ['NikaBeam', 'NikaMap']
+__all__ = ['NikaBeam', 'NikaMap', 'NikaFits']
 
 
 class NikaBeam(Kernel2D):
@@ -865,9 +866,34 @@ class NikaMap(NDDataArray):
 
         return islice
 
+    def to_hdus(self):
+        hdus = []
+        if isinstance(self.meta['header'], fits.Header):
+            header = self.meta['header'].copy()
+        else:
+            header = fits.Header()
+
+        if self.wcs:
+            header.extend(self.wcs.to_header(), update=True)
+
+        if self.data is not None:
+            hdus.append(fits.ImageHDU(self.data, header, name='Brightness_{}'.format(self.meta['band'])))
+
+        if self.uncertainty is not None:
+            hdus.append(fits.ImageHDU(self.uncertainty.array, header, name='Stddev_{}'.format(self.meta['band'])))
+
+        if self.time is not None:
+            f_sampling = self.meta.get('primaty_header', {'f_sampli': 1}).get('f_sampli') * u.Hz
+            hdus.append(fits.ImageHDU(np.asarray((self.time * f_sampling).decompose()),
+                                      header,
+                                      name='Nhits_{}'.format(self.meta['band'])))
+        return hdus
+
 
 def retrieve_primary_keys(filename, band="1mm", **kwd):
     """Retrieve usefulle keys in primary header"""
+
+    assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
 
     with fits.open(filename, **kwd) as hdus:
         # Fiddling to "fix" the fits file
@@ -879,8 +905,6 @@ def retrieve_primary_keys(filename, band="1mm", **kwd):
             bmaj = hdus[0].header['FWHM_260'] * u.arcsec
         elif band in ["2mm", '2']:
             bmaj = hdus[0].header['FWHM_150'] * u.arcsec
-        else:
-            bmaj = None
 
     return f_sampling, bmaj
 
@@ -924,7 +948,7 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
     data = NikaMap(data, mask=unobserved,
                    uncertainty=StdDevUncertainty(e_data),
                    unit=header['UNIT'], wcs=WCS(header),
-                   meta={'header': header, 'primary_header': primary_header},
+                   meta={'header': header, 'primary_header': primary_header, 'band': band},
                    time=time)
 
     return data
@@ -948,34 +972,14 @@ def fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
     if append:
         hdus = fits.HDUList.fromfile(filename, mode='update')
     else:
-        hdus = [fits.PrimaryHDU(None, nm_data.meta.get('primary_header', None))]
+        hdus = fits.HDUList([fits.PrimaryHDU(None, nm_data.meta.get('primary_header', None))])
 
-    if isinstance(nm_data.meta['header'], fits.Header):
-        header = nm_data.meta['header'].copy()
-    else:
-        header = fits.Header()
-
-    if nm_data.wcs:
-        header.extend(nm_data.wcs.to_header(), update=True)
-
-    if nm_data.data is not None:
-        hdus.append(fits.ImageHDU(nm_data.data, header,
-                                  name='Brightness_{}'.format(band)))
-    if nm_data.uncertainty is not None:
-        hdus.append(fits.ImageHDU(nm_data.uncertainty.array, header,
-                                  name='Stddev_{}'.format(band)))
-
-    if nm_data.time is not None:
-        f_sampling = nm_data.meta.get('primaty_header',
-                                      {'f_sampli': 1}).get('f_sampli') * u.Hz
-        hdus.append(fits.ImageHDU(np.asarray((nm_data.time * f_sampling).decompose()),
-                                  header,
-                                  name='Nhits_{}'.format(band)))
+    for hdu in nm_data.to_hdus():
+        hdus.append(hdu)
 
     if append:
         hdus.flush()
     else:
-        hdus = fits.HDUList(hdus)
         hdus.writeto(filename, **kwd)
 
 
@@ -983,3 +987,67 @@ with registry.delay_doc_updates(NikaMap):
     registry.register_reader('fits', NikaMap, fits_nikamap_reader)
     registry.register_writer('fits', NikaMap, fits_nikamap_writer)
     registry.register_identifier('fits', NikaMap, fits.connect.is_fits)
+
+
+class NikaFits(MutableMapping):
+
+    def __init__(self, filename=None, **kwd):
+        self._filename = filename
+        self._kwd = kwd
+        self.__data = {'1mm': None,
+                       '2mm': None,
+                       '1': None,
+                       '2': None,
+                       '3': None}
+        with fits.open(filename, **kwd) as hdus:
+            self.primary_header = hdus[0].header
+
+    def __repr__(self):
+        return "<NIKAFits(filename={})>".format(self._filename)
+
+    def __getitem__(self, key):
+        value = self.__data[key]
+        if not isinstance(value, NikaMap):
+            value = NikaMap.read(self._filename, band=key, **self._kwd)
+            self.__data[key] = value
+        return value
+
+    def __delitem__(self, key):
+        raise NotImplementedError
+
+    def __setitem__(self, key, value):
+        if key not in self.__data:
+            raise KeyError(key)
+
+    def __iter__(self):
+        return iter(self.__data)
+
+    def __len__(self):
+        return len(self.__data)
+
+    @classmethod
+    def read(cls, *args, **kwargs):
+        """NIKA2 IDL Pipeline Map reader
+
+        Parameters
+        ----------
+        filename : str
+            the fits filename
+        revert : boolean
+             use if to return -1 * data
+        """
+        return cls(*args, **kwargs)
+
+    def write(self, filename, *args, **kwargs):
+        """Write NikaFits object on IDL Pipeline fits file format
+
+        Parameters
+        ----------
+        filename : str
+            the fits filename
+        """
+        hdus = [fits.PrimaryHDU(None, self.primary_header)]
+        for item in self.values():
+            hdus += item.to_hdus()
+        hdus = fits.HDUList(hdus)
+        hdus.writeto(filename, **kwargs)

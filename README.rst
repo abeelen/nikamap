@@ -5,10 +5,20 @@ NikaMap
 `nikamap` is a python package to manipulate data produced by the IDL NIKA2 pipeline.
 
 .. code:: python
+
     from nikamap import NikaMap
 
-    nm = NikaMap.read('map.fits')
+    nm = NikaMap.read('map.fits', band='1mm')
     nm.plot()
+
+or alternatively
+
+.. code:: python
+
+   from nikamap import NikaFits
+
+    data = NikaFits.read('map.fits')
+    data['1mm'].plot()
 
 Read the documentation on `readthedoc <http://nikamap.readthedocs.io>`_.
 
@@ -22,7 +32,7 @@ Features
 
 Requirements
 ------------
-You need python 3.4 or later to run `nikamap`. You will also need `numpy`, `scipy`, `matplotlib`, `astropy>=2.0` and `photutils`.
+You need python 3.4 or later to run `nikamap`. You will also need `numpy`, `scipy`, `matplotlib`, `astropy>=2.0` and `photutils>=0.5`.
 
 Installation
 ------------
