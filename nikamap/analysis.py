@@ -177,13 +177,13 @@ class Jackknife:
         :class:`nikamap.NikaMap`
             a jackknifed data set
         """
-        parity = np.zeros(self.shape)
         np.random.shuffle(self.jk_weights)
 
         with np.errstate(invalid='ignore', divide='ignore'):
             e_data = 1 / np.sqrt(np.sum(self.weights, axis=0))
             data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
             parity = np.mean((self.weights != 0) * self.jk_weights[:, np.newaxis, np.newaxis], axis=0)
+            weighted_parity = np.sum(self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
 
         if self.n is not None:
             mask = ((1 - np.abs(parity)) < self.parity_threshold)
@@ -202,7 +202,7 @@ class Jackknife:
                        meta={'header': self.header, 'primary_header': self.primary_header},
                        time=self.time)
 
-        return data
+        return data, weighted_parity
 
     def __next__(self):
         """Iterator on the Jackknife object"""
