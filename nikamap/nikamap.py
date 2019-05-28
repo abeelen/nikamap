@@ -103,6 +103,7 @@ class NikaBeam(Kernel2D):
     def area_pix(self):
         return 2 * np.pi * self.sigma_pix**2
 
+## TODO: Take care of operations (add/subtract/...) to add extra parameters...
 
 class NikaMap(NDDataArray):
     """A NikaMap object represent a nika map with additionnal capabilities.
@@ -659,7 +660,7 @@ class NikaMap(NDDataArray):
 
         return mf_data
 
-    def plot(self, snr=False, ax=None, cbar=False, cat=None, levels=None, **kwargs):
+    def plot(self, to_plot=None, ax=None, cbar=False, cat=None, levels=None, **kwargs):
         """Convenience routine to plot the dataset
 
         Parameters
@@ -670,7 +671,7 @@ class NikaMap(NDDataArray):
             Axe to plot the power spectrum
         cbar: boolean, optionnal
             Draw a colorbar (ax must be None)
-        cat : boolean of list of tuple [(cat, symbol)], optionnal
+        cat : boolean of list of tuple [(cat, symbol, color)], optionnal
             If True, overplot the current self.source catalog with '^' as marker.
             Otherwise overplot the given catalogs on the map.
         levels: array_like, optionnal
@@ -689,9 +690,14 @@ class NikaMap(NDDataArray):
 
         """
 
-        if snr:
+        assert to_plot in ['snr', 'uncertainty', None], "to_plot must be set to 'snr', 'uncertainty', or None"
+
+        if to_plot == 'snr':
             data = self.SNR.data
             cbar_label = 'SNR'
+        elif to_plot == 'uncertainty':
+            data = self.uncertainty.array
+            cbar_label = 'Uncertainty [{}]'.format(self.unit)
         else:
             data = self.__array__()
             cbar_label = 'Brightness [{}]'.format(self.unit)
@@ -700,15 +706,15 @@ class NikaMap(NDDataArray):
             fig = plt.figure()
             ax = fig.add_subplot(111, projection=self.wcs)
 
-        cax = ax.imshow(data, origin='lower', interpolation='none', **kwargs)
+        iax = ax.imshow(data, origin='lower', interpolation='none', **kwargs)
 
         if levels is not None:
-            ax.contour(data, levels=levels, alpha=0.8, colors='w')
-            ax.contour(data, levels=-levels[::-1], alpha=0.8, colors='w', linestyles='dashed')
+            cax = ax.contour(data, levels=levels, alpha=0.8, colors='w')
+            cax = ax.contour(data, levels=-levels[::-1], alpha=0.8, colors='w', linestyles='dashed')
 
         if cbar:
             fig = ax.get_figure()
-            cbar = fig.colorbar(cax)
+            cbar = fig.colorbar(iax, ax=ax)
             cbar.set_label(cbar_label)
 
         # In case of fake sources, overplot them
@@ -717,14 +723,14 @@ class NikaMap(NDDataArray):
             ax.scatter(x, y, marker='o', c='red', alpha=0.8)
 
         if cat is True:
-            cat = [(self.sources, '^')]
+            cat = [(self.sources, '^', 'red')]
 
         if cat is not None:
-            for _cat, _mark in list(cat):
+            for _cat, _mark, _color in list(cat):
                 label = _cat.meta.get('method') or _cat.meta.get('name') or 'Unknown'
                 cat_sc = cat_to_sc(_cat)
                 x, y = self.wcs.wcs_world2pix(cat_sc.ra, cat_sc.dec, 0)
-                ax.scatter(x, y, marker=_mark, alpha=0.8, label=label)
+                ax.scatter(x, y, marker=_mark, color=_color, alpha=0.8, label=label)
 
         ax.set_xlim(0, self.shape[1])
         ax.set_ylim(0, self.shape[0])
@@ -732,11 +738,11 @@ class NikaMap(NDDataArray):
         if cat is not None:
             ax.legend(loc='best', frameon=False)
 
-        return cax
+        return iax
 
     def plot_SNR(self, vmin=-3, vmax=5, **kwargs):
         """Convenience method to plot the signal to noise map"""
-        return self.plot(snr=True, vmin=vmin, vmax=vmax, **kwargs)
+        return self.plot(to_plot='snr', vmin=vmin, vmax=vmax, **kwargs)
 
     def check_SNR(self, ax=None, bins=100):
         """Perform normality test on SNR map
@@ -809,7 +815,7 @@ class NikaMap(NDDataArray):
         """
 
         if snr:
-            data = self.SNR
+            data = np.ma.array(self.SNR, mask=self.mask)
         else:
             data = np.ma.array(self.data * self.unit, mask=self.mask)
 
