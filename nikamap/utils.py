@@ -476,11 +476,11 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
 
     # numpy foward fft does not normalize by 1/N see
     # http://docs.scipy.org/doc/numpy/reference/routines.fft.html#implementation-details
-    # Also see the definition of Power Spectral density
+    # Also see the definition of Power Spectral density vs Energy Spectral Density
     # https://en.wikipedia.org/wiki/Spectral_density
     # Note that the factor 2 is accounted for the fact that we count each
     # frequency twice...
-    pow_sqr = np.absolute(np.fft.fft2(img))**2 / (npix_x * npix_y) * res**2
+    pow_sqr = np.absolute(np.fft.fft2(img))**2 * res**2 / (npix_x * npix_y)
 
     # Define corresponding fourier modes
     u_freq = np.fft.fftfreq(npix_x, d=res)
