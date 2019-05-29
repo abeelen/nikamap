@@ -202,7 +202,7 @@ class Jackknife:
                        meta={'header': self.header, 'primary_header': self.primary_header},
                        time=self.time)
 
-        return data, weighted_parity
+        return data # , weighted_parity
 
     def __next__(self):
         """Iterator on the Jackknife object"""

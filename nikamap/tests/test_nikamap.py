@@ -701,7 +701,7 @@ def test_nikamap_plot_ax(nms):
     axes = axes.flatten()
     nm.plot(ax=axes[0], vmin=-1, vmax=3)
     nm.plot(ax=axes[1], levels=np.logspace(np.log10(0.1), np.log10(5), 5))
-    nm.plot(ax=axes[2], cat=[(nm.fake_sources, '+')])
+    nm.plot(ax=axes[2], cat=[(nm.fake_sources, '+', 'red')])
     nm.fake_sources = None
     nm.detect_sources()
     nm.plot(ax=axes[3], cat=True)
