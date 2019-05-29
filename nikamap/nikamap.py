@@ -103,7 +103,8 @@ class NikaBeam(Kernel2D):
     def area_pix(self):
         return 2 * np.pi * self.sigma_pix**2
 
-## TODO: Take care of operations (add/subtract/...) to add extra parameters...
+# TODO: Take care of operations (add/subtract/...) to add extra parameters...
+
 
 class NikaMap(NDDataArray):
     """A NikaMap object represent a nika map with additionnal capabilities.

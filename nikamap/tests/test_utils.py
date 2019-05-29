@@ -229,6 +229,7 @@ def gen_pkfield(npix=32, alpha=-11. / 3, fknee=1, res=1):
     fft_img = np.sqrt(psd) * (np.cos(pha) + 1j * np.sin(pha))
     return np.real(np.fft.ifft2(fft_img)) * npix / res**2
 
+
 def test_powspec_k():
 
     npix = 128
@@ -254,23 +255,24 @@ def test_powspec_k():
 
     assert np.all((mean_Pk[1:] - P(bin_centers[1:])) < std_Pk[1:])
 
+
 def test_powspec_k_unit():
 
     npix = 1024
     nsub = 128
-    alpha = -1 # For alpha=-3, the P(k) is dominated by the step edges...
+    alpha = -1  # For alpha=-3, the P(k) is dominated by the step edges...
     res = 2 * u.arcsec
 
     np.random.seed(1)
 
-    img = gen_pkfield(npix=npix, res=res, alpha=alpha, fknee=1/u.arcsec) * u.Jy
+    img = gen_pkfield(npix=npix, res=res, alpha=alpha, fknee=1 / u.arcsec) * u.Jy
 
-    bins = np.linspace(2, nsub/2, nsub/2-2) / (res * nsub)
+    bins = np.linspace(2, nsub / 2, nsub / 2 - 2) / (res * nsub)
     powspec_full, bin_full = powspec_k(img, res=res, bins=bins)
     bin_centers = (bin_full[1:] + bin_full[:-1]) / 2
 
-    powspecs = u.Quantity([powspec_k(img[i:i+nsub, j:j+nsub], res=res, bins=bins)[0]
-                           for i, j in np.random.randint(size=(128,2), low=0, high=npix-nsub)]).to(u.Jy**2/u.sr)
+    powspecs = u.Quantity([powspec_k(img[i:i + nsub, j:j + nsub], res=res, bins=bins)[0]
+                           for i, j in np.random.randint(size=(128, 2), low=0, high=npix - nsub)]).to(u.Jy**2 / u.sr)
 
     # plt.close('all')
     # plt.loglog(bins[1:], powspec_full.to(u.Jy**2/u.sr), c='k')
@@ -279,8 +281,7 @@ def test_powspec_k_unit():
     # plt.loglog(bins[1:], np.mean(powspecs, axis=0) - np.std(powspecs, axis=0), linestyle='dashed')
     # plt.loglog(bins, (P(bins, alpha=alpha, fknee=1/u.arcsec) / res **2 * u.Jy**2).to(u.Jy**2 / u.sr))
 
-    assert np.all((np.mean(powspecs, axis=0) - powspec_full.to(u.Jy**2/u.sr)) < np.std(powspecs, axis=0))
-
+    assert np.all((np.mean(powspecs, axis=0) - powspec_full.to(u.Jy**2 / u.sr)) < np.std(powspecs, axis=0))
 
 
 def test_fake_data():
