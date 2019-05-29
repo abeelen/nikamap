@@ -33,7 +33,7 @@ env:
 
 
   global:
-  - PIP_DEPS="pytest coveralls pytest-cov flake8 pytest-mpl matplotlib"
+  - PIP_DEPS="pytest coveralls pytest-cov==2.5.0 flake8 pytest-mpl matplotlib"
   # - ASTROPY_VERSION=2.0.4
 
 python:
