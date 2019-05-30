@@ -436,7 +436,7 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
         sequence, it defines the bin edges, including the rightmost
         edge, allowing for non-uniform bin widths. (see `~numpy.histogram`)
     range : (float, float), optional
-        The lower and upper range of the bins. (see `~numpy.histogram`)
+        The lower and upper range of the bins. (see `~numpy.histogram`).
 
     Returns
     -------
@@ -471,12 +471,15 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
 
     if isinstance(res, u.Quantity):
         pix_unit = res.unit
+        if range is not None:
+            assert isinstance(range, u.Quantity), "range must be a Quantity when res has is a Quantity"
+            range = range.to(1/pix_unit).value
 
     npix_x, npix_y = img.shape
 
     # numpy foward fft does not normalize by 1/N see
     # http://docs.scipy.org/doc/numpy/reference/routines.fft.html#implementation-details
-    # Also see the definition of Power Spectral density vs Energy Spectral Density
+    # Also see the definition of Power Spectral density
     # https://en.wikipedia.org/wiki/Spectral_density
     # Note that the factor 2 is accounted for the fact that we count each
     # frequency twice...
