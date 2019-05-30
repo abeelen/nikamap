@@ -265,8 +265,12 @@ def test_powspec_k_unit():
 
     img = gen_pkfield(npix=npix, res=res, alpha=alpha, fknee=1/u.arcsec) * u.Jy
 
+    with pytest.raises(AssertionError):
+        dummy = powspec_k(img, res=res, range=(0, 1))
+
     bins = np.linspace(2, nsub/2, nsub/2-2) / (res * nsub)
     powspec_full, bin_full = powspec_k(img, res=res, bins=bins)
+
     bin_centers = (bin_full[1:] + bin_full[:-1]) / 2
 
     powspecs = u.Quantity([powspec_k(img[i:i+nsub, j:j+nsub], res=res, bins=bins)[0]
