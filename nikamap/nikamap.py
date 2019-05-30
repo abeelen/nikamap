@@ -103,7 +103,8 @@ class NikaBeam(Kernel2D):
     def area_pix(self):
         return 2 * np.pi * self.sigma_pix**2
 
-## TODO: Take care of operations (add/subtract/...) to add extra parameters...
+# TODO: Take care of operations (add/subtract/...) to add extra parameters...
+
 
 class NikaMap(NDDataArray):
     """A NikaMap object represent a nika map with additionnal capabilities.
@@ -411,7 +412,7 @@ class NikaMap(NDDataArray):
         detect_on = self.SNR.filled(0)
 
         if self.mask is not None:
-                # Make sure that there is no detection on the edge of the map
+            # Make sure that there is no detection on the edge of the map
             box_kernel = Box2DKernel(box_size)
             detect_mask = shrink_mask(self.mask, box_kernel)
             detect_on[detect_mask] = np.nan
