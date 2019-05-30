@@ -671,9 +671,10 @@ class NikaMap(NDDataArray):
             Axe to plot the power spectrum
         cbar: boolean, optionnal
             Draw a colorbar (ax must be None)
-        cat : boolean of list of tuple [(cat, symbol, color)], optionnal
-            If True, overplot the current self.source catalog with '^' as marker.
-            Otherwise overplot the given catalogs on the map.
+        cat : boolean of list of tuple [(cat, kwargs)], optionnal
+            If True, overplot the current self.source catalog 
+            with '^' as marker.
+            Otherwise overplot the given catalogs on the map, with kwargs.
         levels: array_like, optionnal
             Overplot levels contours, add negative contours as dashed line
         **kwargs
@@ -709,28 +710,35 @@ class NikaMap(NDDataArray):
         iax = ax.imshow(data, origin='lower', interpolation='none', **kwargs)
 
         if levels is not None:
-            cax = ax.contour(data, levels=levels, alpha=0.8, colors='w')
-            cax = ax.contour(data, levels=-levels[::-1], alpha=0.8, colors='w', linestyles='dashed')
+            ax.contour(data, levels=levels, alpha=0.8, colors='w')
+            ax.contour(data, levels=-levels[::-1], alpha=0.8, colors='w', linestyles='dashed')
 
         if cbar:
             fig = ax.get_figure()
             cbar = fig.colorbar(iax, ax=ax)
             cbar.set_label(cbar_label)
 
+        if cat is True:
+            cat = [(self.sources, {'marker':'^', 'color':'red'})]
+
         # In case of fake sources, overplot them
         if self.fake_sources:
-            x, y = self.wcs.wcs_world2pix(self.fake_sources['_ra'], self.fake_sources['_dec'], 0)
-            ax.scatter(x, y, marker='o', c='red', alpha=0.8)
-
-        if cat is True:
-            cat = [(self.sources, '^', 'red')]
+            fake_cat = [(self.fake_sources, {'marker': 'o',
+                                             'c':'red',
+                                             'alpha':0.8})]
+            if cat is None:
+                cat = fake_cat
+            else: 
+                cat += fake_cat
 
         if cat is not None:
-            for _cat, _mark, _color in list(cat):
+            for _cat, _kwargs in list(cat):
                 label = _cat.meta.get('method') or _cat.meta.get('name') or 'Unknown'
                 cat_sc = cat_to_sc(_cat)
                 x, y = self.wcs.wcs_world2pix(cat_sc.ra, cat_sc.dec, 0)
-                ax.scatter(x, y, marker=_mark, color=_color, alpha=0.8, label=label)
+                if _kwargs is None:
+                    _kwargs = {'alpha': 0.8}
+                ax.scatter(x, y, **_kwargs, label=label)
 
         ax.set_xlim(0, self.shape[1])
         ax.set_ylim(0, self.shape[0])
