@@ -28,6 +28,14 @@ from ..nikamap import NikaMap, NikaBeam, NikaFits, retrieve_primary_keys
 from ..utils import pos_gridded
 
 
+# from pytest-django #393
+def getfixturevalue(request, value):
+    if hasattr(request, 'getfixturevalue'):
+        return request.getfixturevalue(value)
+
+    return request.getfuncargvalue(value)
+
+
 def test_nikabeam_exceptions():
     # TODO: Should probably be assertions at the __init__ stage...
 
@@ -525,7 +533,7 @@ def test_nikamap_phot_mask_edge(single_source_mask_edge):
         'grid_sources',
         'wobble_grid_sources'])
 def nms(request):
-    return request.getfuncargvalue(request.param)
+    return getfixturevalue(request, request.param)
 
 
 def test_nikamap_trim(single_source_mask):
@@ -701,7 +709,7 @@ def test_nikamap_plot_ax(nms):
     axes = axes.flatten()
     nm.plot(ax=axes[0], vmin=-1, vmax=3)
     nm.plot(ax=axes[1], levels=np.logspace(np.log10(0.1), np.log10(5), 5))
-    nm.plot(ax=axes[2], cat=[(nm.fake_sources, {'marker':'+', 'color':'red'})])
+    nm.plot(ax=axes[2], cat=[(nm.fake_sources, {'marker': '+', 'color': 'red'})])
     nm.fake_sources = None
     nm.detect_sources()
     nm.plot(ax=axes[3], cat=True)

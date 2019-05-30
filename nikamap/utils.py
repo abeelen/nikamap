@@ -473,7 +473,7 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
         pix_unit = res.unit
         if range is not None:
             assert isinstance(range, u.Quantity), "range must be a Quantity when res has is a Quantity"
-            range = range.to(1/pix_unit).value
+            range = range.to(1 / pix_unit).value
 
     npix_x, npix_y = img.shape
 

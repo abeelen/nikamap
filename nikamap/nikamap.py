@@ -673,7 +673,7 @@ class NikaMap(NDDataArray):
         cbar: boolean, optionnal
             Draw a colorbar (ax must be None)
         cat : boolean of list of tuple [(cat, kwargs)], optionnal
-            If True, overplot the current self.source catalog 
+            If True, overplot the current self.source catalog
             with '^' as marker.
             Otherwise overplot the given catalogs on the map, with kwargs.
         levels: array_like, optionnal
@@ -720,16 +720,16 @@ class NikaMap(NDDataArray):
             cbar.set_label(cbar_label)
 
         if cat is True:
-            cat = [(self.sources, {'marker':'^', 'color':'red'})]
+            cat = [(self.sources, {'marker': '^', 'color': 'red'})]
 
         # In case of fake sources, overplot them
         if self.fake_sources:
             fake_cat = [(self.fake_sources, {'marker': 'o',
-                                             'c':'red',
-                                             'alpha':0.8})]
+                                             'c': 'red',
+                                             'alpha': 0.8})]
             if cat is None:
                 cat = fake_cat
-            else: 
+            else:
                 cat += fake_cat
 
         if cat is not None:
