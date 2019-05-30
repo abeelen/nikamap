@@ -734,7 +734,7 @@ class NikaMap(NDDataArray):
 
         if cat is not None:
             for _cat, _kwargs in list(cat):
-                label = _cat.meta.get('method') or _cat.meta.get('name') or 'Unknown'
+                label = _cat.meta.get('method') or _cat.meta.get('name') or _cat.meta.get('NAME') or 'Unknown'
                 cat_sc = cat_to_sc(_cat)
                 x, y = self.wcs.wcs_world2pix(cat_sc.ra, cat_sc.dec, 0)
                 if _kwargs is None:
@@ -777,8 +777,7 @@ class NikaMap(NDDataArray):
         """
 
         SN = self.SNR.compressed()
-        hist, bin_edges = np.histogram(
-            SN, bins=bins, normed=True, range=(-5, 5))
+        hist, bin_edges = np.histogram(SN, bins=bins, density=True, range=(-5, 5))
 
         # is biased if signal is presmf_beament
         # is biased if trimmed
