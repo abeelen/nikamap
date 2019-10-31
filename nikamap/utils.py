@@ -16,7 +16,7 @@ from astropy.convolution import CustomKernel, convolve_fft
 
 Jy_beam = u.Jy / u.beam
 
-__all__ = ['fake_data', 'cat_to_sc', 'CircularGaussianPSF', 'pos_uniform', 'pos_gridded', 'pos_list', 'powspec_k']
+__all__ = ["fake_data", "cat_to_sc", "CircularGaussianPSF", "pos_uniform", "pos_gridded", "pos_list", "powspec_k"]
 
 
 # Forking from astropy.convolution.kernels
@@ -56,57 +56,58 @@ class CircularGaussianPSF(Fittable2DModel):
     @property
     def bounding_box(self):
         halfwidth = 4 * self.sigma
-        return ((int(self.y_0 - halfwidth), int(self.y_0 + halfwidth)),
-                (int(self.x_0 - halfwidth), int(self.x_0 + halfwidth)))
+        return (
+            (int(self.y_0 - halfwidth), int(self.y_0 + halfwidth)),
+            (int(self.x_0 - halfwidth), int(self.x_0 + halfwidth)),
+        )
 
     def __init__(self, sigma=sigma.default, x_0=x_0.default, y_0=y_0.default, flux=flux.default, **kwargs):
         if self._erf is None:
             from scipy.special import erf
+
             self.__class__._erf = erf
 
-        super(CircularGaussianPSF, self).__init__(n_models=1, sigma=sigma,
-                                                  x_0=x_0, y_0=y_0,
-                                                  flux=flux, **kwargs)
+        super(CircularGaussianPSF, self).__init__(n_models=1, sigma=sigma, x_0=x_0, y_0=y_0, flux=flux, **kwargs)
 
     def evaluate(self, x, y, flux, x_0, y_0, sigma):
         """Model function Gaussian PSF model."""
 
-        return flux * np.exp(-((x - x_0)**2 + (y - y_0)**2) / (2 * sigma**2))
+        return flux * np.exp(-((x - x_0) ** 2 + (y - y_0) ** 2) / (2 * sigma ** 2))
 
 
 def fake_header(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec):
     """Build fake header"""
 
     header = fits.Header()
-    header['NAXIS'] = (2, 'Number of data axes')
-    header['NAXIS1'] = (shape[1], '')
-    header['NAXIS2'] = (shape[0], '')
+    header["NAXIS"] = (2, "Number of data axes")
+    header["NAXIS1"] = (shape[1], "")
+    header["NAXIS2"] = (shape[0], "")
 
-    header['CTYPE1'] = ('RA---TAN', 'Coordinate Type')
-    header['CTYPE2'] = ('DEC--TAN', 'Coordinate Type')
-    header['EQUINOX'] = (2000, 'Equinox of Ref. Coord.')
+    header["CTYPE1"] = ("RA---TAN", "Coordinate Type")
+    header["CTYPE2"] = ("DEC--TAN", "Coordinate Type")
+    header["EQUINOX"] = (2000, "Equinox of Ref. Coord.")
 
-    header['CRPIX1'] = (shape[1] / 2, 'Reference Pixel in X')
-    header['CRPIX2'] = (shape[0] / 2, 'Reference Pixel in Y')
+    header["CRPIX1"] = (shape[1] / 2, "Reference Pixel in X")
+    header["CRPIX2"] = (shape[0] / 2, "Reference Pixel in Y")
 
-    header['CRVAL1'] = (189, 'R.A. (degrees) of reference pixel')
-    header['CRVAL2'] = (62, 'Declination of reference pixel')
+    header["CRVAL1"] = (189, "R.A. (degrees) of reference pixel")
+    header["CRVAL2"] = (62, "Declination of reference pixel")
 
-    header['CDELT1'] = (-pixsize.to(u.deg).value, 'Degrees / Pixel')
-    header['CDELT2'] = (pixsize.to(u.deg).value, 'Degrees / Pixel')
+    header["CDELT1"] = (-pixsize.to(u.deg).value, "Degrees / Pixel")
+    header["CDELT2"] = (pixsize.to(u.deg).value, "Degrees / Pixel")
 
-    header['OBJECT'] = ('fake', 'Name of the object')
-    header['BMAJ'] = (beam_fwhm.to(u.deg).value, '[deg],  Beam major axis')
-    header['BMIN'] = (beam_fwhm.to(u.deg).value, '[deg],  Beam major axis')
+    header["OBJECT"] = ("fake", "Name of the object")
+    header["BMAJ"] = (beam_fwhm.to(u.deg).value, "[deg],  Beam major axis")
+    header["BMIN"] = (beam_fwhm.to(u.deg).value, "[deg],  Beam major axis")
 
     return header
 
 
 def update_header(header, bmaj):
     """Update header if 'BMAJ' not present"""
-    if 'BMAJ' not in header:  # pragma: no cover  # old file format
-        header['BMAJ'] = (bmaj.to(u.deg).value, '[deg],  Beam major axis')
-        header['BMIN'] = (bmaj.to(u.deg).value, '[deg],  Beam minor axis')
+    if "BMAJ" not in header:  # pragma: no cover  # old file format
+        header["BMAJ"] = (bmaj.to(u.deg).value, "[deg],  Beam major axis")
+        header["BMIN"] = (bmaj.to(u.deg).value, "[deg],  Beam minor axis")
 
     return header
 
@@ -129,10 +130,10 @@ def cat_to_sc(cat):
     Look for _ra/_dec first and then ra/dec
     """
 
-    if '_ra' in cat.keys() and '_dec' in cat.keys():
-        cols = ['_ra', '_dec']
-    elif 'ra' in cat.keys() and 'dec' in cat.keys():
-        cols = ['ra', 'dec']
+    if "_ra" in cat.keys() and "_dec" in cat.keys():
+        cols = ["_ra", "_dec"]
+    elif "ra" in cat.keys() and "dec" in cat.keys():
+        cols = ["ra", "dec"]
 
     coords = SkyCoord(cat[cols[0]], cat[cols[1]], unit=(cat[cols[0]].unit, cat[cols[1]].unit))
 
@@ -192,7 +193,7 @@ def pos_too_close(pos, dist_threshold=0):
 
     while not np.all(~dist_mask):
         # Computing pixel distances between all sources
-        dist = np.sqrt(np.sum((pos.reshape(len(pos), 1, 2) - pos)**2, 2))
+        dist = np.sqrt(np.sum((pos.reshape(len(pos), 1, 2) - pos) ** 2, 2))
 
         # Filter 0 distances and find minima
         i = np.arange(len(pos))
@@ -239,14 +240,14 @@ def pos_uniform(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * 
         pos = pos[0:nsources]
 
     if i_loop == max_loop and len(pos) < nsources:
-        warnings.warn(
-            "Maximum of loops reached, only have {} positions".format(
-                len(pos)), UserWarning)
+        warnings.warn("Maximum of loops reached, only have {} positions".format(len(pos)), UserWarning)
 
     return pos[:, 1], pos[:, 0], np.repeat(peak_flux, len(pos))
 
 
-def pos_gridded(shape=None, within=(0, 1), mask=None, nsources=2**2, peak_flux=1 * u.mJy, wobble=False, wobble_frac=1):
+def pos_gridded(
+    shape=None, within=(0, 1), mask=None, nsources=2 ** 2, peak_flux=1 * u.mJy, wobble=False, wobble_frac=1
+):
     """Generate x, y gridded position within a mask
 
     Parameters
@@ -259,8 +260,8 @@ def pos_gridded(shape=None, within=(0, 1), mask=None, nsources=2**2, peak_flux=1
     requested number of sources might not be returned"""
 
     sq_sources = int(np.sqrt(nsources))
-    assert sq_sources**2 == nsources, 'nsources must be a squared number'
-    assert nsources > 1, 'nsouces can not be 1'
+    assert sq_sources ** 2 == nsources, "nsources must be a squared number"
+    assert nsources > 1, "nsouces can not be 1"
 
     # square distribution with step margin on the side
     within_step = (within[1] - within[0]) / (sq_sources + 1)
@@ -290,9 +291,9 @@ def pos_list(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * u.m
     -----
     requested number of sources might not be returned"""
 
-    assert x_mean is not None and y_mean is not None, 'you must provide x_mean & y_mean'
-    assert len(x_mean) == len(y_mean), 'x_mean and y_mean must have the same dimension'
-    assert nsources <= len(x_mean), 'x_mean must contains at least {} sources'.format(nsources)
+    assert x_mean is not None and y_mean is not None, "you must provide x_mean & y_mean"
+    assert len(x_mean) == len(y_mean), "x_mean and y_mean must have the same dimension"
+    assert nsources <= len(x_mean), "x_mean must contains at least {} sources".format(nsources)
 
     pos = np.array([y_mean, x_mean]).T
 
@@ -306,11 +307,28 @@ def pos_list(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * u.m
     return pos[:, 1], pos[:, 0], np.repeat(peak_flux, len(pos))
 
 
-def fake_data(shape=(512, 512),
-              beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec,
-              nefd=50e-3 * Jy_beam * u.s**0.5, time_fwhm=1. / 5,
-              jk_data=None, e_data=None,
-              nsources=32, peak_flux=None, pos_gen=pos_uniform, **kwargs):
+def centered_circular_gaussian(fwhm, shape):
+    y_idx, x_idx = np.indices(shape, dtype=np.float)
+    sigma = gaussian_fwhm_to_sigma * fwhm * np.asarray(shape)
+    delta_x = (x_idx - shape[1] / 2) ** 2 / (2 * sigma[1] ** 2)
+    delta_y = (y_idx - shape[0] / 2) ** 2 / (2 * sigma[0] ** 2)
+
+    return np.exp(-(delta_x + delta_y))
+
+
+def fake_data(
+    shape=(512, 512),
+    beam_fwhm=12.5 * u.arcsec,
+    pixsize=2 * u.arcsec,
+    nefd=50e-3 * Jy_beam * u.s ** 0.5,
+    time_fwhm=1.0 / 5,
+    jk_data=None,
+    e_data=None,
+    nsources=32,
+    peak_flux=None,
+    pos_gen=pos_uniform,
+    **kwargs
+):
     """Build fake dataset"""
 
     # To avoid import loops
@@ -327,7 +345,7 @@ def fake_data(shape=(512, 512),
     elif e_data is not None:
         # Only gave e_data
         mask = np.isnan(e_data)
-        time = ((e_data / nefd)**(-1. / 0.5)).to(u.h)
+        time = ((e_data / nefd) ** (-1.0 / 0.5)).to(u.h)
         e_data = e_data.to(Jy_beam).value
 
         data = np.random.normal(0, 1, size=shape) * e_data
@@ -336,9 +354,7 @@ def fake_data(shape=(512, 512),
         # Regular gaussian noise
         if time_fwhm is not None:
             # Time as a centered gaussian
-            y_idx, x_idx = np.indices(shape, dtype=np.float)
-            time = np.exp(-((x_idx - shape[1] / 2)**2 / (2 * (gaussian_fwhm_to_sigma * time_fwhm * shape[1])**2) +
-                            (y_idx - shape[0] / 2)**2 / (2 * (gaussian_fwhm_to_sigma * time_fwhm * shape[0])**2))) * u.h
+            time = centered_circular_gaussian(time_fwhm, shape) * u.h
         else:
             # Time is uniform
             time = np.ones(shape) * u.h
@@ -346,14 +362,13 @@ def fake_data(shape=(512, 512),
         mask = time < 1 * u.s
         time[mask] = np.nan
 
-        e_data = (nefd * time**(-0.5)).to(Jy_beam).value
+        e_data = (nefd * time ** (-0.5)).to(Jy_beam).value
 
         # White noise plus source
         data = np.random.normal(0, 1, size=shape) * e_data
 
     header = fake_header(shape, beam_fwhm, pixsize)
-    header['NEFD'] = (nefd.to(Jy_beam * u.s**0.5).value,
-                      '[Jy/beam sqrt(s)], NEFD')
+    header["NEFD"] = (nefd.to(Jy_beam * u.s ** 0.5).value, "[Jy/beam sqrt(s)], NEFD")
 
     # min flux which should be recoverable at the center of the field at 3
     # sigma
@@ -361,17 +376,11 @@ def fake_data(shape=(512, 512),
         peak_flux = 3 * (nefd / np.sqrt(np.nanmax(time)) * u.beam).to(u.mJy)
 
     data = NikaMap(
-        data,
-        mask=mask,
-        unit=Jy_beam,
-        uncertainty=StdDevUncertainty(e_data),
-        wcs=WCS(header),
-        meta=header,
-        time=time)
+        data, mask=mask, unit=Jy_beam, uncertainty=StdDevUncertainty(e_data), wcs=WCS(header), meta=header, time=time
+    )
 
     if nsources:
-        data.add_gaussian_sources(
-            nsources=nsources, cat_gen=pos_gen, peak_flux=peak_flux, **kwargs)
+        data.add_gaussian_sources(nsources=nsources, cat_gen=pos_gen, peak_flux=peak_flux, **kwargs)
 
     return data
 
@@ -395,7 +404,7 @@ def shrink_mask(mask, kernel):
     -----
     The kernel sum must be normalized
     """
-    return ~np.isclose(signal.fftconvolve(~mask, kernel, mode='same'), 1)
+    return ~np.isclose(signal.fftconvolve(~mask, kernel, mode="same"), 1)
 
 
 def fft_2d_hanning(mask, size=2):
@@ -405,12 +414,12 @@ def fft_2d_hanning(mask, size=2):
 
     idx = np.linspace(-0.5, 0.5, size * 2 + 1, endpoint=True)
     xx, yy = np.meshgrid(idx, idx)
-    n = np.sqrt(xx**2 + yy**2)
+    n = np.sqrt(xx ** 2 + yy ** 2)
     hann_kernel = (1 + np.cos(2 * np.pi * n)) / 2
     hann_kernel[n > 0.5] = 0
 
     hann_kernel = CustomKernel(hann_kernel)
-    hann_kernel.normalize('integral')
+    hann_kernel.normalize("integral")
 
     # Reduce mask size to apodize on the edge
     apod = ~shrink_mask(mask, hann_kernel)
@@ -483,21 +492,21 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
     # https://en.wikipedia.org/wiki/Spectral_density
     # Note that the factor 2 is accounted for the fact that we count each
     # frequency twice...
-    pow_sqr = np.absolute(np.fft.fft2(img))**2 * res**2 / (npix_x * npix_y)
+    pow_sqr = np.absolute(np.fft.fft2(img)) ** 2 * res ** 2 / (npix_x * npix_y)
 
     # Define corresponding fourier modes
     u_freq = np.fft.fftfreq(npix_x, d=res)
     v_freq = np.fft.fftfreq(npix_y, d=res)
 
-    k_freq = np.sqrt(u_freq[:, np.newaxis]**2 + v_freq**2)
+    k_freq = np.sqrt(u_freq[:, np.newaxis] ** 2 + v_freq ** 2)
 
     hist, bin_edges = np.histogram(k_freq, bins=bins, range=range, weights=pow_sqr)
     norm, _ = np.histogram(k_freq, bins=bins, range=range)
-    with np.errstate(invalid='ignore'):
+    with np.errstate(invalid="ignore"):
         hist /= norm
 
     # Histogram remove the units so put it back here
-    hist = hist * img_unit**2 * pix_unit**2
-    bin_edges = bin_edges * pix_unit**-1
+    hist = hist * img_unit ** 2 * pix_unit ** 2
+    bin_edges = bin_edges * pix_unit ** -1
 
     return hist, bin_edges

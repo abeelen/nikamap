@@ -3,6 +3,7 @@ master
 
 Added
 -----
+* `PIIC_fits_nikamap_reader` to read fits file produced by PIIC
 
 Fixed
 -----

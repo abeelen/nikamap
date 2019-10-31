@@ -12,7 +12,7 @@ from astropy.utils.console import ProgressBar
 from .nikamap import retrieve_primary_keys, NikaMap
 from .utils import update_header
 
-__all__ = ['Jackknife', 'bootstrap']
+__all__ = ["Jackknife", "bootstrap"]
 
 
 def check_filenames(filenames, band="1mm", n=None):
@@ -33,9 +33,9 @@ def check_filenames(filenames, band="1mm", n=None):
         the curated list of filenames
     """
 
-    assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+    assert band in ["1mm", "2mm", "1", "2", "3"], "band should be either '1mm', '2mm', '1', '2', '3'"
 
-    assert isinstance(n, (int, np.int32, np.int64)) or n is None, 'n must be an int or None'
+    assert isinstance(n, (int, np.int32, np.int64)) or n is None, "n must be an int or None"
 
     # Chek for existence
     checked_filenames = []
@@ -43,23 +43,22 @@ def check_filenames(filenames, band="1mm", n=None):
         if os.path.isfile(filename):
             checked_filenames.append(filename)
         else:
-            warnings.warn('{} does not exist, removing from list'.format(
-                filename), UserWarning)
+            warnings.warn("{} does not exist, removing from list".format(filename), UserWarning)
 
     filenames = checked_filenames
-    header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
+    header = fits.getheader(filenames[0], "Brightness_{}".format(band))
     w = WCS(header)
 
     # Checking all header for consistency
     for filename in filenames:
-        _header = fits.getheader(filename, 'Brightness_{}'.format(band))
+        _header = fits.getheader(filename, "Brightness_{}".format(band))
         _w = WCS(_header)
-        assert w.wcs == _w.wcs, '{} has a different header'.format(filename)
-        assert header['UNIT'] == _header['UNIT'], '{} has a different uni'.format(filename)
-        assert (w._naxis1, w._naxis2) == (_w._naxis1, _w._naxis2), '{} has a different shape'.format(filename)
+        assert w.wcs == _w.wcs, "{} has a different header".format(filename)
+        assert header["UNIT"] == _header["UNIT"], "{} has a different uni".format(filename)
+        assert (w._naxis1, w._naxis2) == (_w._naxis1, _w._naxis2), "{} has a different shape".format(filename)
 
     if n is not None and len(filenames) % 2:
-        warnings.warn('Even number of files, dropping the last one', UserWarning)
+        warnings.warn("Even number of files, dropping the last one", UserWarning)
         filenames = filenames[:-1]
 
     return filenames
@@ -91,7 +90,7 @@ class Jackknife:
     A crude check is made on the wcs of each map when instanciated
     """
 
-    def __init__(self, filenames, band='1mm', n=1, parity_threshold=1, **kwd):
+    def __init__(self, filenames, band="1mm", n=1, parity_threshold=1, **kwd):
 
         self.i = 0
         self.n = n
@@ -99,20 +98,20 @@ class Jackknife:
         self.parity_threshold = parity_threshold
 
         filenames = check_filenames(filenames, band=band, n=n)
-        assert len(filenames) > 1, 'Less than 2 existing files in filenames'
+        assert len(filenames) > 1, "Less than 2 existing files in filenames"
 
         self.filenames = filenames
 
         self.primary_header = fits.getheader(filenames[0])
 
-        header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
+        header = fits.getheader(filenames[0], "Brightness_{}".format(band))
 
         # Retrieve common keywords
         f_sampling, bmaj = retrieve_primary_keys(filenames[0], band, **kwd)
         header = update_header(header, bmaj)
 
         self.header = header
-        self.shape = (header['NAXIS2'], header['NAXIS1'])
+        self.shape = (header["NAXIS2"], header["NAXIS1"])
 
         # This is a low_mem=False case ...
         # TODO: How to refactor that for low_mem=True ?
@@ -124,15 +123,15 @@ class Jackknife:
 
             with fits.open(filename, **kwd) as hdus:
 
-                f_sampling = hdus[0].header['f_sampli'] * u.Hz
-                nhits = hdus['Nhits_{}'.format(band)].data
+                f_sampling = hdus[0].header["f_sampli"] * u.Hz
+                nhits = hdus["Nhits_{}".format(band)].data
 
                 # Time always adds up
                 time += nhits / f_sampling
 
-                datas[i, :, :] = hdus['Brightness_{}'.format(band)].data
-                with np.errstate(invalid='ignore', divide='ignore'):
-                    weights[i, :, :] = hdus['Stddev_{}'.format(band)].data**-2
+                datas[i, :, :] = hdus["Brightness_{}".format(band)].data
+                with np.errstate(invalid="ignore", divide="ignore"):
+                    weights[i, :, :] = hdus["Stddev_{}".format(band)].data ** -2
 
                 weights[i, nhits == 0] = 0
 
@@ -179,14 +178,14 @@ class Jackknife:
         """
         np.random.shuffle(self.jk_weights)
 
-        with np.errstate(invalid='ignore', divide='ignore'):
+        with np.errstate(invalid="ignore", divide="ignore"):
             e_data = 1 / np.sqrt(np.sum(self.weights, axis=0))
-            data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
+            data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data ** 2
             parity = np.mean((self.weights != 0) * self.jk_weights[:, np.newaxis, np.newaxis], axis=0)
-            weighted_parity = np.sum(self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data**2
+            weighted_parity = np.sum(self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data ** 2
 
         if self.n is not None:
-            mask = ((1 - np.abs(parity)) < self.parity_threshold)
+            mask = (1 - np.abs(parity)) < self.parity_threshold
         else:
             mask = parity < self.parity_threshold
 
@@ -196,11 +195,15 @@ class Jackknife:
         e_data[mask] = np.nan
 
         # TBC: time will have a different mask here....
-        data = NikaMap(data, mask=mask,
-                       uncertainty=StdDevUncertainty(e_data),
-                       unit=self.header['UNIT'], wcs=WCS(self.header),
-                       meta={'header': self.header, 'primary_header': self.primary_header},
-                       time=self.time)
+        data = NikaMap(
+            data,
+            mask=mask,
+            uncertainty=StdDevUncertainty(e_data),
+            unit=self.header["UNIT"],
+            wcs=WCS(self.header),
+            meta={"header": self.header, "primary_header": self.primary_header},
+            time=self.time,
+        )
 
         return data  # , weighted_parity
 
@@ -222,13 +225,13 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False, ipython_widge
     filenames = check_filenames(filenames, band=band, n=None)
 
     n_scans = len(filenames)
-    header = fits.getheader(filenames[0], 'Brightness_{}'.format(band))
+    header = fits.getheader(filenames[0], "Brightness_{}".format(band))
     primary_header = fits.getheader(filenames[0])
 
     f_sampling, bmaj = retrieve_primary_keys(filenames[0], band)
     header = update_header(header, bmaj)
 
-    shape = (header['NAXIS2'], header['NAXIS1'])
+    shape = (header["NAXIS2"], header["NAXIS1"])
 
     datas = np.zeros((n_scans,) + tuple(shape), dtype=np.float)
     hits = np.zeros(shape, dtype=np.float)
@@ -240,13 +243,13 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False, ipython_widge
         weights = np.zeros((n_scans,) + tuple(shape))
 
     for index, filename in enumerate(filenames):
-        with fits.open(filename, 'readonly') as fits_file:
-            datas[index] = fits_file['Brightness_{}'.format(band)].data
-            hits += fits_file['Nhits_{}'.format(band)].data
+        with fits.open(filename, "readonly") as fits_file:
+            datas[index] = fits_file["Brightness_{}".format(band)].data
+            hits += fits_file["Nhits_{}".format(band)].data
             if wmean:
-                stddev = fits_file['Stddev_{}'.format(band)].data
-                with np.errstate(divide='ignore'):
-                    weights[index] = 1 / stddev**2
+                stddev = fits_file["Stddev_{}".format(band)].data
+                with np.errstate(divide="ignore"):
+                    weights[index] = 1 / stddev ** 2
 
     if wmean:
         mask = ~np.isfinite(weights)
@@ -255,12 +258,11 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False, ipython_widge
 
     # This is where the magic happens
     for index in ProgressBar(np.arange(n_bootstrap), ipython_widget=ipython_widget):
-        shuffled_index = np.floor(np.random.uniform(
-            0, n_scans, n_scans)).astype(np.int)
+        shuffled_index = np.floor(np.random.uniform(0, n_scans, n_scans)).astype(np.int)
         if wmean:
-            bs_array[index, :, :] = np.ma.average(datas[shuffled_index, :, :],
-                                                  weights=weights[shuffled_index, :, :],
-                                                  axis=0, returned=False)
+            bs_array[index, :, :] = np.ma.average(
+                datas[shuffled_index, :, :], weights=weights[shuffled_index, :, :], axis=0, returned=False
+            )
         else:
             bs_array[index, :, :] = np.mean(datas[shuffled_index, :, :], axis=0)
 
@@ -274,10 +276,14 @@ def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False, ipython_widge
     data[unobserved] = np.nan
     e_data[unobserved] = np.nan
 
-    data = NikaMap(data, mask=unobserved,
-                   uncertainty=StdDevUncertainty(e_data), unit=header['UNIT'],
-                   wcs=WCS(header),
-                   meta={'header': header, 'primary_header': primary_header},
-                   time=time)
+    data = NikaMap(
+        data,
+        mask=unobserved,
+        uncertainty=StdDevUncertainty(e_data),
+        unit=header["UNIT"],
+        wcs=WCS(header),
+        meta={"header": header, "primary_header": primary_header},
+        time=time,
+    )
 
     return data
