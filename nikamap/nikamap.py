@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 from itertools import product
 from collections import MutableMapping
+from pathlib import Path
 
 import numpy as np
 
@@ -44,7 +45,7 @@ __all__ = ["NikaBeam", "NikaMap", "NikaFits"]
 
 
 class NikaBeam(Kernel2D):
-    """NikaBeam describe the beam of a NikaMap
+    """NikaBeam describe the beam of a NikaMap.
 
     By default the beams are gaussian function, but the class should be able to handle arbitrary beam. It also add an internal pixel_scale which allow for :class:`astropy.units.Quantity` arguments
 
@@ -113,7 +114,7 @@ class NikaMap(NDDataArray):
     It contains the metadata, wcs, and all attribute (data/stddev/time/unit/mask) as well as potential source list detected in these maps.
 
     Parameters
-    -----------
+    ----------
     data : :class:`~numpy.ndarray` or :class:`astropy.nddata.NDData`
         The actual data contained in this `NDData` object. Not that this
         will always be copies by *reference* , so you should make copy
@@ -330,7 +331,7 @@ class NikaMap(NDDataArray):
         return self[axis_slice[0], axis_slice[1]]
 
     def add_gaussian_sources(self, within=(0, 1), cat_gen=pos_uniform, **kwargs):
-        """Add gaussian sources into the map
+        """Add gaussian sources into the map.
 
         Parameters
         ----------
@@ -406,7 +407,6 @@ class NikaMap(NDDataArray):
         -----
         The edge of the map is cropped by the box_size in order to insure proper subpixel fitting.
         """
-
         detect_on = self.SNR.filled(0)
 
         if self.mask is not None:
@@ -560,7 +560,7 @@ class NikaMap(NDDataArray):
         self.sources = sources
 
     def match_filter(self, kernel):
-        """Return a matched filtered version of the map
+        """Return a matched filtered version of the map.
 
         Parameters
         ----------
@@ -661,7 +661,7 @@ class NikaMap(NDDataArray):
         return mf_data
 
     def plot(self, to_plot=None, ax=None, cbar=False, cat=None, levels=None, **kwargs):
-        """Convenience routine to plot the dataset
+        """Convenience routine to plot the dataset.
 
         Parameters
         ----------
@@ -747,11 +747,16 @@ class NikaMap(NDDataArray):
         return iax
 
     def plot_SNR(self, vmin=-3, vmax=5, **kwargs):
-        """Convenience method to plot the signal to noise map"""
+        """Convenience method to plot the signal to noise map.
+
+        Notes
+        -----
+        See :func:`nikamap.plot`for additionnal keywords
+        """
         return self.plot(to_plot="snr", vmin=vmin, vmax=vmax, **kwargs)
 
     def check_SNR(self, ax=None, bins=100):
-        """Perform normality test on SNR map
+        """Perform normality test on SNR map.
 
         Parameters
         ----------
@@ -772,7 +777,6 @@ class NikaMap(NDDataArray):
         >>> std = data.check_SNR()
         >>> data.uncertainty.array *= std
         """
-
         SN = self.SNR.compressed()
         hist, bin_edges = np.histogram(SN, bins=bins, density=True, range=(-5, 5))
 
@@ -788,7 +792,7 @@ class NikaMap(NDDataArray):
         def gauss(x, a, c, s):
             return a * np.exp(-(x - c) ** 2 / (2 * s ** 2))
 
-        popt, pcov = curve_fit(gauss, bin_center[robust], hist[robust])
+        popt, pcov = curve_fit(gauss, bin_center[robust].astype(np.float32), hist[robust].astype(np.float32))
         mu, std = popt[1:]
 
         if ax is not None:
@@ -798,7 +802,7 @@ class NikaMap(NDDataArray):
         return std
 
     def plot_PSD(self, snr=False, ax=None, bins=100, range=None, apod_size=None, **kwargs):
-        """Plot the power spectrum of the map
+        """Plot the power spectrum of the map.
 
         Parameters
         ----------
@@ -818,7 +822,6 @@ class NikaMap(NDDataArray):
         bin_edges : :class:`astropy.units.quantity.Quantity`
             Return the bin edges ``(length(hist)+1)``.
         """
-
         if snr:
             data = np.ma.array(self.SNR, mask=self.mask)
         else:
@@ -842,7 +845,7 @@ class NikaMap(NDDataArray):
         return powspec, bin_edges
 
     def get_square_slice(self, start=None):
-        """Retrieve the slice to get the maximum unmasked square
+        """Retrieve the slice to get the maximum unmasked square.
 
         Parameters
         ----------
@@ -858,7 +861,6 @@ class NikaMap(NDDataArray):
         -----
         Simply growth a square symetrically from the starting point
         """
-
         if start is None:
             start = np.asarray(self.shape) // 2
         else:
@@ -904,7 +906,7 @@ class NikaMap(NDDataArray):
 
 
 def retrieve_primary_keys(filename, band="1mm", **kwd):
-    """Retrieve usefulle keys in primary header"""
+    """Retrieve usefulle keys in primary header."""
 
     assert band in ["1mm", "2mm", "1", "2", "3"], "band should be either '1mm', '2mm', '1', '2', '3'"
 
@@ -922,8 +924,8 @@ def retrieve_primary_keys(filename, band="1mm", **kwd):
     return f_sampling, bmaj
 
 
-def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
-    """NIKA2 IDL Pipeline Map reader
+def IDL_fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
+    """NIKA2 IDL Pipeline Map reader.
 
     Parameters
     ----------
@@ -934,7 +936,6 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
     revert : boolean
          use if to return -1 * data
     """
-
     assert band in ["1mm", "2mm", "1", "2", "3"], "band should be either '1mm', '2mm', '1', '2', '3'"
 
     f_sampling, bmaj = retrieve_primary_keys(filename, band, **kwd)
@@ -971,8 +972,8 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
     return data
 
 
-def fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
-    """Write NikaMap object on IDL Pipeline fits file format
+def IDL_fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
+    """Write NikaMap object on IDL Pipeline fits file format.
 
     Parameters
     ----------
@@ -983,7 +984,6 @@ def fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
     append : boolean
         append nikamap to file
     """
-
     assert band in ["1mm", "2mm", "1", "2", "3"], "band should be either '1mm', '2mm', '1', '2', '3'"
 
     if append:
@@ -1000,10 +1000,77 @@ def fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
         hdus.writeto(filename, **kwd)
 
 
+def PIIC_fits_nikamap_reader(filename, band="1mm", revert=False, unit="mJy/beam", **kwd):
+    """NIKA2 IDL Pipeline Map reader.
+
+    Parameters
+    ----------
+    filename : str or `Path
+        the fits data filename
+    revert : boolean
+         use if to return -1 * data
+    unit : str
+         unit of the data (assuming mJy/beam)
+    Notes
+    -----
+    the snr filenames is assumed to be in the same directory ending in '_snr.fits'
+    """
+    data_file = Path(filename)
+    snr_file = data_file.parent / (data_file.with_suffix("").name + "_snr.fits")
+
+    assert data_file.exists() & snr_file.exists(), "Either {} or {} could not be found".format(
+        data_file.name, snr_file.name
+    )
+
+    with fits.open(data_file) as data_hdu, fits.open(snr_file) as snr_hdu:
+        data = data_hdu[0].data
+        header = data_hdu[0].header
+        snr = snr_hdu[0].data
+        snr_header = snr_hdu[0].header
+
+    assert WCS(snr_header).to_header() == WCS(header).to_header(), "{} and {} do not share the same WCS".format(
+        data_file.name, snr_file.name
+    )
+
+    e_data = data / snr
+    unobserved = np.isnan(data)
+
+    # No time or hit information....
+    time = np.ones_like(data) * np.nan * u.h
+
+    if revert:
+        data *= -1
+
+    data = NikaMap(
+        data,
+        mask=unobserved,
+        uncertainty=StdDevUncertainty(e_data),
+        unit=unit,
+        wcs=WCS(header),
+        meta={"header": header, "primary_header": None, "band": band},
+        time=time,
+    )
+
+    return data
+
+
+def identify_PIIC(origin, *args, **kwargs):
+    data_file = Path(args[0])
+    snr_file = data_file.parent / (data_file.with_suffix("").name + "_snr.fits")
+    check = data_file.exists() & snr_file.exists()
+    if check:
+        check &= fits.connect.is_fits("read", data_file.parent, data_file.open(mode="rb"))
+        check &= fits.connect.is_fits("read", snr_file.parent, snr_file.open(mode="rb"))
+    return check
+
+
 with registry.delay_doc_updates(NikaMap):
-    registry.register_reader("fits", NikaMap, fits_nikamap_reader)
-    registry.register_writer("fits", NikaMap, fits_nikamap_writer)
-    registry.register_identifier("fits", NikaMap, fits.connect.is_fits)
+    registry.register_reader("piic", NikaMap, PIIC_fits_nikamap_reader)
+    registry.register_identifier("piic", NikaMap, identify_PIIC)
+
+    registry.register_reader("idl", NikaMap, IDL_fits_nikamap_reader)
+    registry.register_writer("idl", NikaMap, IDL_fits_nikamap_writer)
+    registry.register_identifier("idl", NikaMap, fits.connect.is_fits)
 
 
 class NikaFits(MutableMapping):
