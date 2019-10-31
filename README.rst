@@ -47,7 +47,7 @@ In the meantime you can clone the git repository, and install it
 .. code:: bash
 
     git clone https://gitlab.lam.fr/N2CLS/nikamap.git
-    cd NikaMap
+    cd nikamap
     pip install -e .
 
 
@@ -55,7 +55,7 @@ or directly install it from git
 
 .. code:: bash
 
-    pip install https://gitlab.lam.fr/N2CLS/nikamap.git
+    pip install git+https://gitlab.lam.fr/N2CLS/nikamap.git
 
 
 License
