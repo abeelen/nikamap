@@ -2,5 +2,5 @@ numpy>=1.11
 scipy
 matplotlib>=1.5
 astropy>=2.0
-photutils>=0.5
+photutils>=0.7
 scikit-image

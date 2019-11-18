@@ -36,18 +36,18 @@ You need python 3.4 or later to run `nikamap`. You will also need `numpy`, `scip
 
 Installation
 ------------
-`nikamap` will soon be on `PyPI`, and thus you will be able to install it with
+`nikamap` can be installed with 
 
 .. code:: bash
 
     pip install nikamap
 
-In the meantime you can clone the git repository, and install it
+But if you prefer to work on the master branch, you can clone the git repository, and install it
 
 .. code:: bash
 
     git clone https://gitlab.lam.fr/N2CLS/nikamap.git
-    cd NikaMap
+    cd nikamap
     pip install -e .
 
 
@@ -55,7 +55,7 @@ or directly install it from git
 
 .. code:: bash
 
-    pip install https://gitlab.lam.fr/N2CLS/nikamap.git
+    pip install git+https://gitlab.lam.fr/N2CLS/nikamap.git
 
 
 License

@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 from itertools import product
 from collections import MutableMapping
+from pathlib import Path
 
 import numpy as np
 
@@ -40,11 +41,11 @@ from .utils import shrink_mask
 
 Jy_beam = u.Jy / u.beam
 
-__all__ = ['NikaBeam', 'NikaMap', 'NikaFits']
+__all__ = ["NikaBeam", "NikaMap", "NikaFits"]
 
 
 class NikaBeam(Kernel2D):
-    """NikaBeam describe the beam of a NikaMap
+    """NikaBeam describe the beam of a NikaMap.
 
     By default the beams are gaussian function, but the class should be able to handle arbitrary beam. It also add an internal pixel_scale which allow for :class:`astropy.units.Quantity` arguments
 
@@ -66,17 +67,18 @@ class NikaBeam(Kernel2D):
         self._pixel_scale = pixel_scale
         self._fwhm = fwhm
 
-        if kwargs.get('array', None) is None:
-            stddev = gaussian_fwhm_to_sigma * \
-                fwhm.to(u.pixel, equivalencies=self._pixel_scale).value
-            self._model = models.Gaussian2D(1., 0, 0, stddev, stddev)
+        if kwargs.get("array", None) is None:
+            stddev = gaussian_fwhm_to_sigma * fwhm.to(u.pixel, equivalencies=self._pixel_scale).value
+            self._model = models.Gaussian2D(1.0, 0, 0, stddev, stddev)
             self._default_size = _round_up_to_odd_integer(8 * stddev)
 
         super(NikaBeam, self).__init__(**kwargs)
-        self._truncation = np.abs(1. - self._array.sum())
+        self._truncation = np.abs(1.0 - self._array.sum())
 
     def __repr__(self):
-        return "<NikaBeam(fwhm={}, pixel_scale={:.2f} / pixel)".format(self.fwhm.to(u.arcsec), (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale))
+        return "<NikaBeam(fwhm={}, pixel_scale={:.2f} / pixel)".format(
+            self.fwhm.to(u.arcsec), (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale)
+        )
 
     @property
     def fwhm(self):
@@ -92,16 +94,16 @@ class NikaBeam(Kernel2D):
 
     @property
     def sigma_pix(self):
-        return self._fwhm.to(
-            u.pixel, equivalencies=self._pixel_scale) * gaussian_fwhm_to_sigma
+        return self._fwhm.to(u.pixel, equivalencies=self._pixel_scale) * gaussian_fwhm_to_sigma
 
     @property
     def area(self):
-        return 2 * np.pi * self.sigma**2
+        return 2 * np.pi * self.sigma ** 2
 
     @property
     def area_pix(self):
-        return 2 * np.pi * self.sigma_pix**2
+        return 2 * np.pi * self.sigma_pix ** 2
+
 
 # TODO: Take care of operations (add/subtract/...) to add extra parameters...
 
@@ -112,7 +114,7 @@ class NikaMap(NDDataArray):
     It contains the metadata, wcs, and all attribute (data/stddev/time/unit/mask) as well as potential source list detected in these maps.
 
     Parameters
-    -----------
+    ----------
     data : :class:`~numpy.ndarray` or :class:`astropy.nddata.NDData`
         The actual data contained in this `NDData` object. Not that this
         will always be copies by *reference* , so you should make copy
@@ -156,17 +158,17 @@ class NikaMap(NDDataArray):
     def __init__(self, *args, **kwargs):
 
         # Must be set AFTER the super() call
-        time = kwargs.pop('time', None)
-        beam = kwargs.pop('beam', None)
-        fake_sources = kwargs.pop('fake_sources', None)
-        sources = kwargs.pop('sources', None)
+        time = kwargs.pop("time", None)
+        beam = kwargs.pop("beam", None)
+        fake_sources = kwargs.pop("fake_sources", None)
+        sources = kwargs.pop("sources", None)
 
         super(NikaMap, self).__init__(*args, **kwargs)
 
         if isinstance(self.wcs, WCS):
             pixsize = np.abs(self.wcs.wcs.cdelt[0]) * u.deg
         else:
-            pixsize = np.abs(self.meta.get('header', {'CDELT': 1}).get('CDELT1', 1)) * u.deg
+            pixsize = np.abs(self.meta.get("header", {"CDELT": 1}).get("CDELT1", 1)) * u.deg
 
         self._pixel_scale = u.pixel_scale(pixsize / u.pixel)
 
@@ -177,7 +179,7 @@ class NikaMap(NDDataArray):
 
         if beam is None:
             # Default gaussian beam
-            bmaj = self.meta.get('header', {'BMAJ': 1}).get('BMAJ', 1) * u.deg
+            bmaj = self.meta.get("header", {"BMAJ": 1}).get("BMAJ", 1) * u.deg
             self.beam = NikaBeam(bmaj, pixel_scale=self._pixel_scale)
         else:
             self.beam = beam
@@ -237,9 +239,9 @@ class NikaMap(NDDataArray):
 
             nvalid = np.sum(~mask)
 
-        conversion = (u.pix.to(u.arcsec, equivalencies=self._pixel_scale))**2
+        conversion = (u.pix.to(u.arcsec, equivalencies=self._pixel_scale)) ** 2
 
-        return nvalid * conversion * u.arcsec**2
+        return nvalid * conversion * u.arcsec ** 2
 
     @property
     def uncertainty(self):
@@ -249,7 +251,7 @@ class NikaMap(NDDataArray):
     def uncertainty(self, value):
         if value is not None:
             # Ugly trick to overcome bug in NDDataArray uncertainty setter
-            unit = getattr(value, 'unit', None)
+            unit = getattr(value, "unit", None)
             _class = value.__class__
             if isinstance(value, (np.ndarray, u.Quantity)):
                 if self.unit and unit:
@@ -272,13 +274,12 @@ class NikaMap(NDDataArray):
 
     @property
     def SNR(self):
-        return np.ma.array((self.data / self.uncertainty.array),
-                           mask=self.mask)
+        return np.ma.array((self.data / self.uncertainty.array), mask=self.mask)
 
     @property
     def beam(self):
         beam = self._beam
-        beam.normalize('peak')
+        beam.normalize("peak")
         return beam
 
     @beam.setter
@@ -293,9 +294,9 @@ class NikaMap(NDDataArray):
     def time(self, value):
         value = u.Quantity(value)
         if not value.unit.is_equivalent(u.s):
-            raise ValueError('time unit must be equivalent to seconds')
+            raise ValueError("time unit must be equivalent to seconds")
         if value.shape != self.data.shape:
-            raise ValueError('time must have the same shape as the data.')
+            raise ValueError("time must have the same shape as the data.")
         self._time = value
 
     def _slice(self, item):
@@ -303,11 +304,11 @@ class NikaMap(NDDataArray):
         kwargs = super(NikaMap, self)._slice(item)
         # The arguments for creating a new instance are saved in kwargs
         # so we need to add another keyword "flags" and add the sliced flags
-        kwargs['time'] = self.time[item]
-        kwargs['beam'] = self.beam
+        kwargs["time"] = self.time[item]
+        kwargs["beam"] = self.beam
 
-        kwargs['fake_sources'] = self.fake_sources
-        kwargs['sources'] = self.sources
+        kwargs["fake_sources"] = self.fake_sources
+        kwargs["sources"] = self.sources
 
         return kwargs  # these must be returned
 
@@ -330,7 +331,7 @@ class NikaMap(NDDataArray):
         return self[axis_slice[0], axis_slice[1]]
 
     def add_gaussian_sources(self, within=(0, 1), cat_gen=pos_uniform, **kwargs):
-        """Add gaussian sources into the map
+        """Add gaussian sources into the map.
 
         Parameters
         ----------
@@ -354,37 +355,35 @@ class NikaMap(NDDataArray):
 
         sources = Table(masked=True)
 
-        sources['amplitude'] = peak_flux.to(self.unit * u.beam)
+        sources["amplitude"] = peak_flux.to(self.unit * u.beam)
 
-        sources['x_mean'] = x_mean
-        sources['y_mean'] = y_mean
+        sources["x_mean"] = x_mean
+        sources["y_mean"] = y_mean
 
-        sources['x_stddev'] = np.ones(nsources) * self.beam.sigma_pix.value
-        sources['y_stddev'] = np.ones(nsources) * self.beam.sigma_pix.value
-        sources['theta'] = np.zeros(nsources)
+        sources["x_stddev"] = np.ones(nsources) * self.beam.sigma_pix.value
+        sources["y_stddev"] = np.ones(nsources) * self.beam.sigma_pix.value
+        sources["theta"] = np.zeros(nsources)
 
         # Crude check to be within the finite part of the map
         if self.mask is not None:
-            within_coverage = ~self.mask[sources['y_mean'].astype(int), sources['x_mean'].astype(int)]
+            within_coverage = ~self.mask[sources["y_mean"].astype(int), sources["x_mean"].astype(int)]
             sources = sources[within_coverage]
 
         # Gaussian sources...
         self._data += make_gaussian_sources_image(shape, sources)
 
         # Add an ID column
-        sources.add_column(Column(np.arange(len(sources)), name='ID'), 0)
+        sources.add_column(Column(np.arange(len(sources)), name="ID"), 0)
 
         # Transform pixel to world coordinates
-        a, d = self.wcs.wcs_pix2world(sources['x_mean'], sources['y_mean'], 0)
-        sources.add_columns([Column(a * u.deg, name='ra'),
-                             Column(d * u.deg, name='dec')])
+        a, d = self.wcs.wcs_pix2world(sources["x_mean"], sources["y_mean"], 0)
+        sources.add_columns([Column(a * u.deg, name="ra"), Column(d * u.deg, name="dec")])
 
-        sources['_ra'] = sources['ra']
-        sources['_dec'] = sources['dec']
+        sources["_ra"] = sources["ra"]
+        sources["_dec"] = sources["dec"]
 
         # Remove unnecessary columns
-        sources.remove_columns(
-            ['x_mean', 'y_mean', 'x_stddev', 'y_stddev', 'theta'])
+        sources.remove_columns(["x_mean", "y_mean", "x_stddev", "y_stddev", "theta"])
 
         self.fake_sources = sources
 
@@ -408,7 +407,6 @@ class NikaMap(NDDataArray):
         -----
         The edge of the map is cropped by the box_size in order to insure proper subpixel fitting.
         """
-
         detect_on = self.SNR.filled(0)
 
         if self.mask is not None:
@@ -424,51 +422,52 @@ class NikaMap(NDDataArray):
         try:
             # To avoid bad fit warnings...
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore', AstropyWarning)
+                warnings.simplefilter("ignore", AstropyWarning)
                 sources = photutils.find_peaks(
                     detect_on,
                     threshold=threshold,
                     mask=self.mask,
                     wcs=self.wcs,
                     centroid_func=centroid_2dg,  # or centroid_com for faster/less precise values (see phoutils #655)
-                    box_size=box_size)
+                    box_size=box_size,
+                )
         except InconsistentAxisTypesError:
             sources = []
 
-        if len(sources) > 0:
+        if sources is not None and len(sources) > 0:
             # Transform to masked Table here to avoid future warnings
             sources = Table(sources, masked=True)
-            sources.meta['method'] = 'find_peak'
-            sources.meta['threshold'] = threshold
+            sources.meta["method"] = "find_peak"
+            sources.meta["threshold"] = threshold
 
             # pixels values are irrelevant
-            sources.remove_columns(['x_centroid', 'y_centroid', 'x_peak', 'y_peak'])
+            sources.remove_columns(["x_centroid", "y_centroid", "x_peak", "y_peak"])
             # Only keep fitted value
-            sources.remove_columns(['skycoord_peak'])
+            sources.remove_columns(["skycoord_peak"])
 
             # Copy column for compatibility, as "Skycoord object does not support item assignement"
-            sources['ra'] = sources['skycoord_centroid'].ra
-            sources['dec'] = sources['skycoord_centroid'].dec
-            sources.remove_columns(['skycoord_centroid'])
+            sources["ra"] = sources["skycoord_centroid"].ra
+            sources["dec"] = sources["skycoord_centroid"].dec
+            sources.remove_columns(["skycoord_centroid"])
 
             # For compatibility issues
-            sources['_ra'] = sources['ra']
-            sources['_dec'] = sources['dec']
+            sources["_ra"] = sources["ra"]
+            sources["_dec"] = sources["dec"]
 
             # Sort by decreasing SNR
-            sources.rename_column('peak_value', 'SNR')
-            sources.sort('SNR')
+            sources.rename_column("peak_value", "SNR")
+            sources.sort("SNR")
             sources.reverse()
 
-            sources.add_column(Column(np.arange(len(sources)), name='ID'), 0)
+            sources.add_column(Column(np.arange(len(sources)), name="ID"), 0)
 
         if self.fake_sources:
             # Match to the fake catalog
             fake_sources = self.fake_sources
             dist_threshold = self.beam.fwhm / 3
 
-            if len(sources) == 0:
-                fake_sources['find_peak'] = MaskedColumn(np.ones(len(fake_sources), dtype=np.int), mask=True)
+            if sources is None or len(sources) == 0:
+                fake_sources["find_peak"] = MaskedColumn(np.ones(len(fake_sources), dtype=np.int), mask=True)
             else:
 
                 fake_sc = cat_to_sc(fake_sources)
@@ -476,13 +475,13 @@ class NikaMap(NDDataArray):
 
                 idx, sep2d, _ = match_coordinates_sky(fake_sc, sources_sc)
                 mask = sep2d > dist_threshold
-                fake_sources['find_peak'] = MaskedColumn(sources[idx]['ID'], mask=mask)
+                fake_sources["find_peak"] = MaskedColumn(sources[idx]["ID"], mask=mask)
 
                 idx, sep2d, _ = match_coordinates_sky(sources_sc, fake_sc)
                 mask = sep2d > dist_threshold
-                sources['fake_sources'] = MaskedColumn(fake_sources[idx]['ID'], mask=mask)
+                sources["fake_sources"] = MaskedColumn(fake_sources[idx]["ID"], mask=mask)
 
-        if len(sources) > 0:
+        if sources is not None and len(sources) > 0:
             self.sources = sources
         else:
             self.sources = None
@@ -500,14 +499,14 @@ class NikaMap(NDDataArray):
             ref_sc = cat_to_sc(ref_cat)
             idx, sep2d, _ = match_coordinates_sky(cat_sc, ref_sc)
             mask = sep2d > dist_threshold
-            cat[ref_cat.meta['name']] = MaskedColumn(idx, mask=mask)
+            cat[ref_cat.meta["name"]] = MaskedColumn(idx, mask=mask)
 
     def phot_sources(self, sources=None, peak=True, psf=True):
 
         if sources is None:
             sources = self.sources
 
-        xx, yy = self.wcs.wcs_world2pix(sources['ra'], sources['dec'], 0)
+        xx, yy = self.wcs.wcs_world2pix(sources["ra"], sources["dec"], 0)
 
         x_idx = np.floor(xx + 0.5).astype(int)
         y_idx = np.floor(yy + 0.5).astype(int)
@@ -516,8 +515,8 @@ class NikaMap(NDDataArray):
             # Crude Peak Photometry
             # From pixel indexes to array indexing
 
-            sources['flux_peak'] = Column(self.data[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
-            sources['eflux_peak'] = Column(self.uncertainty.array[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
+            sources["flux_peak"] = Column(self.data[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
+            sources["eflux_peak"] = Column(self.uncertainty.array[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
 
         if psf:
             # BasicPSFPhotometry with fixed positions
@@ -537,32 +536,31 @@ class NikaMap(NDDataArray):
             mmm_bkg = MedianBackground()
 
             photometry = BasicPSFPhotometry(
-                group_maker=daogroup,
-                bkg_estimator=mmm_bkg,
-                psf_model=psf_model,
-                fitter=LevMarLSQFitter(),
-                fitshape=9)
+                group_maker=daogroup, bkg_estimator=mmm_bkg, psf_model=psf_model, fitter=LevMarLSQFitter(), fitshape=9
+            )
 
-            positions = Table([Column(xx, name="x_0"),
-                               Column(yy, name="y_0"),
-                               Column(self.data[y_idx, x_idx], name="flux_0")])
+            positions = Table(
+                [Column(xx, name="x_0"), Column(yy, name="y_0"), Column(self.data[y_idx, x_idx], name="flux_0")]
+            )
 
             # Fill the mask with nan to perform correct photometry on the edge
             # of the mask, and catch numpy & astropy warnings
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore', AstropyWarning)
-                warnings.simplefilter('ignore', RuntimeWarning)
-                result_tab = photometry(image=np.ma.array(self.data, mask=self.mask).filled(np.nan), init_guesses=positions)
+                warnings.simplefilter("ignore", AstropyWarning)
+                warnings.simplefilter("ignore", RuntimeWarning)
+                result_tab = photometry(
+                    image=np.ma.array(self.data, mask=self.mask).filled(np.nan), init_guesses=positions
+                )
 
-            result_tab.sort('id')
-            for _source, _tab in zip(['flux_psf', 'eflux_psf'], ['flux_fit', 'flux_unc']):
+            result_tab.sort("id")
+            for _source, _tab in zip(["flux_psf", "eflux_psf"], ["flux_fit", "flux_unc"]):
                 sources[_source] = Column(result_tab[_tab] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
-            sources['group_id'] = result_tab['group_id']
+            sources["group_id"] = result_tab["group_id"]
 
         self.sources = sources
 
     def match_filter(self, kernel):
-        """Return a matched filtered version of the map
+        """Return a matched filtered version of the map.
 
         Parameters
         ----------
@@ -603,11 +601,11 @@ class NikaMap(NDDataArray):
         # Is peak normalizerd on get
         beam = self.beam
 
-        kernel.normalize('integral')
+        kernel.normalize("integral")
 
         # Assuming the same pixel_scale
         if isinstance(beam.model, models.Gaussian2D) & isinstance(kernel.model, models.Gaussian2D):
-            fwhm = np.sqrt(beam.model.x_fwhm**2 + kernel.model.x_fwhm**2) * u.pixel
+            fwhm = np.sqrt(beam.model.x_fwhm ** 2 + kernel.model.x_fwhm ** 2) * u.pixel
             fwhm = fwhm.to(u.arcsec, equivalencies=beam._pixel_scale)
             mf_beam = NikaBeam(fwhm, pixel_scale=beam._pixel_scale)
         else:
@@ -626,27 +624,27 @@ class NikaMap(NDDataArray):
         # with warnings.catch_warnings():
         #     warnings.simplefilter('ignore', AstropyWarning)
         #     mf_time = convolve(self.time, kernel, normalize_kernel=False)*self.time.unit
-        mf_time = signal.fftconvolve(self.__t_array__().filled(0), kernel, mode='same') * self.time.unit
+        mf_time = signal.fftconvolve(self.__t_array__().filled(0), kernel, mode="same") * self.time.unit
 
         if mf_mask is not None:
             mf_time[mf_mask] = 0
 
         # Convolve the data (peak for unit conservation)
-        kernel.normalize('peak')
-        kernel_sqr = kernel.array**2
+        kernel.normalize("peak")
+        kernel_sqr = kernel.array ** 2
 
         # ma.filled(0) required for the fft convolution
-        weights = 1. / self.uncertainty.array**2
+        weights = 1.0 / self.uncertainty.array ** 2
         if self.mask is not None:
             weights[self.mask] = 0
 
-        with np.errstate(invalid='ignore', divide='ignore'):
-            mf_uncertainty = 1 / np.sqrt(signal.fftconvolve(weights, kernel_sqr, mode='same'))
+        with np.errstate(invalid="ignore", divide="ignore"):
+            mf_uncertainty = 1 / np.sqrt(signal.fftconvolve(weights, kernel_sqr, mode="same"))
         if mf_mask is not None:
             mf_uncertainty[mf_mask] = np.nan
 
         # Units are not propagated in masked arrays...
-        mf_data = signal.fftconvolve(weights * self.__array__().filled(0), kernel, mode='same') * mf_uncertainty**2
+        mf_data = signal.fftconvolve(weights * self.__array__().filled(0), kernel, mode="same") * mf_uncertainty ** 2
 
         mf_data = NikaMap(
             mf_data,
@@ -657,12 +655,13 @@ class NikaMap(NDDataArray):
             wcs=self.wcs,
             meta=self.meta,
             fake_sources=self.fake_sources,
-            beam=mf_beam)
+            beam=mf_beam,
+        )
 
         return mf_data
 
     def plot(self, to_plot=None, ax=None, cbar=False, cat=None, levels=None, **kwargs):
-        """Convenience routine to plot the dataset
+        """Convenience routine to plot the dataset.
 
         Parameters
         ----------
@@ -692,27 +691,27 @@ class NikaMap(NDDataArray):
 
         """
 
-        assert to_plot in ['snr', 'uncertainty', None], "to_plot must be set to 'snr', 'uncertainty', or None"
+        assert to_plot in ["snr", "uncertainty", None], "to_plot must be set to 'snr', 'uncertainty', or None"
 
-        if to_plot == 'snr':
+        if to_plot == "snr":
             data = self.SNR.data
-            cbar_label = 'SNR'
-        elif to_plot == 'uncertainty':
+            cbar_label = "SNR"
+        elif to_plot == "uncertainty":
             data = self.uncertainty.array
-            cbar_label = 'Uncertainty [{}]'.format(self.unit)
+            cbar_label = "Uncertainty [{}]".format(self.unit)
         else:
             data = self.__array__()
-            cbar_label = 'Brightness [{}]'.format(self.unit)
+            cbar_label = "Brightness [{}]".format(self.unit)
 
         if not ax:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection=self.wcs)
 
-        iax = ax.imshow(data, origin='lower', interpolation='none', **kwargs)
+        iax = ax.imshow(data, origin="lower", interpolation="none", **kwargs)
 
         if levels is not None:
-            ax.contour(data, levels=levels, alpha=0.8, colors='w')
-            ax.contour(data, levels=-levels[::-1], alpha=0.8, colors='w', linestyles='dashed')
+            ax.contour(data, levels=levels, alpha=0.8, colors="w")
+            ax.contour(data, levels=-levels[::-1], alpha=0.8, colors="w", linestyles="dashed")
 
         if cbar:
             fig = ax.get_figure()
@@ -720,13 +719,11 @@ class NikaMap(NDDataArray):
             cbar.set_label(cbar_label)
 
         if cat is True:
-            cat = [(self.sources, {'marker': '^', 'color': 'red'})]
+            cat = [(self.sources, {"marker": "^", "color": "red"})]
 
         # In case of fake sources, overplot them
         if self.fake_sources:
-            fake_cat = [(self.fake_sources, {'marker': 'o',
-                                             'c': 'red',
-                                             'alpha': 0.8})]
+            fake_cat = [(self.fake_sources, {"marker": "o", "c": "red", "alpha": 0.8})]
             if cat is None:
                 cat = fake_cat
             else:
@@ -734,11 +731,11 @@ class NikaMap(NDDataArray):
 
         if cat is not None:
             for _cat, _kwargs in list(cat):
-                label = _cat.meta.get('method') or _cat.meta.get('name') or _cat.meta.get('NAME') or 'Unknown'
+                label = _cat.meta.get("method") or _cat.meta.get("name") or _cat.meta.get("NAME") or "Unknown"
                 cat_sc = cat_to_sc(_cat)
                 x, y = self.wcs.wcs_world2pix(cat_sc.ra, cat_sc.dec, 0)
                 if _kwargs is None:
-                    _kwargs = {'alpha': 0.8}
+                    _kwargs = {"alpha": 0.8}
                 ax.scatter(x, y, **_kwargs, label=label)
 
         ax.set_xlim(0, self.shape[1])
@@ -750,11 +747,16 @@ class NikaMap(NDDataArray):
         return iax
 
     def plot_SNR(self, vmin=-3, vmax=5, **kwargs):
-        """Convenience method to plot the signal to noise map"""
-        return self.plot(to_plot='snr', vmin=vmin, vmax=vmax, **kwargs)
+        """Convenience method to plot the signal to noise map.
+
+        Notes
+        -----
+        See :func:`nikamap.plot`for additionnal keywords
+        """
+        return self.plot(to_plot="snr", vmin=vmin, vmax=vmax, **kwargs)
 
     def check_SNR(self, ax=None, bins=100):
-        """Perform normality test on SNR map
+        """Perform normality test on SNR map.
 
         Parameters
         ----------
@@ -775,7 +777,6 @@ class NikaMap(NDDataArray):
         >>> std = data.check_SNR()
         >>> data.uncertainty.array *= std
         """
-
         SN = self.SNR.compressed()
         hist, bin_edges = np.histogram(SN, bins=bins, density=True, range=(-5, 5))
 
@@ -789,19 +790,19 @@ class NikaMap(NDDataArray):
         robust = (-6 < bin_center) & (bin_center < 3)
 
         def gauss(x, a, c, s):
-            return a * np.exp(-(x - c)**2 / (2 * s**2))
+            return a * np.exp(-(x - c) ** 2 / (2 * s ** 2))
 
-        popt, pcov = curve_fit(gauss, bin_center[robust], hist[robust])
+        popt, pcov = curve_fit(gauss, bin_center[robust].astype(np.float32), hist[robust].astype(np.float32))
         mu, std = popt[1:]
 
         if ax is not None:
-            ax.plot(bin_center, hist, drawstyle='steps-mid')
+            ax.plot(bin_center, hist, drawstyle="steps-mid")
             ax.plot(bin_center, gauss(bin_center, *popt))
 
         return std
 
     def plot_PSD(self, snr=False, ax=None, bins=100, range=None, apod_size=None, **kwargs):
-        """Plot the power spectrum of the map
+        """Plot the power spectrum of the map.
 
         Parameters
         ----------
@@ -821,7 +822,6 @@ class NikaMap(NDDataArray):
         bin_edges : :class:`astropy.units.quantity.Quantity`
             Return the bin edges ``(length(hist)+1)``.
         """
-
         if snr:
             data = np.ma.array(self.SNR, mask=self.mask)
         else:
@@ -831,21 +831,21 @@ class NikaMap(NDDataArray):
         powspec, bin_edges = powspec_k(data, res=res, bins=bins, range=range, apod_size=apod_size)
 
         if snr:
-            powspec /= res**2
+            powspec /= res ** 2
         else:
-            powspec /= (self.beam.area / u.beam)**2
-            powspec = powspec.to(u.Jy**2 / u.sr)
+            powspec /= (self.beam.area / u.beam) ** 2
+            powspec = powspec.to(u.Jy ** 2 / u.sr)
 
         if ax is not None:
             bin_center = (bin_edges[1:] + bin_edges[:-1]) / 2
             ax.loglog(bin_center, powspec, **kwargs)
-            ax.set_xlabel(r'k [arcsec$^{-1}$]')
-            ax.set_ylabel('P(k) [{}]'.format(powspec.unit))
+            ax.set_xlabel(r"k [arcsec$^{-1}$]")
+            ax.set_ylabel("P(k) [{}]".format(powspec.unit))
 
         return powspec, bin_edges
 
     def get_square_slice(self, start=None):
-        """Retrieve the slice to get the maximum unmasked square
+        """Retrieve the slice to get the maximum unmasked square.
 
         Parameters
         ----------
@@ -861,7 +861,6 @@ class NikaMap(NDDataArray):
         -----
         Simply growth a square symetrically from the starting point
         """
-
         if start is None:
             start = np.asarray(self.shape) // 2
         else:
@@ -882,8 +881,8 @@ class NikaMap(NDDataArray):
 
     def to_hdus(self):
         hdus = []
-        if isinstance(self.meta['header'], fits.Header):
-            header = self.meta['header'].copy()
+        if isinstance(self.meta["header"], fits.Header):
+            header = self.meta["header"].copy()
         else:
             header = fits.Header()
 
@@ -891,40 +890,42 @@ class NikaMap(NDDataArray):
             header.extend(self.wcs.to_header(), update=True)
 
         if self.data is not None:
-            hdus.append(fits.ImageHDU(self.data, header, name='Brightness_{}'.format(self.meta['band'])))
+            hdus.append(fits.ImageHDU(self.data, header, name="Brightness_{}".format(self.meta["band"])))
 
         if self.uncertainty is not None:
-            hdus.append(fits.ImageHDU(self.uncertainty.array, header, name='Stddev_{}'.format(self.meta['band'])))
+            hdus.append(fits.ImageHDU(self.uncertainty.array, header, name="Stddev_{}".format(self.meta["band"])))
 
         if self.time is not None:
-            f_sampling = self.meta.get('primaty_header', {'f_sampli': 1}).get('f_sampli') * u.Hz
-            hdus.append(fits.ImageHDU(np.asarray((self.time * f_sampling).decompose()),
-                                      header,
-                                      name='Nhits_{}'.format(self.meta['band'])))
+            f_sampling = self.meta.get("primaty_header", {"f_sampli": 1}).get("f_sampli") * u.Hz
+            hdus.append(
+                fits.ImageHDU(
+                    np.asarray((self.time * f_sampling).decompose()), header, name="Nhits_{}".format(self.meta["band"])
+                )
+            )
         return hdus
 
 
 def retrieve_primary_keys(filename, band="1mm", **kwd):
-    """Retrieve usefulle keys in primary header"""
+    """Retrieve usefulle keys in primary header."""
 
-    assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+    assert band in ["1mm", "2mm", "1", "2", "3"], "band should be either '1mm', '2mm', '1', '2', '3'"
 
     with fits.open(filename, **kwd) as hdus:
         # Fiddling to "fix" the fits file
         # extension params and info
         # hdus[14].header['EXTNAME'] = 'Param'
         # hdus[15].header['EXTNAME'] = 'Info'
-        f_sampling = hdus[0].header['f_sampli'] * u.Hz
-        if band in ["1mm", '1', '3']:
-            bmaj = hdus[0].header['FWHM_260'] * u.arcsec
-        elif band in ["2mm", '2']:
-            bmaj = hdus[0].header['FWHM_150'] * u.arcsec
+        f_sampling = hdus[0].header["f_sampli"] * u.Hz
+        if band in ["1mm", "1", "3"]:
+            bmaj = hdus[0].header["FWHM_260"] * u.arcsec
+        elif band in ["2mm", "2"]:
+            bmaj = hdus[0].header["FWHM_150"] * u.arcsec
 
     return f_sampling, bmaj
 
 
-def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
-    """NIKA2 IDL Pipeline Map reader
+def IDL_fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
+    """NIKA2 IDL Pipeline Map reader.
 
     Parameters
     ----------
@@ -935,17 +936,16 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
     revert : boolean
          use if to return -1 * data
     """
-
-    assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+    assert band in ["1mm", "2mm", "1", "2", "3"], "band should be either '1mm', '2mm', '1', '2', '3'"
 
     f_sampling, bmaj = retrieve_primary_keys(filename, band, **kwd)
 
     with fits.open(filename, **kwd) as hdus:
         primary_header = hdus[0].header
-        data = hdus['Brightness_{}'.format(band)].data
-        header = hdus['Brightness_{}'.format(band)].header
-        e_data = hdus['Stddev_{}'.format(band)].data
-        hits = hdus['Nhits_{}'.format(band)].data
+        data = hdus["Brightness_{}".format(band)].data
+        header = hdus["Brightness_{}".format(band)].header
+        e_data = hdus["Stddev_{}".format(band)].data
+        hits = hdus["Nhits_{}".format(band)].data
 
     header = update_header(header, bmaj)
 
@@ -959,17 +959,21 @@ def fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
     if revert:
         data *= -1
 
-    data = NikaMap(data, mask=unobserved,
-                   uncertainty=StdDevUncertainty(e_data),
-                   unit=header['UNIT'], wcs=WCS(header),
-                   meta={'header': header, 'primary_header': primary_header, 'band': band},
-                   time=time)
+    data = NikaMap(
+        data,
+        mask=unobserved,
+        uncertainty=StdDevUncertainty(e_data),
+        unit=header["UNIT"],
+        wcs=WCS(header),
+        meta={"header": header, "primary_header": primary_header, "band": band},
+        time=time,
+    )
 
     return data
 
 
-def fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
-    """Write NikaMap object on IDL Pipeline fits file format
+def IDL_fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
+    """Write NikaMap object on IDL Pipeline fits file format.
 
     Parameters
     ----------
@@ -980,13 +984,12 @@ def fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
     append : boolean
         append nikamap to file
     """
-
-    assert band in ['1mm', '2mm', '1', '2', '3'], "band should be either '1mm', '2mm', '1', '2', '3'"
+    assert band in ["1mm", "2mm", "1", "2", "3"], "band should be either '1mm', '2mm', '1', '2', '3'"
 
     if append:
-        hdus = fits.HDUList.fromfile(filename, mode='update')
+        hdus = fits.HDUList.fromfile(filename, mode="update")
     else:
-        hdus = fits.HDUList([fits.PrimaryHDU(None, nm_data.meta.get('primary_header', None))])
+        hdus = fits.HDUList([fits.PrimaryHDU(None, nm_data.meta.get("primary_header", None))])
 
     for hdu in nm_data.to_hdus():
         hdus.append(hdu)
@@ -997,22 +1000,84 @@ def fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
         hdus.writeto(filename, **kwd)
 
 
+def PIIC_fits_nikamap_reader(filename, band="1mm", revert=False, unit="mJy/beam", **kwd):
+    """NIKA2 IDL Pipeline Map reader.
+
+    Parameters
+    ----------
+    filename : str or `Path
+        the fits data filename
+    revert : boolean
+         use if to return -1 * data
+    unit : str
+         unit of the data (assuming mJy/beam)
+    Notes
+    -----
+    the snr filenames is assumed to be in the same directory ending in '_snr.fits'
+    """
+    data_file = Path(filename)
+    snr_file = data_file.parent / (data_file.with_suffix("").name + "_snr.fits")
+
+    assert data_file.exists() & snr_file.exists(), "Either {} or {} could not be found".format(
+        data_file.name, snr_file.name
+    )
+
+    with fits.open(data_file) as data_hdu, fits.open(snr_file) as snr_hdu:
+        data = data_hdu[0].data
+        header = data_hdu[0].header
+        snr = snr_hdu[0].data
+        snr_header = snr_hdu[0].header
+
+    assert WCS(snr_header).to_header() == WCS(header).to_header(), "{} and {} do not share the same WCS".format(
+        data_file.name, snr_file.name
+    )
+
+    e_data = data / snr
+    unobserved = np.isnan(data)
+
+    # No time or hit information....
+    time = np.ones_like(data) * np.nan * u.h
+
+    if revert:
+        data *= -1
+
+    data = NikaMap(
+        data,
+        mask=unobserved,
+        uncertainty=StdDevUncertainty(e_data),
+        unit=unit,
+        wcs=WCS(header),
+        meta={"header": header, "primary_header": None, "band": band},
+        time=time,
+    )
+
+    return data
+
+
+def identify_PIIC(origin, *args, **kwargs):
+    data_file = Path(args[0])
+    snr_file = data_file.parent / (data_file.with_suffix("").name + "_snr.fits")
+    check = data_file.exists() & snr_file.exists()
+    if check:
+        check &= fits.connect.is_fits("read", data_file.parent, data_file.open(mode="rb"))
+        check &= fits.connect.is_fits("read", snr_file.parent, snr_file.open(mode="rb"))
+    return check
+
+
 with registry.delay_doc_updates(NikaMap):
-    registry.register_reader('fits', NikaMap, fits_nikamap_reader)
-    registry.register_writer('fits', NikaMap, fits_nikamap_writer)
-    registry.register_identifier('fits', NikaMap, fits.connect.is_fits)
+    registry.register_reader("piic", NikaMap, PIIC_fits_nikamap_reader)
+    registry.register_identifier("piic", NikaMap, identify_PIIC)
+
+    registry.register_reader("idl", NikaMap, IDL_fits_nikamap_reader)
+    registry.register_writer("idl", NikaMap, IDL_fits_nikamap_writer)
+    registry.register_identifier("idl", NikaMap, fits.connect.is_fits)
 
 
 class NikaFits(MutableMapping):
-
     def __init__(self, filename=None, **kwd):
         self._filename = filename
         self._kwd = kwd
-        self.__data = {'1mm': None,
-                       '2mm': None,
-                       '1': None,
-                       '2': None,
-                       '3': None}
+        self.__data = {"1mm": None, "2mm": None, "1": None, "2": None, "3": None}
         with fits.open(filename, **kwd) as hdus:
             self.primary_header = hdus[0].header
 
