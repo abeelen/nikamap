@@ -744,8 +744,8 @@ class NikaMap(NDDataArray):
         ax.set_xlim(0, self.shape[1])
         ax.set_ylim(0, self.shape[0])
 
-        if cat is not None:
-            ax.legend(loc='best', frameon=False)
+        # if cat is not None:
+        #     ax.legend(loc='best', frameon=False)
 
         return iax
 

@@ -714,6 +714,10 @@ def test_nikamap_plot_ax(nms):
     nm.detect_sources()
     nm.plot(ax=axes[3], cat=True)
 
+    for ax in axes:
+        ax.legend(loc='best', frameon=False)
+
+
     return fig
 
 
