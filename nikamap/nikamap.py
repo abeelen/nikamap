@@ -624,7 +624,7 @@ class NikaMap(NDDataArray):
         # with warnings.catch_warnings():
         #     warnings.simplefilter('ignore', AstropyWarning)
         #     mf_time = convolve(self.time, kernel, normalize_kernel=False)*self.time.unit
-        mf_time = signal.fftconvolve(self.__t_array__().filled(0), kernel, mode="same") * self.time.unit
+        mf_time = signal.fftconvolve(np.asarray(self.__t_array__().filled(0)), kernel, mode="same") * self.time.unit
 
         if mf_mask is not None:
             mf_time[mf_mask] = 0
@@ -719,7 +719,10 @@ class NikaMap(NDDataArray):
             cbar.set_label(cbar_label)
 
         if cat is True:
-            cat = [(self.sources, {"marker": "^", "color": "red"})]
+            if self.sources is not None:
+                cat = [(self.sources, {"marker": "^", "color": "red"})]
+            else:
+                cat = None
 
         # In case of fake sources, overplot them
         if self.fake_sources:
