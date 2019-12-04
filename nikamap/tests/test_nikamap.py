@@ -250,7 +250,7 @@ def single_source_side():
     wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
 
     fake_sources = Table(masked=True)
-    fake_sources["ID"] = [1]
+    fake_sources["fake_id"] = [1]
     fake_sources["x_mean"] = [0]
     fake_sources["y_mean"] = [13]
 
@@ -356,7 +356,7 @@ def single_source_mask_edge():
     data[mask] = np.nan
 
     fake_sources = Table(masked=True)
-    fake_sources["ID"] = [1]
+    fake_sources["fake_id"] = [1]
     fake_sources["x_mean"] = [13]
     fake_sources["y_mean"] = [13]
 

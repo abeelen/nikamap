@@ -373,7 +373,7 @@ class NikaMap(NDDataArray):
         self._data += make_gaussian_sources_image(shape, sources)
 
         # Add an ID column
-        sources.add_column(Column(np.arange(len(sources)), name="ID"), 0)
+        sources.add_column(Column(np.arange(len(sources)), name="fake_id"), 0)
 
         # Transform pixel to world coordinates
         a, d = self.wcs.wcs_pix2world(sources["x_mean"], sources["y_mean"], 0)
@@ -479,7 +479,7 @@ class NikaMap(NDDataArray):
 
                 idx, sep2d, _ = match_coordinates_sky(sources_sc, fake_sc)
                 mask = sep2d > dist_threshold
-                sources["fake_sources"] = MaskedColumn(fake_sources[idx]["ID"], mask=mask)
+                sources["fake_id"] = MaskedColumn(fake_sources[idx]["fake_id"], mask=mask)
 
         if sources is not None and len(sources) > 0:
             self.sources = sources
