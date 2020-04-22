@@ -288,7 +288,7 @@ def blended_sources():
     wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
 
     fake_sources = Table(masked=True)
-    fake_sources["ID"] = [1, 2]
+    fake_sources["fake_id"] = [1, 2]
     fake_sources["x_mean"] = [13.6, 15.1]
     fake_sources["y_mean"] = [13.6, 15.1]
 
@@ -705,7 +705,6 @@ def test_nikamap_plot_ax(nms):
 
     for ax in axes:
         ax.legend(loc='best', frameon=False)
-
 
     return fig
 

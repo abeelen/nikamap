@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: required
 language: python
 
@@ -20,37 +20,30 @@ addons:
 
 env:
   matrix:
-    # - ASTROPY_VERSION=3.0
-    # - ASTROPY_VERSION=2.0.4
-    # - NUMPY_VERSION=1.10.4
-    # - NUMPY_VERSION=1.14.5
-    # - NUMPY_VERSION=1.13.3
-    # - NUMPY_VERSION=1.11.3
-    # - NUMPY_VERSION=1.12.1
-    - SCIPY_VERSION=1.1.0
-    - SCIPY_VERSION=1.0.0
-    - SCIPY_VERSION=0.19.1
-
-
+    - ASTROPY_VERSION=3.0 SCIPY_VERSION=1.1.0
+    - ASTROPY_VERSION=4.0.1 SCIPY_VERSION=1.4.1
   global:
-  - PIP_DEPS="pytest coveralls pytest-cov==2.5.0 flake8 pytest-mpl matplotlib"
+    - PIP_DEPS="pytest coveralls pytest-cov==2.5.0 flake8 pytest-mpl matplotlib"
   # - ASTROPY_VERSION=2.0.4
 
 python:
   # - "3.4"
   # - "3.5"
   - "3.6"
+  - "3.8" # Problem with travis...
 
 matrix:
   exclude:
   - python: "3.4"
     env: ASTROPY_VERSION=3.0
+  - python: "3.8"
+    env: ASTROPY_VERSION=3.0 SCIPY_VERSION=1.1.0
 
 install:
   - travis_retry pip install $PIP_DEPS
   # - travis_retry pip install -q numpy==$NUMPY_VERSION
   - travis_retry pip install -q scipy==$SCIPY_VERSION
-  # - travis_retry pip install -q astropy==$ASTROPY_VERSION
+  - travis_retry pip install -q astropy==$ASTROPY_VERSION
   - travis_retry pip install -r requirements.txt
   - travis_retry pip install .
 
