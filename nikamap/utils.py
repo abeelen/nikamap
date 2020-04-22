@@ -464,8 +464,11 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
     """
     img_unit, pix_unit = 1, 1
 
+    # Dropping units here to be backward compatible with astropy<4.0
+    # See #16
     if isinstance(img, u.Quantity):
         img_unit = img.unit
+        img = img.to(img_unit).value
     elif isinstance(img, np.ma.MaskedArray):
 
         # TODO: apodization will change the absolute level of the powerspectra,
@@ -475,14 +478,19 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
 
         if isinstance(img.data, u.Quantity):
             img_unit = img.data.unit
+            img = np.ma.array(img.data.to(img_unit).value, mask=img.mask)
 
         img = img.filled(0)
 
     if isinstance(res, u.Quantity):
         pix_unit = res.unit
+        res = res.to(pix_unit).value
         if range is not None:
             assert isinstance(range, u.Quantity), "range must be a Quantity when res has is a Quantity"
             range = range.to(1 / pix_unit).value
+
+        if isinstance(bins, u.Quantity):
+            bins = bins.to(1 / pix_unit).value
 
     npix_x, npix_y = img.shape
 
@@ -492,7 +500,7 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
     # https://en.wikipedia.org/wiki/Spectral_density
     # Note that the factor 2 is accounted for the fact that we count each
     # frequency twice...
-    pow_sqr = np.absolute(np.fft.fft2(img)) ** 2 * res ** 2 / (npix_x * npix_y)
+    pow_sqr = np.absolute(np.fft.fft2(img) ** 2 * res ** 2 / (npix_x * npix_y))
 
     # Define corresponding fourier modes
     u_freq = np.fft.fftfreq(npix_x, d=res)
@@ -505,7 +513,7 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
     with np.errstate(invalid="ignore"):
         hist /= norm
 
-    # Histogram remove the units so put it back here
+    # we drop units in histogram so put it back here
     hist = hist * img_unit ** 2 * pix_unit ** 2
     bin_edges = bin_edges * pix_unit ** -1
 

@@ -54,8 +54,8 @@ def check_filenames(filenames, band="1mm", n=None):
         _header = fits.getheader(filename, "Brightness_{}".format(band))
         _w = WCS(_header)
         assert w.wcs == _w.wcs, "{} has a different header".format(filename)
-        assert header["UNIT"] == _header["UNIT"], "{} has a different uni".format(filename)
-        assert (w._naxis1, w._naxis2) == (_w._naxis1, _w._naxis2), "{} has a different shape".format(filename)
+        for key in ['UNIT', 'NAXIS1', 'NAXIS2']:
+            assert header[key] == _header[key], "{} has a different key".format(filename, key)
 
     if n is not None and len(filenames) % 2:
         warnings.warn("Even number of files, dropping the last one", UserWarning)
