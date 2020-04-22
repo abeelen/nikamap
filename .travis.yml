@@ -1,57 +1,45 @@
 dist: xenial
 sudo: required
 language: python
-
 deploy:
   provider: pypi
-  user: abeelen
+  user: __token__
   password:
-    secure: idXuosz+94Q1u/OBrNEdr+2A30ajfLYk5EDWEXH88MNpluKKqXnZ2YtZU7ksu1FmsVvyZqcvMmGbxvwi3vNEiZpwh1nj5RLGNaa/5iRtnBDgVrYg1gvEzdtUfQ+1NOKnbjKprFJdUOK1yshmDGX3DBR1t8j85lbY7HAZjaseA2Hf1sOUvO2XZs+rMmR5K6rge/mGvbd0uNXtK7ofbB6N2hbeCJp6+Qgn+4zyXZ95qvIAoTo/uBOgjFD1SUbH0IySqtLhvhUqqPjs4FF9F9krp/MMx+gbsYbB+lb1bT2N14cFn6phalgO2NmL4D3ccRY6Q5MfvufwY8KAjwGNb4BxoNxYvG5NMzjJtLczg3ItAxAUBrsiPfi8LmxHpLJFTvnJCZxWGH+KqkHdlU+vwm4MFdJrxRVJb++MR4A0lHAgtz/lCiG+iHSrdV0rYiNMmVUgjrs+uI+yTp6Qup+TUf8gsAgCkaQjYqr4Op3AXEKlRGGwadtriRPh8lzOGpMhU71jSaFoNcZ7JHijJuc3D3xqozxFF01OkJg7h0rwoVQfs51dxtRRxvJEXhkCLhdXgAUZNbOpsVP7QFhuMg+xIkpnhX6tKl06M1rp8GGyYtYUew3FOr7/ffC5NnXwAgKJj1aMgNDF77CYFN3fVEw8EyYLWDcfFVYF72Vq5xrxrBxoqmg=
+    secure: XN38Tc8jflFleLlr+toNj7yu9gkonVhuXAJySEW+YyhHiXv1SXbgGErVtB9GXCfNV6MkpgYBiNqNuuJpKpN6b7mjXAVOgSofiDxeCXxLPH07NifsqZtlDb2ssifZXfb9FsMfQQaPNLYpXrziooUgeCaOVUZhAZjMKdaSmIu9gO/QTxWFBUcXKrmkbI4YhEpprorqeMOBAoeTM6R4B2JwBJ4LCXKbVP8zK9JH5QsfGr32wF03FeUspM+FUX3xKPEexAwwYk5c6gNSKyopNnps4MtXZdcLDdwCig+OutgnV9pStewFq05wpKPCuCIH0r1z2fh6dO6M3Ibxz+qkH0ooHXc2HX1VeKQOJxxvXb4K0+s6SdM6/EZ07w9eVms2aeQTU8UBHxwC4h3h9gj6B8+4QdQRyfc7nS+YzHpRjJJVdc2hRu0wGmvzhzG8Lw2NroldZkTfkP8Id39merIzlh+SHjMfqMxvnqSH+Ru7Y9VNdYL9gvws6i+Ffjn9tof++eAuv6yWFuQkBPDn4wSNQ0jPjU6yuub4S5eGj255vF6sO0Q0xNIJfLRPRsv/0251TKrsTQCgZpq/cFRLGBlBhXLLODKlXTkLkuVzu2HoTADMoVp7HfTdXAj5KlU4WBc1AUQC5zNG7X9j7aGt8R3IudNLdf4wVuNw/Evn1yIG3iHAiJo=
   on:
     tags: true
     repo: abeelen/nikamap
-
 addons:
   sonarcloud:
-    organization: "abeelen-github"
+    organization: abeelen-github
     token:
-      secure: "J5jeO/6I3y+4jHbsBP0Lp6Zqfq4plQNcU5spUpVUH+F6EIfOYPfNiiBjSp0H/YUsQlOWSKzM1DobATKjaqjxAEANRqXUMrfh6jwZmIKiXJqePdMqkYxGU3NhgXXRizkXnEuDyKf42OQuBY/OvA8m7/w5S4LWIrjeizpk8yGuNZYL888kE9wquqBdWTYU+6gpwwe6iodWe2avHv0beCpTAC9flRITxK1TwVlrMys+zU6LQ+mE6JGqSQmbtVCPSffSyy+u7UGumJdXRHVUec3My35OFbDG6O1VRnH8JBh1fg+pO80O+YTWO6In2KYZhPFZvKReYKwim2Rmaig0lwSnSNolqNRK8hqj3kHRZvTtpBs1K+EdvCxIBNfEoyAZZOqWG/KNcN0e+eSB8nbSwO7QfSS4ph7pj8jzQ/QvxyVOtPsJ1OYSBtdx8RM4Gx3bvbGmv7VYDpZSre0BbIaDlDieXjGT6XVwLqofZbmFb0atE5pI/lBUup9lr3hmj9ZBf337T2I+OM4+FaV8mPbxkqbnymeZS05K6RS4v4mpclXXEUViLltA4+nDXGBRIcij4AEFvNJ19UAwRsihn4BueNBrKDtLFbOQ1KAtHfWV5kJ6WqVAsjZna9YyQl18Flq0Dpty+ANlgek8r2IVHz5Fxi/uX6e72VdmTrQoCdrW2VuYvWA="
-
-
+      secure: J5jeO/6I3y+4jHbsBP0Lp6Zqfq4plQNcU5spUpVUH+F6EIfOYPfNiiBjSp0H/YUsQlOWSKzM1DobATKjaqjxAEANRqXUMrfh6jwZmIKiXJqePdMqkYxGU3NhgXXRizkXnEuDyKf42OQuBY/OvA8m7/w5S4LWIrjeizpk8yGuNZYL888kE9wquqBdWTYU+6gpwwe6iodWe2avHv0beCpTAC9flRITxK1TwVlrMys+zU6LQ+mE6JGqSQmbtVCPSffSyy+u7UGumJdXRHVUec3My35OFbDG6O1VRnH8JBh1fg+pO80O+YTWO6In2KYZhPFZvKReYKwim2Rmaig0lwSnSNolqNRK8hqj3kHRZvTtpBs1K+EdvCxIBNfEoyAZZOqWG/KNcN0e+eSB8nbSwO7QfSS4ph7pj8jzQ/QvxyVOtPsJ1OYSBtdx8RM4Gx3bvbGmv7VYDpZSre0BbIaDlDieXjGT6XVwLqofZbmFb0atE5pI/lBUup9lr3hmj9ZBf337T2I+OM4+FaV8mPbxkqbnymeZS05K6RS4v4mpclXXEUViLltA4+nDXGBRIcij4AEFvNJ19UAwRsihn4BueNBrKDtLFbOQ1KAtHfWV5kJ6WqVAsjZna9YyQl18Flq0Dpty+ANlgek8r2IVHz5Fxi/uX6e72VdmTrQoCdrW2VuYvWA=
 env:
   matrix:
-    - ASTROPY_VERSION=3.0 SCIPY_VERSION=1.1.0
-    - ASTROPY_VERSION=4.0.1 SCIPY_VERSION=1.4.1
+  - ASTROPY_VERSION=3.0 SCIPY_VERSION=1.1.0
+  - ASTROPY_VERSION=4.0.1 SCIPY_VERSION=1.4.1
   global:
-    - PIP_DEPS="pytest coveralls pytest-cov==2.5.0 flake8 pytest-mpl matplotlib"
-  # - ASTROPY_VERSION=2.0.4
-
+  - PIP_DEPS="pytest coveralls pytest-cov==2.5.0 flake8 pytest-mpl matplotlib"
 python:
-  # - "3.4"
-  # - "3.5"
-  - "3.6"
-  - "3.8" # Problem with travis...
-
+- '3.6'
+- '3.8'
 matrix:
   exclude:
-  - python: "3.4"
+  - python: '3.4'
     env: ASTROPY_VERSION=3.0
-  - python: "3.8"
+  - python: '3.8'
     env: ASTROPY_VERSION=3.0 SCIPY_VERSION=1.1.0
-
 install:
-  - travis_retry pip install $PIP_DEPS
-  # - travis_retry pip install -q numpy==$NUMPY_VERSION
-  - travis_retry pip install -q scipy==$SCIPY_VERSION
-  - travis_retry pip install -q astropy==$ASTROPY_VERSION
-  - travis_retry pip install -r requirements.txt
-  - travis_retry pip install .
-
+- travis_retry pip install $PIP_DEPS
+- travis_retry pip install -q scipy==$SCIPY_VERSION
+- travis_retry pip install -q astropy==$ASTROPY_VERSION
+- travis_retry pip install -r requirements.txt
+- travis_retry pip install .
 script:
-  - flake8 --ignore N802,N806,E501,F841,F401,W504 `find . -name \*.py | grep -v setup.py | grep -v version.py | grep -v __init__.py | grep -v /doc/`
-  - pip freeze
-  - MPLBACKEND="agg" python setup.py test
-  - sonar-scanner
-
+- flake8 --ignore N802,N806,E501,F841,F401,W504 `find . -name \*.py | grep -v setup.py
+  | grep -v version.py | grep -v __init__.py | grep -v /doc/`
+- pip freeze
+- MPLBACKEND="agg" python setup.py test
+- sonar-scanner
 after_success:
-  - coveralls
+- coveralls
