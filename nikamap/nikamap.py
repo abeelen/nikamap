@@ -321,14 +321,14 @@ class NikaMap(NDDataArray):
             return a trimmed NikaMap object
 
         """
-
         mask = self.mask
         axis_slice = []
         for axis in [1, 0]:
             good_pix = np.argwhere(np.mean(mask, axis=axis) != 1)
             axis_slice.append(slice(np.min(good_pix), np.max(good_pix) + 1))
 
-        return self[axis_slice[0], axis_slice[1]]
+        output = self[axis_slice[0], axis_slice[1]]
+        return output
 
     def add_gaussian_sources(self, within=(0, 1), cat_gen=pos_uniform, **kwargs):
         """Add gaussian sources into the map.
@@ -376,7 +376,10 @@ class NikaMap(NDDataArray):
         sources.add_column(Column(np.arange(len(sources)), name="fake_id"), 0)
 
         # Transform pixel to world coordinates
-        a, d = self.wcs.wcs_pix2world(sources["x_mean"], sources["y_mean"], 0)
+        if hasattr(self.wcs, "low_level_wcs"):
+            a, d = self.wcs.low_level_wcs.wcs_pix2world(sources["x_mean"], sources["y_mean"], 0)
+        else:
+            a, d = self.wcs.wcs_pix2world(sources["x_mean"], sources["y_mean"], 0)
         sources.add_columns([Column(a * u.deg, name="ra"), Column(d * u.deg, name="dec")])
 
         sources["_ra"] = sources["ra"]
@@ -506,7 +509,10 @@ class NikaMap(NDDataArray):
         if sources is None:
             sources = self.sources
 
-        xx, yy = self.wcs.wcs_world2pix(sources["ra"], sources["dec"], 0)
+        if hasattr(self.wcs, "low_level_wcs"):
+            xx, yy = self.wcs.low_level_wcs.world_to_pixel_values(sources["ra"], sources["dec"])
+        else:
+            xx, yy = self.wcs.wcs_world2pix(sources["ra"], sources["dec"], 0)
 
         x_idx = np.floor(xx + 0.5).astype(int)
         y_idx = np.floor(yy + 0.5).astype(int)
@@ -705,7 +711,10 @@ class NikaMap(NDDataArray):
 
         if not ax:
             fig = plt.figure()
-            ax = fig.add_subplot(111, projection=self.wcs)
+            if hasattr(self.wcs, "low_level_wcs"):
+                ax = fig.add_subplot(111, projection=self.wcs.low_level_wcs)
+            else:
+                ax = fig.add_subplot(111, projection=self.wcs)
 
         iax = ax.imshow(data, origin="lower", interpolation="none", **kwargs)
 
@@ -736,7 +745,10 @@ class NikaMap(NDDataArray):
             for _cat, _kwargs in list(cat):
                 label = _cat.meta.get("method") or _cat.meta.get("name") or _cat.meta.get("NAME") or "Unknown"
                 cat_sc = cat_to_sc(_cat)
-                x, y = self.wcs.wcs_world2pix(cat_sc.ra, cat_sc.dec, 0)
+                if hasattr(self.wcs, "low_level_wcs"):
+                    x, y = self.wcs.low_level_wcs.world_to_pixel_values(cat_sc.ra, cat_sc.dec)
+                else:
+                    x, y = self.wcs.wcs_world2pix(cat_sc.ra, cat_sc.dec, 0)
                 if _kwargs is None:
                     _kwargs = {"alpha": 0.8}
                 ax.scatter(x, y, **_kwargs, label=label)
@@ -793,7 +805,7 @@ class NikaMap(NDDataArray):
         robust = (-6 < bin_center) & (bin_center < 3)
 
         def gauss(x, a, c, s):
-            return a * np.exp(-(x - c) ** 2 / (2 * s ** 2))
+            return a * np.exp(-((x - c) ** 2) / (2 * s ** 2))
 
         popt, pcov = curve_fit(gauss, bin_center[robust].astype(np.float32), hist[robust].astype(np.float32))
         mu, std = popt[1:]
@@ -945,10 +957,10 @@ def IDL_fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
 
     with fits.open(filename, **kwd) as hdus:
         primary_header = hdus[0].header
-        data = hdus["Brightness_{}".format(band)].data
+        data = hdus["Brightness_{}".format(band)].data.astype(np.float)
         header = hdus["Brightness_{}".format(band)].header
-        e_data = hdus["Stddev_{}".format(band)].data
-        hits = hdus["Nhits_{}".format(band)].data
+        e_data = hdus["Stddev_{}".format(band)].data.astype(np.float)
+        hits = hdus["Nhits_{}".format(band)].data.astype(np.int)
 
     header = update_header(header, bmaj)
 
@@ -1019,23 +1031,23 @@ def PIIC_fits_nikamap_reader(filename, band="1mm", revert=False, unit="mJy/beam"
     the snr filenames is assumed to be in the same directory ending in '_snr.fits'
     """
     data_file = Path(filename)
-    snr_file = data_file.parent / (data_file.with_suffix("").name + "_snr.fits")
+    rgw_file = data_file.parent / (data_file.with_suffix("").name + "_rgw.fits")
 
-    assert data_file.exists() & snr_file.exists(), "Either {} or {} could not be found".format(
-        data_file.name, snr_file.name
+    assert data_file.exists() & rgw_file.exists(), "Either {} or {} could not be found".format(
+        data_file.name, rgw_file.name
     )
 
-    with fits.open(data_file) as data_hdu, fits.open(snr_file) as snr_hdu:
-        data = data_hdu[0].data
+    with fits.open(data_file) as data_hdu, fits.open(rgw_file) as rgw_hdu:
+        data = data_hdu[0].data.astype(np.float)
         header = data_hdu[0].header
-        snr = snr_hdu[0].data
-        snr_header = snr_hdu[0].header
+        rgw = rgw_hdu[0].data.astype(np.float)
+        rgw_header = rgw_hdu[0].header
 
-    assert WCS(snr_header).to_header() == WCS(header).to_header(), "{} and {} do not share the same WCS".format(
-        data_file.name, snr_file.name
+    assert WCS(rgw_header).to_header() == WCS(header).to_header(), "{} and {} do not share the same WCS".format(
+        data_file.name, rgw_file.name
     )
 
-    e_data = data / snr
+    e_data = 1 / np.sqrt(rgw)
     unobserved = np.isnan(data)
 
     # No time or hit information....
@@ -1059,11 +1071,11 @@ def PIIC_fits_nikamap_reader(filename, band="1mm", revert=False, unit="mJy/beam"
 
 def identify_PIIC(origin, *args, **kwargs):
     data_file = Path(args[0])
-    snr_file = data_file.parent / (data_file.with_suffix("").name + "_snr.fits")
-    check = data_file.exists() & snr_file.exists()
+    rgw_file = data_file.parent / (data_file.with_suffix("").name + "_rgw.fits")
+    check = data_file.exists() & rgw_file.exists()
     if check:
         check &= fits.connect.is_fits("read", data_file.parent, data_file.open(mode="rb"))
-        check &= fits.connect.is_fits("read", snr_file.parent, snr_file.open(mode="rb"))
+        check &= fits.connect.is_fits("read", rgw_file.parent, rgw_file.open(mode="rb"))
     return check
 
 
