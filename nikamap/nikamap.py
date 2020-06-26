@@ -1015,13 +1015,15 @@ def IDL_fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
         hdus.writeto(filename, **kwd)
 
 
-def PIIC_fits_nikamap_reader(filename, band="1mm", revert=False, unit="mJy/beam", **kwd):
+def PIIC_fits_nikamap_reader(filename, band=None, revert=False, unit="mJy/beam", **kwd):
     """NIKA2 IDL Pipeline Map reader.
 
     Parameters
     ----------
     filename : str or `Path
         the fits data filename
+    band : str (1mm | 2mm | 1 | 2 | 3 )
+        the corresponding band
     revert : boolean
          use if to return -1 * data
     unit : str
@@ -1038,20 +1040,22 @@ def PIIC_fits_nikamap_reader(filename, band="1mm", revert=False, unit="mJy/beam"
     )
 
     with fits.open(data_file) as data_hdu, fits.open(rgw_file) as rgw_hdu:
-        data = data_hdu[0].data.astype(np.float)
         header = data_hdu[0].header
+        data = data_hdu[0].data.astype(np.float)
         rgw = rgw_hdu[0].data.astype(np.float)
         rgw_header = rgw_hdu[0].header
 
     assert WCS(rgw_header).to_header() == WCS(header).to_header(), "{} and {} do not share the same WCS".format(
         data_file.name, rgw_file.name
     )
+    with np.errstate(invalid="ignore", divide="ignore"):
+        e_data = 1 / np.sqrt(rgw)
 
-    e_data = 1 / np.sqrt(rgw)
-    unobserved = np.isnan(data)
+    unobserved = np.isnan(data) | np.isnan(e_data)
 
     # No time or hit information....
-    time = np.ones_like(data) * np.nan * u.h
+    time = np.ones_like(data) * u.h
+    time[unobserved] = 0
 
     if revert:
         data *= -1
