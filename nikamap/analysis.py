@@ -3,6 +3,8 @@ from __future__ import absolute_import, division, print_function
 import os
 import warnings
 import numpy as np
+from multiprocessing import cpu_count
+
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy import units as u
@@ -12,59 +14,146 @@ from astropy.utils.console import ProgressBar
 from .nikamap import retrieve_primary_keys, NikaMap
 from .utils import update_header
 
-__all__ = ["Jackknife", "bootstrap"]
+__all__ = ["Jackknife", "Bootstrap"]
 
 
-def check_filenames(filenames, band="1mm", n=None):
-    """Check the existence and compatibility of a list of NIKA IDL fits
+def compare_header(header_ref, header_target):
+    """Crude comparison of two header
 
     Parameters
     ----------
-    filenames : list
-        the list of NIKA fits files
-    band : str (1mm | 2mm | 1 | 2 | 3)
-        the requested band
-    n : int or None, optionnal
-        if not None check parity of filenames
+    header_ref : astropy.io.fits.Header
+        the reference header
+    header_target : astropy.io.fits.Header
+        the target header to check
 
-    Returns
-    -------
-    line
-        the curated list of filenames
+    Notes
+    -----
+    This will raise assertion error if the two header are not equivalent
+    """
+    wcs_ref = WCS(header_ref)
+    wcs_target = WCS(header_target)
+
+    assert wcs_ref.wcs == wcs_target.wcs, "Different header found"
+    for key in ["UNIT", "NAXIS1", "NAXIS2"]:
+        if key in header_ref:
+            assert header_ref[key] == header_target[key], "Different key found"
+
+
+class MultiScans(object):
+    """A class to hold multi single scans from a list of fits files.
+
+    This acts as a python lazy iterator and/or a callable
+
+    Parameters
+    ----------
+    filenames : list or `~MultiScans` object
+        the list of fits files to produce the Jackknifes or an already filled object
+    ipython_widget : bool, optional
+        If True, the progress bar will display as an IPython notebook widget.
+
+    Notes
+    -----
+    A crude check is made on the wcs of each map when instanciated
     """
 
-    assert band in ["1mm", "2mm", "1", "2", "3"], "band should be either '1mm', '2mm', '1', '2', '3'"
+    def __init__(self, filenames, ipython_widget=False, **kwd):
 
-    assert isinstance(n, (int, np.int32, np.int64)) or n is None, "n must be an int or None"
+        self.i = 0
+        self.n = None
+        self.kwargs = kwd
+        self.ipython_widget = ipython_widget
 
-    # Chek for existence
-    checked_filenames = []
-    for filename in filenames:
-        if os.path.isfile(filename):
-            checked_filenames.append(filename)
+        if isinstance(filenames, MultiScans):
+            data = filenames
+
+            self.filenames = data.filenames
+            self.primary_header = data.primary_header
+            self.header = data.header
+            self.unit = data.unit
+            self.shape = data.shape
+            self.datas = data.datas
+            self.weights = data.weights
+            self.time = data.time
+            self.mask = data.mask
         else:
-            warnings.warn("{} does not exist, removing from list".format(filename), UserWarning)
 
-    filenames = checked_filenames
-    header = fits.getheader(filenames[0], "Brightness_{}".format(band))
-    w = WCS(header)
+            # Chek for existence
+            checked_filenames = []
+            for filename in filenames:
+                if os.path.isfile(filename):
+                    checked_filenames.append(filename)
+                else:
+                    warnings.warn("{} does not exist, removing from list".format(filename), UserWarning)
 
-    # Checking all header for consistency
-    for filename in filenames:
-        _header = fits.getheader(filename, "Brightness_{}".format(band))
-        _w = WCS(_header)
-        assert w.wcs == _w.wcs, "{} has a different header".format(filename)
-        for key in ['UNIT', 'NAXIS1', 'NAXIS2']:
-            assert header[key] == _header[key], "{} has a different key".format(filename, key)
+            self.filenames = checked_filenames
 
-    if n is not None and len(filenames) % 2:
-        warnings.warn("Even number of files, dropping the last one", UserWarning)
-        filenames = filenames[:-1]
+            nm = NikaMap.read(self.filenames[0], **kwd)
 
-    return filenames
+            self.primary_header = nm.meta.get("primary_header", None)
+            self.header = nm.meta["header"]
+            self.unit = nm.unit
+            self.shape = nm.shape
+
+            # This is a low_mem=False case ...
+            # TODO: How to refactor that for low_mem=True ?
+            datas = np.zeros((len(self.filenames),) + self.shape)
+            weights = np.zeros((len(self.filenames),) + self.shape)
+            time = np.zeros(self.shape) * u.h
+
+            for i, filename in enumerate(ProgressBar(self.filenames, ipython_widget=self.ipython_widget)):
+
+                nm = NikaMap.read(filename, **kwd)
+                try:
+                    compare_header(self.header, nm.meta["header"])
+                except AssertionError as e:
+                    raise ValueError("{} for {}".format(e, filename))
+
+                datas[i, :, :] = nm.data
+                with np.errstate(invalid="ignore", divide="ignore"):
+                    weights[i, :, :] = nm.uncertainty.array ** -2
+                time += nm.time
+
+                # make sure that we do not have nans in the data
+                datas[i, nm.time == 0] = 0
+                weights[i, nm.time == 0] = 0
+
+            unobserved = time == 0
+
+            self.datas = datas
+            self.weights = weights
+            self.time = time
+            self.mask = unobserved
+
+    def __len__(self):
+        # to retrieve the legnth of the iterator, enable ProgressBar on it
+        return self.n
+
+    def __iter__(self):
+        # Iterators are iterables too.
+        # Adding this functions to make them so.
+        return self
+
+    def __call__(self):
+        """The main method which should be overrided
+
+        should return a  :class:`nikamap.NikaMap`
+        """
+        pass
+
+    def __next__(self):
+        """Iterator on the objects"""
+        if self.n is None or self.i < self.n:
+            # Produce data until last iter
+            self.i += 1
+            data = self.__call__()
+        else:
+            raise StopIteration()
+
+        return data
 
 
-class Jackknife:
+class Jackknife(MultiScans):
     """A class to create weighted Jackknife maps from a list of IDL fits files.
 
     This acts as a python lazy iterator and/or a callable
@@ -73,79 +162,41 @@ class Jackknife:
     ----------
     filenames : list
         the list of fits files to produce the Jackknifes
-    band : str (1mm | 2mm | 1 | 2 | 3)
-        the requested band
+    ipython_widget : bool, optional
+        If True, the progress bar will display as an IPython notebook widget.
     n : int
-        the number of Jackknifes maps to be produced
+        the number of Jackknifes maps to be produced in the iterator
 
-            if set to `None`, produce one weighted average of the maps
+            if set to `None`, produce only one weighted average of the maps
 
     parity_threshold : float
         mask threshold between 0 and 1 to keep partially jackknifed area
         * 1 pure jackknifed
         * 0 partially jackknifed, keep all
 
+
     Notes
     -----
     A crude check is made on the wcs of each map when instanciated
     """
 
-    def __init__(self, filenames, band="1mm", n=1, parity_threshold=1, **kwd):
-
-        self.i = 0
+    def __init__(self, filenames, n=1, parity_threshold=1, **kwd):
+        super(Jackknife, self).__init__(filenames, **kwd)
         self.n = n
-        self.band = band
         self.parity_threshold = parity_threshold
 
-        filenames = check_filenames(filenames, band=band, n=n)
-        assert len(filenames) > 1, "Less than 2 existing files in filenames"
+        if n is not None and len(self.filenames) % 2:
+            warnings.warn("Even number of files, dropping the last one", UserWarning)
+            self.filenames = self.filenames[:-1]
 
-        self.filenames = filenames
+        assert len(self.filenames) > 1, "Less than 2 existing files in filenames"
 
-        self.primary_header = fits.getheader(filenames[0])
-
-        header = fits.getheader(filenames[0], "Brightness_{}".format(band))
-
-        # Retrieve common keywords
-        f_sampling, bmaj = retrieve_primary_keys(filenames[0], band, **kwd)
-        header = update_header(header, bmaj)
-
-        self.header = header
-        self.shape = (header["NAXIS2"], header["NAXIS1"])
-
-        # This is a low_mem=False case ...
-        # TODO: How to refactor that for low_mem=True ?
-        datas = np.zeros((len(filenames),) + self.shape)
-        weights = np.zeros((len(filenames),) + self.shape)
-        time = np.zeros(self.shape) * u.h
-
-        for i, filename in enumerate(filenames):
-
-            with fits.open(filename, **kwd) as hdus:
-
-                f_sampling = hdus[0].header["f_sampli"] * u.Hz
-                nhits = hdus["Nhits_{}".format(band)].data
-
-                # Time always adds up
-                time += nhits / f_sampling
-
-                datas[i, :, :] = hdus["Brightness_{}".format(band)].data
-                with np.errstate(invalid="ignore", divide="ignore"):
-                    weights[i, :, :] = hdus["Stddev_{}".format(band)].data ** -2
-
-                weights[i, nhits == 0] = 0
-
-        unobserved = time == 0
         # Base jackknife weights
-        jk_weights = np.ones(len(filenames))
+        jk_weights = np.ones(len(self.filenames))
 
         if n is not None:
             jk_weights[::2] *= -1
 
-        self.datas = datas
-        self.weights = weights
-        self.time = time
-        self.mask = unobserved
         self.jk_weights = jk_weights
 
     @property
@@ -158,15 +209,6 @@ class Jackknife:
             self._parity = value
         else:
             raise TypeError("parity must be between 0 and 1")
-
-    def __len__(self):
-        # to retrieve the legnth of the iterator, enable ProgressBar on it
-        return self.n
-
-    def __iter__(self):
-        # Iterators are iterables too.
-        # Adding this functions to make them so.
-        return self
 
     def __call__(self):
         """Compute a jackknifed dataset
@@ -199,7 +241,7 @@ class Jackknife:
             data,
             mask=mask,
             uncertainty=StdDevUncertainty(e_data),
-            unit=self.header["UNIT"],
+            unit=self.unit,
             wcs=WCS(self.header),
             meta={"header": self.header, "primary_header": self.primary_header},
             time=self.time,
@@ -207,83 +249,87 @@ class Jackknife:
 
         return data  # , weighted_parity
 
-    def __next__(self):
-        """Iterator on the Jackknife object"""
-        if self.n is None or self.i < self.n:
-            # Produce Jackkife data until last iter
-            self.i += 1
-            data = self.__call__()
+
+class Bootstrap(MultiScans):
+    """A class to create bootstraped maps from a list of IDL fits files.
+
+    This acts as a python lazy iterator and/or a callable
+
+    Parameters
+    ----------
+    filenames : list
+        the list of fits files to produce the Jackknifes
+    ipython_widget : bool, optional
+        If True, the progress bar will display as an IPython notebook widget.
+    n : int
+        the number of bootstrap maps to be produced in the iterator
+    n_bootstrap : int
+        the number of realization to produce a bootsrapped map, by default twice the length of the input filename list
+
+    Notes
+    -----
+    A crude check is made on the wcs of each map when instanciated
+    """
+
+    def __init__(self, filenames, n=1, n_bootstrap=None, **kwd):
+        super(Bootstrap, self).__init__(filenames, **kwd)
+        self.n = n
+
+        if n_bootstrap is None:
+            n_bootstrap = 2 * len(self.filenames)
+
+        self.n_bootstrap = n_bootstrap
+
+    def shuffled_average(self, *args):
+        """Actually do one shuffled average."""
+        if len(args) > 0:
+            n_shuffle = len(args[0])
         else:
-            raise StopIteration()
+            n_shuffle = 1
+        n_scans = self.datas.shape[0]
+        outputs = []
+        for i_shuffle in range(n_shuffle):
+            shuffled_index = np.floor(np.random.uniform(0, n_scans, n_scans)).astype(np.int)
+            # np.ma.average is needed as some of the pixels have zero weights (should be masked)
+            outputs.append(
+                np.ma.average(self.datas[shuffled_index], weights=self.weights[shuffled_index], axis=0, returned=False)
+            )
+        return outputs
+
+    def __call__(self):
+        """Compute a bootstraped map
+
+        Returns
+        -------
+        :class:`nikamap.NikaMap`
+            a bootstraped data set
+        """
+
+        bs_array = np.concatenate(
+            ProgressBar.map(
+                self.shuffled_average,
+                np.array_split(np.arange(self.n_bootstrap), cpu_count()),
+                ipython_widget=self.ipython_widget,
+                multiprocess=True,
+            )
+        )
+
+        data = np.mean(bs_array, axis=0)
+        e_data = np.std(bs_array, axis=0, ddof=1)
+
+        # Mask unobserved regions
+        unobserved = self.time == 0
+        data[unobserved] = np.nan
+        e_data[unobserved] = np.nan
+
+        data = NikaMap(
+            data,
+            mask=unobserved,
+            uncertainty=StdDevUncertainty(e_data),
+            unit=self.unit,
+            wcs=WCS(self.header),
+            meta={"header": self.header, "primary_header": self.primary_header},
+            time=self.time,
+        )
 
         return data
-
-
-def bootstrap(filenames, band="1mm", n_bootstrap=200, wmean=False, ipython_widget=False):
-    """Perform Bootstrap analysis on a set of IDL nika fits files"""
-
-    filenames = check_filenames(filenames, band=band, n=None)
-
-    n_scans = len(filenames)
-    header = fits.getheader(filenames[0], "Brightness_{}".format(band))
-    primary_header = fits.getheader(filenames[0])
-
-    f_sampling, bmaj = retrieve_primary_keys(filenames[0], band)
-    header = update_header(header, bmaj)
-
-    shape = (header["NAXIS2"], header["NAXIS1"])
-
-    datas = np.zeros((n_scans,) + tuple(shape), dtype=np.float)
-    hits = np.zeros(shape, dtype=np.float)
-
-    bs_array = np.zeros((n_bootstrap,) + tuple(shape), dtype=np.float)
-
-    # To avoid large memory allocation
-    if wmean:
-        weights = np.zeros((n_scans,) + tuple(shape))
-
-    for index, filename in enumerate(filenames):
-        with fits.open(filename, "readonly") as fits_file:
-            datas[index] = fits_file["Brightness_{}".format(band)].data
-            hits += fits_file["Nhits_{}".format(band)].data
-            if wmean:
-                stddev = fits_file["Stddev_{}".format(band)].data
-                with np.errstate(divide="ignore"):
-                    weights[index] = 1 / stddev ** 2
-
-    if wmean:
-        mask = ~np.isfinite(weights)
-        datas = np.ma.array(datas, mask=mask)
-        weights[mask] = 0
-
-    # This is where the magic happens
-    for index in ProgressBar(np.arange(n_bootstrap), ipython_widget=ipython_widget):
-        shuffled_index = np.floor(np.random.uniform(0, n_scans, n_scans)).astype(np.int)
-        if wmean:
-            bs_array[index, :, :] = np.ma.average(
-                datas[shuffled_index, :, :], weights=weights[shuffled_index, :, :], axis=0, returned=False
-            )
-        else:
-            bs_array[index, :, :] = np.mean(datas[shuffled_index, :, :], axis=0)
-
-    data = np.mean(bs_array, axis=0)
-    e_data = np.std(bs_array, axis=0, ddof=1)
-
-    time = (hits / f_sampling).to(u.h)
-
-    # Mask unobserved regions
-    unobserved = hits == 0
-    data[unobserved] = np.nan
-    e_data[unobserved] = np.nan
-
-    data = NikaMap(
-        data,
-        mask=unobserved,
-        uncertainty=StdDevUncertainty(e_data),
-        unit=header["UNIT"],
-        wcs=WCS(header),
-        meta={"header": header, "primary_header": primary_header},
-        time=time,
-    )
-
-    return data

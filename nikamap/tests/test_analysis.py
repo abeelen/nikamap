@@ -16,7 +16,7 @@ import numpy.testing as npt
 # import nikamap as nm
 # data_path = op.join(nm.__path__[0], 'data')
 
-from ..analysis import Jackknife, bootstrap
+from ..analysis import Jackknife, Bootstrap
 
 
 @pytest.fixture(scope="session")
@@ -249,46 +249,15 @@ def test_Jackknife_assert(generate_nikamaps):
         with pytest.raises(AssertionError):
             iterator = Jackknife([filenames[0], "toto.fits"], n=1)
 
-    # Wrong size type
-    with pytest.raises(AssertionError):
-        iterator = Jackknife(filenames, n=(100,))
 
-
-def test_bootstrap(generate_nikamaps):
+def test_Bootstrap(generate_nikamaps):
     filenames = generate_nikamaps
 
     primary_header = fits.getheader(filenames[0], 0)
-    weighted_noise = primary_header["NOISE"] / np.sqrt(primary_header["NMAPS"])
+    weighted_noises = primary_header["NOISE"] / np.sqrt(np.arange(1, primary_header["NMAPS"] + 1))
 
-    np.random.seed(0)
-    nm = bootstrap(filenames, n_bootstrap=len(filenames) * 10)
-    mean_std = np.mean(nm.uncertainty.array[~nm.mask])
-    std_std = np.std(nm.uncertainty.array[~nm.mask])
-    assert np.abs(weighted_noise - mean_std) < std_std
+    # Weighted average
+    bs = Bootstrap(filenames, n=1, n_bootstrap=10)
+    data = bs()
 
-    # For some reason, it seems that the bootstrap std is biaised....
-    # n_bootstraps = np.logspace(np.log10(10), np.log10(1000), 10).astype(np.int)
-    # mean_std = []
-    # std_std = []
-    # for n_bootstrap in n_bootstraps:
-    #     nm = bootstrap(filenames, n_bootstrap=n_bootstrap)
-    #     mean_std.append(np.mean(nm.uncertainty.array[~nm.mask]))
-    #     std_std.append(np.std(nm.uncertainty.array[~nm.mask]))
-    #
-    # # We are actually limited by the number of input maps here...
-    # plt.errorbar(n_bootstraps, mean_std, std_std)
-    # plt.axhline(weighted_noise)
-
-
-def test_weigthed_bootstrap(generate_nikamaps):
-    filenames = generate_nikamaps
-
-    primary_header = fits.getheader(filenames[0], 0)
-    weighted_noise = primary_header["NOISE"] / np.sqrt(primary_header["NMAPS"])
-
-    # This is equivalent to the unweighted case as the weights are all the same
-    np.random.seed(0)
-    nm = bootstrap(filenames, n_bootstrap=len(filenames) * 10, wmean=True)
-    mean_std = np.mean(nm.uncertainty.array[~nm.mask])
-    std_std = np.std(nm.uncertainty.array[~nm.mask])
-    assert np.abs(weighted_noise - mean_std) < std_std
+    # Trouble to find a proper test for this
