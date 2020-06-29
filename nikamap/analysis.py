@@ -40,6 +40,28 @@ def compare_header(header_ref, header_target):
             assert header_ref[key] == header_target[key], "Different key found"
 
 
+def check_filenames(filenames):
+    """check filenames existence
+
+    Parameters
+    ----------
+    filenames : list of str
+        filenames list to be checked
+
+    Returns
+    -------
+    list of str
+        curated list of files
+    """
+    _filenames = []
+    for filename in filenames:
+        if os.path.isfile(filename):
+            _filenames.append(filename)
+        else:
+            warnings.warn("{} does not exist, removing from list".format(filename), UserWarning)
+    return _filenames
+
+
 class MultiScans(object):
     """A class to hold multi single scans from a list of fits files.
 
@@ -77,16 +99,7 @@ class MultiScans(object):
             self.time = data.time
             self.mask = data.mask
         else:
-
-            # Chek for existence
-            checked_filenames = []
-            for filename in filenames:
-                if os.path.isfile(filename):
-                    checked_filenames.append(filename)
-                else:
-                    warnings.warn("{} does not exist, removing from list".format(filename), UserWarning)
-
-            self.filenames = checked_filenames
+            self.filenames = check_filenames(filenames)
 
             nm = NikaMap.read(self.filenames[0], **kwd)
 
@@ -224,7 +237,8 @@ class Jackknife(MultiScans):
             e_data = 1 / np.sqrt(np.sum(self.weights, axis=0))
             data = np.sum(self.datas * self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data ** 2
             parity = np.mean((self.weights != 0) * self.jk_weights[:, np.newaxis, np.newaxis], axis=0)
-            weighted_parity = np.sum(self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data ** 2
+            # TBC: In principle we should use a weighted parity to avoid different scans/weights problems
+            # weighted_parity = np.sum(self.weights * self.jk_weights[:, np.newaxis, np.newaxis], axis=0) * e_data ** 2
 
         if self.n is not None:
             mask = (1 - np.abs(parity)) < self.parity_threshold
@@ -288,12 +302,10 @@ class Bootstrap(MultiScans):
             n_shuffle = 1
         n_scans = self.datas.shape[0]
         outputs = []
-        for i_shuffle in range(n_shuffle):
+        for _ in range(n_shuffle):
             shuffled_index = np.floor(np.random.uniform(0, n_scans, n_scans)).astype(np.int)
             # np.ma.average is needed as some of the pixels have zero weights (should be masked)
-            outputs.append(
-                np.ma.average(self.datas[shuffled_index], weights=self.weights[shuffled_index], axis=0, returned=False)
-            )
+            outputs.append(np.ma.average(self.datas[shuffled_index], weights=self.weights[shuffled_index], axis=0, returned=False))
         return outputs
 
     def __call__(self):
@@ -306,12 +318,7 @@ class Bootstrap(MultiScans):
         """
 
         bs_array = np.concatenate(
-            ProgressBar.map(
-                self.shuffled_average,
-                np.array_split(np.arange(self.n_bootstrap), cpu_count()),
-                ipython_widget=self.ipython_widget,
-                multiprocess=True,
-            )
+            ProgressBar.map(self.shuffled_average, np.array_split(np.arange(self.n_bootstrap), cpu_count()), ipython_widget=self.ipython_widget, multiprocess=True,)
         )
 
         data = np.mean(bs_array, axis=0)

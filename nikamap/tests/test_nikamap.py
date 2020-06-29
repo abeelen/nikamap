@@ -373,9 +373,7 @@ def single_source_mask_edge():
 
     data += g(xx, yy)
 
-    nm = NikaMap(
-        data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, mask=mask, fake_sources=fake_sources
-    )
+    nm = NikaMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, mask=mask, fake_sources=fake_sources)
 
     nm.x = fake_sources["x_mean"]
     nm.y = fake_sources["y_mean"]
@@ -519,9 +517,7 @@ def test_nikamap_phot_mask_edge(single_source_mask_edge):
     npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
 
 
-@pytest.fixture(
-    params=["single_source", "single_source_side", "single_source_mask", "grid_sources", "wobble_grid_sources"]
-)
+@pytest.fixture(params=["single_source", "single_source_side", "single_source_mask", "grid_sources", "wobble_grid_sources"])
 def nms(request):
     return getfixturevalue(request, request.param)
 
@@ -704,7 +700,7 @@ def test_nikamap_plot_ax(nms):
     nm.plot(ax=axes[3], cat=True)
 
     for ax in axes:
-        ax.legend(loc='best', frameon=False)
+        ax.legend(loc="best", frameon=False)
 
     return fig
 
@@ -718,7 +714,7 @@ def test_nikamap_plot_PSD(nms):
     nm.plot_PSD(ax=axes[0])
     nm.plot_PSD(ax=axes[1], apod_size=5)
     nm.plot_PSD(ax=axes[2], bins=50)
-    nm.plot_PSD(ax=axes[3], snr=True)
+    nm.plot_PSD(ax=axes[3], to_plot="snr")
 
     powspec, bins = nm.plot_PSD()
 

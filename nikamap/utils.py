@@ -5,6 +5,8 @@ import warnings
 
 from scipy import signal
 
+import matplotlib.pyplot as plt
+
 from astropy.io import fits
 from astropy import units as u
 from astropy.wcs import WCS
@@ -97,8 +99,8 @@ def fake_header(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcse
     header["CDELT2"] = (pixsize.to(u.deg).value, "Degrees / Pixel")
 
     header["OBJECT"] = ("fake", "Name of the object")
-    header["BMAJ"] = (beam_fwhm.to(u.deg).value, "[deg],  Beam major axis")
-    header["BMIN"] = (beam_fwhm.to(u.deg).value, "[deg],  Beam major axis")
+
+    update_header(header, beam_fwhm)
 
     return header
 
@@ -340,7 +342,6 @@ def fake_data(
         e_data = jk_data.uncertainty
         mask = jk_data.mask
         time = jk_data.time
-        header = jk_data.wcs.to_header()
         shape = data.shape
     elif e_data is not None:
         # Only gave e_data
@@ -518,3 +519,29 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
     bin_edges = bin_edges * pix_unit ** -1
 
     return hist, bin_edges
+
+
+def setup_ax(ax=None, wcs=None):
+    """Setup a axe for plotting.
+
+    Parameters
+    ----------
+    ax : ~matplotlib.Axes, optional
+        potential axe, by default None
+    wcs : ~astropy.wcs.WCS, optional
+        potential wcs, by default None
+
+    Returns
+    -------
+    ~matplotlib.Axes
+        the necessary axe.
+    """
+
+    if not ax:
+        fig = plt.figure()
+        if wcs is not None:
+            ax = fig.add_subplot(111, projection=getattr(wcs, "low_level_wcs", wcs))
+        else:
+            ax = fig.add_subplot(111)
+
+    return ax
