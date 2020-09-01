@@ -194,13 +194,16 @@ class Jackknife(MultiScans):
     """
 
     def __init__(self, filenames, n=1, parity_threshold=1, **kwd):
+
+        if n is not None and len(filenames) % 2:
+            warnings.warn("Even number of files, dropping the last one", UserWarning)
+            filenames = filenames[:-1]
+
         super(Jackknife, self).__init__(filenames, **kwd)
         self.n = n
         self.parity_threshold = parity_threshold
 
-        if n is not None and len(self.filenames) % 2:
-            warnings.warn("Even number of files, dropping the last one", UserWarning)
-            self.filenames = self.filenames[:-1]
+
 
         assert len(self.filenames) > 1, "Less than 2 existing files in filenames"
 
