@@ -1,4 +1,3 @@
-from nikamap import NikaMap
 from nikamap.utils import fake_data
 
 import warnings

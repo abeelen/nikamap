@@ -6,8 +6,6 @@ from pathlib import Path
 
 import numpy as np
 
-import matplotlib.pyplot as plt
-
 from astropy.io import fits, registry
 from astropy import units as u
 from astropy.wcs import WCS, InconsistentAxisTypesError
@@ -622,6 +620,8 @@ class NikaMap(NDDataArray):
         >>> data[(npix-std*8)//2:(npix+std*8)//2+1,(npix-std*8)//2:(npix+std*8)//2+1] += kernel.array/kernel.array.max()
         >>> data = NikaMap(data, uncertainty=StdDevUncertainty(np.ones_like(data)), time=np.ones_like(data)*u.s, mask=mask)
         >>> mf_data = data.match_filter(kernel)
+        >>> import matplotlib.pypot as plt
+        >>> plt.ion()
         >>> fig, axes = plt.subplots(ncols=2)
         >>> axes[0].imshow(data) ; axes[1].imshow(mf_data)
         """

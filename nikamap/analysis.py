@@ -5,14 +5,12 @@ import warnings
 import numpy as np
 from multiprocessing import cpu_count
 
-from astropy.io import fits
 from astropy.wcs import WCS
 from astropy import units as u
 from astropy.nddata import StdDevUncertainty
 from astropy.utils.console import ProgressBar
 
-from .nikamap import retrieve_primary_keys, NikaMap
-from .utils import update_header
+from .nikamap import NikaMap
 
 __all__ = ["Jackknife", "Bootstrap"]
 
@@ -199,11 +197,13 @@ class Jackknife(MultiScans):
             warnings.warn("Even number of files, dropping the last one", UserWarning)
             filenames = filenames[:-1]
 
+        filenames = check_filenames(filenames)  # Redundant with super()
+
+        assert len(filenames) > 1, "Less than 2 existing files in filenames"
+
         super(Jackknife, self).__init__(filenames, **kwd)
         self.n = n
         self.parity_threshold = parity_threshold
-
-        assert len(self.filenames) > 1, "Less than 2 existing files in filenames"
 
         # Base jackknife weights
         jk_weights = np.ones(len(self.filenames))
