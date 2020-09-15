@@ -1,5 +1,30 @@
 master
 =====
+Added
+-----
+
+Fixed
+-----
+
+Version 0.2.2
+=============
+
+Added
+-----
+* Jackknife class renamed as HalfDifference
+* Jackknife now provide a proper jackknife resampling
+
+Vesion 0.2
+==========
+Added
+-----
+* Boostrap sampling
+
+Fixed
+-----
+* use the new astropy low_level_wcs interface when present (astropy 4 compatibility)
+* general piic format (rgw instead of snr)
+* Refactor Jackknife
 
 Version 0.1.2
 =============
