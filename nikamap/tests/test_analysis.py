@@ -16,21 +16,14 @@ import numpy.testing as npt
 # import nikamap as nm
 # data_path = op.join(nm.__path__[0], 'data')
 
-from ..analysis import Jackknife, Bootstrap
+from ..analysis import HalfDifference, MultiScans, Jackknife, Bootstrap
 
+Jybeam = u.Jy / u.beam
 
-@pytest.fixture(scope="session")
-def generate_nikamaps(tmpdir_factory):
+def generate_nikamaps(tmpdir_factory, shape=(61, 61), pixsize=1/3*u.deg, noise_level=1*Jybeam, nmaps=10, nsources=5, fwhm =1*u.deg, nrots=4):
     # Generate several maps with sources and noise... only one band...
 
     tmpdir = tmpdir_factory.mktemp("nm_maps")
-
-    shape = (61, 61)
-    pixsize = 1 / 3 * u.deg
-    noise_level = 1 * u.Jy / u.beam
-    nmaps = 10
-    nsources = 5
-    fwhm = 1 * u.deg
 
     wcs = WCS()
     wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
@@ -60,7 +53,7 @@ def generate_nikamaps(tmpdir_factory):
     sources.add_column(Column(np.arange(len(sources)), name="ID"), 0)
 
     # Elliptical gaussian mask
-    def mask_rot(shape, sigma, theta, limit):
+    def elliptical_mask_rot(shape, sigma, theta, limit):
         xx, yy = np.indices(shape)
 
         xx_arr = xx - (shape[1] - 1) / 2
@@ -87,6 +80,7 @@ def generate_nikamaps(tmpdir_factory):
     primary_header["nsources"] = nsources, "Number of fake sources"
     primary_header["pixsize"] = pixsize.to(u.deg).value, "[deg] pixel size"
     primary_header["nmaps"] = nmaps, "number of maps produced"
+    primary_header["nrots"] = nmaps, "number of rotations"
     primary_header["shape0"] = shape[0], "[0] of map shape"
     primary_header["shape1"] = shape[1], "[1] of map shape"
     primary_header["noise"] = noise_level.to(u.Jy / u.beam).value, "[Jy/beam] noise level per map"
@@ -98,7 +92,7 @@ def generate_nikamaps(tmpdir_factory):
     for i_map in range(nmaps):
 
         # Rotated asymetric mask
-        mask = mask_rot(shape, (np.sqrt(1 / 2), np.sqrt(2 / 5)), i_map * np.pi / 4, (shape[0] - 1) / 2)
+        mask = elliptical_mask_rot(shape, (np.sqrt(1 / 2), np.sqrt(2 / 5)), i_map * np.pi / nrots, (shape[0] - 1) / 2)
 
         filename = str(tmpdir.join("map_{}.fits".format(i_map)))
 
@@ -129,126 +123,142 @@ def generate_nikamaps(tmpdir_factory):
     return filenames
 
 
-def test_Jackknife_average(generate_nikamaps):
+@pytest.fixture(name="generate_nikamaps", scope="session")
+def generate_nikamaps_fixture(tmpdir_factory):
+    # default arguments
+    return generate_nikamaps(tmpdir_factory)
+
+
+def test_MultiScans_init(generate_nikamaps):
     filenames = generate_nikamaps
 
-    primary_header = fits.getheader(filenames[0], 0)
-    weighted_noise = primary_header["NOISE"] / np.sqrt(primary_header["NMAPS"])
+    ms = MultiScans(filenames, n=None)
 
-    # Weighted average
-    jk = Jackknife(filenames, n=None, parity_threshold=1)
-    data = next(jk)
-    assert np.all(data.uncertainty.array[~data.mask] == weighted_noise)
-
-    data_call = jk()
-    npt.assert_equal(data.data[~data.mask], data_call.data[~data_call.mask])
+    ms2 = MultiScans(ms, n=1)
+    assert ms.filenames == ms2.filenames
+    npt.assert_equal(ms.datas, ms2.datas)
+    npt.assert_equal(ms.weights, ms2.weights)
+    npt.assert_equal(ms.time, ms2.time)
+    npt.assert_equal(ms.mask, ms2.mask)
 
 
-def test_Jackknife_call(generate_nikamaps):
+def test_MultiScans_iterator(generate_nikamaps):
     filenames = generate_nikamaps
 
-    primary_header = fits.getheader(filenames[0], 0)
-    weighted_noise = primary_header["NOISE"] / np.sqrt(primary_header["NMAPS"])
+    iterator = MultiScans(filenames, n=10)
+    assert len(iterator) == 10
 
-    # Produce one Jackknife
-    jk = Jackknife(filenames, n=1, parity_threshold=1)
-    data = jk()
-
-    shape = data.shape
-    norm = data.time.value / data.time.value[(shape[1] - 1) // 2, (shape[0] - 1) // 2]
-    npt.assert_allclose((data.uncertainty.array * norm ** 0.5)[~data.mask], weighted_noise)
-
-
-def test_Jackknife_parity_set(generate_nikamaps):
-    filenames = generate_nikamaps
-
-    jk = Jackknife(filenames, parity_threshold=0)
-    assert jk.parity_threshold == 0
-
-    jk = Jackknife(filenames, parity_threshold=0.4)
-    assert jk.parity_threshold == 0.4
-
-    jk = Jackknife(filenames)
-    assert jk.parity_threshold == 1
-
-    with pytest.raises(TypeError):
-        jk = Jackknife(filenames, parity_threshold=-0.1)
-
-    with pytest.raises(TypeError):
-        jk = Jackknife(filenames, parity_threshold=1.1)
-
-
-# import py.path
-# tmpdir = py.path.local()
-# tmpdir.mktemp = tmpdir.mkdir
-# filenames = generate_nikamaps(tmpdir)
-
-
-def test_Jackknife_parity(generate_nikamaps):
-    filenames = generate_nikamaps
-
-    primary_header = fits.getheader(filenames[0], 0)
-    weighted_noises = primary_header["NOISE"] / np.sqrt(np.arange(1, primary_header["NMAPS"] + 1))
-
-    jk = Jackknife(filenames, n=None, parity_threshold=0)
-    data = jk()
-    uncertainties = np.unique(data.uncertainty.array[~data.mask])
-
-    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
-
-    jk.parity_threshold = 0.5
-    data = jk()
-    uncertainties = np.unique(data.uncertainty.array[~data.mask])
-
-    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
-
-    jk = Jackknife(filenames, n=1, parity_threshold=0)
-    data = jk()
-    uncertainties = np.unique(data.uncertainty.array[~data.mask])
-
-    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
-
-    jk.parity_threshold = 0.5
-    data = jk()
-    uncertainties = np.unique(data.uncertainty.array[~data.mask])
-
-    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
-
-
-def test_Jackknife_iterator(generate_nikamaps):
-    filenames = generate_nikamaps
-
-    iterator = Jackknife(filenames, n=10)
     assert len(list(iterator)) == 10
 
     with pytest.raises(StopIteration):
         next(iterator)
 
 
-def test_Jackknife_odd(generate_nikamaps):
+def test_HalfDifference_average(generate_nikamaps):
+    filenames = generate_nikamaps
+
+    primary_header = fits.getheader(filenames[0], 0)
+    weighted_noise = primary_header["NOISE"] / np.sqrt(primary_header["NMAPS"])
+
+    # Weighted average
+    hd = HalfDifference(filenames, n=None, parity_threshold=1)
+    data = next(hd)
+    assert np.all(data.uncertainty.array[~data.mask] == weighted_noise)
+
+    data_call = hd()
+    npt.assert_equal(data.data[~data.mask], data_call.data[~data_call.mask])
+
+
+def test_HalfDifference_call(generate_nikamaps):
+    filenames = generate_nikamaps
+
+    primary_header = fits.getheader(filenames[0], 0)
+    weighted_noise = primary_header["NOISE"] / np.sqrt(primary_header["NMAPS"])
+
+    # Produce one HalfDifference
+    hd = HalfDifference(filenames, n=1, parity_threshold=1)
+    data = hd()
+
+    shape = data.shape
+    norm = data.time.value / data.time.value[(shape[1] - 1) // 2, (shape[0] - 1) // 2]
+    npt.assert_allclose((data.uncertainty.array * norm ** 0.5)[~data.mask], weighted_noise)
+
+
+def test_HalfDifference_parity_set(generate_nikamaps):
+    filenames = generate_nikamaps
+
+    hd = HalfDifference(filenames, parity_threshold=0)
+    assert hd.parity_threshold == 0
+
+    hd = HalfDifference(filenames, parity_threshold=0.4)
+    assert hd.parity_threshold == 0.4
+
+    hd = HalfDifference(filenames)
+    assert hd.parity_threshold == 1
+
+    with pytest.raises(TypeError):
+        hd = HalfDifference(filenames, parity_threshold=-0.1)
+
+    with pytest.raises(TypeError):
+        hd = HalfDifference(filenames, parity_threshold=1.1)
+
+
+def test_HalfDifference_parity(generate_nikamaps):
+    filenames = generate_nikamaps
+
+    primary_header = fits.getheader(filenames[0], 0)
+    weighted_noises = primary_header["NOISE"] / np.sqrt(np.arange(1, primary_header["NMAPS"] + 1))
+
+    hd = HalfDifference(filenames, n=None, parity_threshold=0)
+    data = hd()
+    uncertainties = np.unique(data.uncertainty.array[~data.mask])
+
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
+
+    hd.parity_threshold = 0.5
+    data = hd()
+    uncertainties = np.unique(data.uncertainty.array[~data.mask])
+
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
+
+    hd = HalfDifference(filenames, n=1, parity_threshold=0)
+    data = hd()
+    uncertainties = np.unique(data.uncertainty.array[~data.mask])
+
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
+
+    hd.parity_threshold = 0.5
+    data = hd()
+    uncertainties = np.unique(data.uncertainty.array[~data.mask])
+
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
+
+
+
+
+def test_HalfDifference_odd(generate_nikamaps):
     filenames = generate_nikamaps
 
     # Odd number
     with pytest.warns(UserWarning):
-        iterator = Jackknife(filenames[1:], n=1)
+        _ = HalfDifference(filenames[1:], n=1)
 
 
-def test_Jackknife_assert(generate_nikamaps):
+def test_HalfDifference_assert(generate_nikamaps):
     filenames = generate_nikamaps
 
     # Non existent files
     with pytest.warns(UserWarning):
-        iterator = Jackknife([filenames[0], filenames[1], "toto.fits"], n=1)
+        _ = HalfDifference([filenames[0], filenames[1], "toto.fits"], n=1)
 
     # Non existent files
     with pytest.raises(AssertionError):
-        iterator = Jackknife([filenames[0]], n=1)
+        _ = HalfDifference([filenames[0]], n=1)
 
     # Non existent files
     with pytest.warns(UserWarning):
         with pytest.raises(AssertionError):
-            iterator = Jackknife([filenames[0], "toto.fits"], n=1)
-
+            _ = HalfDifference([filenames[0], "toto.fits"], n=1)
 
 def test_Bootstrap(generate_nikamaps):
     filenames = generate_nikamaps
@@ -257,7 +267,37 @@ def test_Bootstrap(generate_nikamaps):
     weighted_noises = primary_header["NOISE"] / np.sqrt(np.arange(1, primary_header["NMAPS"] + 1))
 
     # Weighted average
-    bs = Bootstrap(filenames, n=1, n_bootstrap=10)
+    bs = Bootstrap(filenames, n=None)
     data = bs()
 
+    # Most likely weight and median absolute deviation should be the minimal noise
+    med = np.nanmedian(data.uncertainty.array)
+    mad = np.nanmedian(np.abs(data.uncertainty.array - med))
+    assert (weighted_noises.min() - med)  <  mad
+
     # Trouble to find a proper test for this
+
+def test_Jackknife(generate_nikamaps):
+    filenames = generate_nikamaps
+
+    primary_header = fits.getheader(filenames[0], 0)
+    weighted_noises = primary_header["NOISE"] / np.sqrt(np.arange(1, primary_header["NMAPS"] + 1))
+
+    # Weighted average
+    jk = Jackknife(filenames, n=None)
+    data = jk()
+
+    # Most likely weight and median absolute deviation should be the minimal noise
+    med = np.nanmedian(data.uncertainty.array)
+    mad = np.nanmedian(np.abs(data.uncertainty.array - med))
+    assert (weighted_noises.min() - med)  <  mad
+
+    # Trouble to find a proper test for this
+
+# To be run interactively to get a fixture for debugging
+def interactive_fixture():
+    import py.path
+    tmpdir = py.path.local()
+    tmpdir.mktemp = tmpdir.mkdir
+    filenames = generate_nikamaps(tmpdir)
+    return filenames

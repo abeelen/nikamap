@@ -12,7 +12,7 @@ from astropy.utils.console import ProgressBar
 
 from .nikamap import NikaMap
 
-__all__ = ["Jackknife", "Bootstrap"]
+__all__ = ["HalfDifference", "Jackknife", "Bootstrap"]
 
 
 def compare_header(header_ref, header_target):
@@ -71,16 +71,20 @@ class MultiScans(object):
         the list of fits files to produce the Jackknifes or an already filled object
     ipython_widget : bool, optional
         If True, the progress bar will display as an IPython notebook widget.
+    ignore_header : bool, optional
+        if True, the check on header is ignored 
+    n : int
+        the number of iteration for the iterator
 
     Notes
     -----
     A crude check is made on the wcs of each map when instanciated
     """
 
-    def __init__(self, filenames, ipython_widget=False, **kwd):
+    def __init__(self, filenames, n=None, ipython_widget=False, ignore_header=False, **kwd):
 
         self.i = 0
-        self.n = None
+        self.n = n
         self.kwargs = kwd
         self.ipython_widget = ipython_widget
 
@@ -118,7 +122,10 @@ class MultiScans(object):
                 try:
                     compare_header(self.header, nm.meta["header"])
                 except AssertionError as e:
-                    raise ValueError("{} for {}".format(e, filename))
+                    if ignore_header:
+                        warnings.warn("{} for {}".format(e, filename), UserWarning)
+                    else:
+                        raise ValueError("{} for {}".format(e, filename))
 
                 datas[i, :, :] = nm.data
                 with np.errstate(invalid="ignore", divide="ignore"):
@@ -164,8 +171,8 @@ class MultiScans(object):
         return data
 
 
-class Jackknife(MultiScans):
-    """A class to create weighted Jackknife maps from a list of IDL fits files.
+class HalfDifference(MultiScans):
+    """A class to create weighted half differences uncertainty maps from a list of scans.
 
     This acts as a python lazy iterator and/or a callable
 
@@ -191,25 +198,22 @@ class Jackknife(MultiScans):
     A crude check is made on the wcs of each map when instanciated
     """
 
-    def __init__(self, filenames, n=1, parity_threshold=1, **kwd):
+    def __init__(self, filenames, parity_threshold=1, **kwd):
 
-        if n is not None and len(filenames) % 2:
-            warnings.warn("Even number of files, dropping the last one", UserWarning)
-            filenames = filenames[:-1]
-
-        filenames = check_filenames(filenames)  # Redundant with super()
-
-        assert len(filenames) > 1, "Less than 2 existing files in filenames"
-
-        super(Jackknife, self).__init__(filenames, **kwd)
-        self.n = n
+        super(HalfDifference, self).__init__(filenames, **kwd)
         self.parity_threshold = parity_threshold
 
-        # Base jackknife weights
+        # Create weights for Half differences
         jk_weights = np.ones(len(self.filenames))
 
-        if n is not None:
+        if self.n is not None:
             jk_weights[::2] *= -1
+
+        if self.n is not None and len(self.filenames) % 2:
+            warnings.warn("Even number of files, dropping a random file", UserWarning)
+            jk_weights[-1] = 0
+
+        assert np.sum(jk_weights != 0), "Less than 2 existing files in filenames"
 
         self.jk_weights = jk_weights
 
@@ -265,6 +269,143 @@ class Jackknife(MultiScans):
         return data  # , weighted_parity
 
 
+class Jackknife(MultiScans):
+    """A class to create weighted Jackknife maps from a list of scans.
+
+    This acts as a python lazy iterator and/or a callable
+
+    Parameters
+    ----------
+    filenames : list
+        the list of fits files to produce the Jackknifes
+    n_samples : int
+        The number of (sub) samples to use (from 2 to len(filenames)) 
+    parity_threshold : float
+        mask threshold between 0 and 1 to keep partially jackknifed area
+        * 1 pure jackknifed
+        * 0 partially jackknifed, keep all
+    ipython_widget : bool, optional
+        If True, the progress bar will display as an IPython notebook widget.
+    n : int
+        the number of Jackknifes maps to be produced by the iterator
+
+
+    Notes
+    -----
+    A crude check is made on the wcs of each map when instanciated
+    """
+
+    def __init__(self, filenames, n_samples=None, parity_threshold=1, **kwd):
+
+        super(Jackknife, self).__init__(filenames, **kwd)
+
+        assert len(self.filenames) > 1, "Less than 2 existing files in filenames"
+
+        self.n_samples = n_samples  # Will create the indexes for the sub-samples
+        self.parity_threshold = parity_threshold
+
+    @property
+    def parity_threshold(self):
+        return self._parity
+
+    @parity_threshold.setter
+    def parity_threshold(self, value):
+        if value is not None and isinstance(value, (int, float)) and 0 <= value <= 1:
+            self._parity = value
+        else:
+            raise TypeError("parity must be between 0 and 1")
+
+    @property
+    def n_samples(self):
+        return self._n_samples
+
+    @n_samples.setter
+    def n_samples(self, value):
+        if value is None:
+            value = len(self.filenames)
+
+        assert (2 <= value) and (value <= len(self.filenames)), "n_samples must be between 2 and the number of scans"
+
+        self._n_samples = value
+       
+        # Check compatibility between n_samples and filenames length
+        n_filenames = len(self.filenames)
+        remainder = n_filenames % value
+
+        if remainder:
+            warnings.warn("Remainder in number of files for {} samples, dropping the last {}".format(value, remainder), UserWarning)
+            n_filenames -= remainder
+
+        assert n_filenames, "Less than 2 existing files in filenames"
+
+        # Create the indexes for the sub-samples
+        indexes = np.repeat(np.arange(value), n_filenames // value)
+        
+        if remainder:
+            indexes = np.concatenate([indexes, np.full(remainder, np.nan)])
+
+        self.indexes = indexes
+
+
+    def __call__(self):
+        """Compute a jackknifed dataset
+
+        Returns
+        -------
+        :class:`nikamap.NikaMap`
+            a jackknifed data set
+        """
+        np.random.shuffle(self.indexes)
+
+        with np.errstate(invalid="ignore", divide="ignore"):
+            
+            # Compute sub-samples
+            sub_datas = []
+            sub_weights = []
+            for idx in range(self.n_samples):
+                mask = self.indexes == idx
+                data, weight = np.ma.average(self.datas[mask], weights=self.weights[mask], axis=0, returned=True)
+                sub_datas.append(data)
+                sub_weights.append(weight)
+            
+            sub_datas = np.ma.array(sub_datas)
+            sub_weights = np.ma.array(sub_weights)
+
+            data = np.ma.average(sub_datas, weights=sub_weights, axis=0)
+            # unweighted sample variance
+            V1 = self.n_samples
+            e_data = np.sqrt(np.sum((sub_datas - data)**2, axis=0) /(V1 * (V1 - 1)))
+            # TODO : weighted sample variance (NOT WORKING !!!)
+            # V1 = np.sum(sub_weights, axis=0)
+            # V2 = np.sum(sub_weights**2, axis=0)
+            # e_data = np.sqrt(np.sum(sub_weights * (sub_datas - data)**2, axis=0)  / (V1 - V2 / V1) )
+            # e_data = e_data.filled(np.nan)
+
+            parity = np.mean(sub_weights != 0, axis=0)
+
+            # TBC: In principle we should use a weighted parity to avoid different scans/weights problems
+
+            mask = parity < self.parity_threshold
+
+        mask = mask | self.mask
+
+        data[mask] = np.nan
+        e_data[mask] = np.nan
+
+        # TBC: time will have a different mask here....
+        data = NikaMap(
+            data,
+            mask=mask,
+            uncertainty=StdDevUncertainty(e_data),
+            unit=self.unit,
+            wcs=WCS(self.header),
+            meta={"header": self.header, "primary_header": self.primary_header},
+            time=self.time,
+        )
+
+        return data  # , weighted_parity
+
+
 class Bootstrap(MultiScans):
     """A class to create bootstraped maps from a list of IDL fits files.
 
@@ -274,24 +415,23 @@ class Bootstrap(MultiScans):
     ----------
     filenames : list
         the list of fits files to produce the Jackknifes
+    n_bootstrap : int
+        the number of realization to produce a bootsrapped map, by default 20 times the length of the input filename list
     ipython_widget : bool, optional
         If True, the progress bar will display as an IPython notebook widget.
     n : int
-        the number of bootstrap maps to be produced in the iterator
-    n_bootstrap : int
-        the number of realization to produce a bootsrapped map, by default twice the length of the input filename list
+        the number of bootstrap maps to be produced by the iterator
 
     Notes
     -----
     A crude check is made on the wcs of each map when instanciated
     """
 
-    def __init__(self, filenames, n=1, n_bootstrap=None, **kwd):
+    def __init__(self, filenames, n_bootstrap=None, **kwd):
         super(Bootstrap, self).__init__(filenames, **kwd)
-        self.n = n
 
         if n_bootstrap is None:
-            n_bootstrap = 2 * len(self.filenames)
+            n_bootstrap = 20 * len(self.filenames)
 
         self.n_bootstrap = n_bootstrap
 
