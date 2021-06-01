@@ -1040,7 +1040,7 @@ def piic_fits_nikamap_reader(filename, band=None, revert=False, unit="mJy/beam",
     the snr filenames is assumed to be in the same directory ending in '_snr.fits'
     """
     data_file = Path(filename)
-    rgw_file = data_file.parent / (data_file.with_suffix("").name + "_rgw.fits")
+    rgw_file = data_file.parent / (data_file.with_suffix("").name + "rgw.fits")
 
     assert data_file.exists() & rgw_file.exists(), "Either {} or {} could not be found".format(data_file.name, rgw_file.name)
 
@@ -1072,7 +1072,7 @@ def piic_fits_nikamap_reader(filename, band=None, revert=False, unit="mJy/beam",
 
 def identify_piic(origin, *args, **kwargs):
     data_file = Path(args[0])
-    rgw_file = data_file.parent / (data_file.with_suffix("").name + "_rgw.fits")
+    rgw_file = data_file.parent / (data_file.with_suffix("").name + "rgw.fits")
     check = data_file.exists() & rgw_file.exists()
     if check:
         check &= fits.connect.is_fits("read", data_file.parent, data_file.open(mode="rb"))
