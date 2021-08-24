@@ -434,7 +434,7 @@ def wobble_grid_sources():
     return nm
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def generate_fits(tmpdir_factory):
 
     tmpdir = tmpdir_factory.mktemp("nm_map")
