@@ -11,7 +11,7 @@ from astropy.io import fits, registry
 from astropy import units as u
 from astropy.wcs import WCS, InconsistentAxisTypesError
 from astropy.coordinates import match_coordinates_sky
-from astropy.nddata import NDDataArray, NDUncertainty 
+from astropy.nddata import NDDataArray, NDUncertainty
 from astropy.nddata import StdDevUncertainty, InverseVariance, VarianceUncertainty
 from astropy.modeling import models
 from astropy.modeling.fitting import LevMarLSQFitter
@@ -28,7 +28,7 @@ from photutils.psf import BasicPSFPhotometry
 from photutils.psf import DAOGroup
 from photutils.background import MedianBackground
 from photutils.datasets import make_gaussian_sources_image
-from photutils.centroids import centroid_2dg
+from photutils.centroids import centroid_2dg, centroid_com
 
 from radio_beam import Beam
 
@@ -81,7 +81,9 @@ class NikaBeam(Kernel2D):
         self._truncation = np.abs(1.0 - self._array.sum())
 
     def __repr__(self):
-        return "<NikaBeam(fwhm={}, pixel_scale={:.2f} / pixel)".format(self._fwhm.to(u.arcsec), (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale))
+        return "<NikaBeam(fwhm={}, pixel_scale={:.2f} / pixel)".format(
+            self._fwhm.to(u.arcsec), (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale)
+        )
 
     @property
     def fwhm(self):
@@ -108,7 +110,10 @@ class NikaBeam(Kernel2D):
 
     @property
     def sigma_pix(self):
-        warnings.warn("sigma is deprecated, use major/minor.to(u.pixel, u=pixel_scale)* gaussian_fwhm_to_sigma", DeprecationWarning)
+        warnings.warn(
+            "sigma is deprecated, use major/minor.to(u.pixel, u=pixel_scale)* gaussian_fwhm_to_sigma",
+            DeprecationWarning,
+        )
         return self._fwhm.to(u.pixel, equivalencies=self._pixel_scale) * gaussian_fwhm_to_sigma
 
     @property
@@ -209,7 +214,7 @@ class NikaMap(NDDataArray):
         self.primary_header = kwargs.pop("primary_header", None)
         self.fake_sources = kwargs.pop("fake_sources", None)
         self.sources = kwargs.pop("sources", None)
-        self.sampling_freq = kwargs.pop('sampling_freq', None)
+        self.sampling_freq = kwargs.pop("sampling_freq", None)
 
         self.hits = kwargs.pop("hits", None)
         self.beam = kwargs.pop("beam", None)
@@ -232,8 +237,8 @@ class NikaMap(NDDataArray):
         if self.beam is None:
             # Default BMAJ 1 deg...
             header = self.meta
-            if 'BMAJ' not in header:
-                header['BMAJ'] = 1
+            if "BMAJ" not in header:
+                header["BMAJ"] = 1
             self.beam = Beam.from_fits_header(fits.Header(header))
 
     @property
@@ -243,7 +248,7 @@ class NikaMap(NDDataArray):
     @header.setter
     def header(self, value):
         self.meta = value
-            
+
     @property
     def time(self):
         if self.hits is not None and self.sampling_freq is not None:
@@ -393,10 +398,10 @@ class NikaMap(NDDataArray):
         if value is None or isinstance(value, Beam):
             self._beam = value
         elif isinstance(value, NikaBeam):
-            warnings.warn('Using deprecated NikaBeam', DeprecationWarning)
+            warnings.warn("Using deprecated NikaBeam", DeprecationWarning)
             self._beam = value
         else:
-            raise ValueError('Can not handle this beam type {}'.format(type(value)))
+            raise ValueError("Can not handle this beam type {}".format(type(value)))
 
     def _slice(self, item):
         # slice all normal attributes
@@ -459,8 +464,12 @@ class NikaMap(NDDataArray):
         sources["x_mean"] = x_mean
         sources["y_mean"] = y_mean
 
-        sources["x_stddev"] = np.ones(nsources) * self.beam.major.to(u.pix, self._pixel_scale).value * gaussian_fwhm_to_sigma
-        sources["y_stddev"] = np.ones(nsources) * self.beam.minor.to(u.pix, self._pixel_scale).value * gaussian_fwhm_to_sigma
+        sources["x_stddev"] = (
+            np.ones(nsources) * self.beam.major.to(u.pix, self._pixel_scale).value * gaussian_fwhm_to_sigma
+        )
+        sources["y_stddev"] = (
+            np.ones(nsources) * self.beam.minor.to(u.pix, self._pixel_scale).value * gaussian_fwhm_to_sigma
+        )
         sources["theta"] = np.zeros(nsources)
 
         # Crude check to be within the finite part of the map
@@ -530,6 +539,17 @@ class NikaMap(NDDataArray):
                     centroid_func=centroid_2dg,  # or centroid_com for faster/less precise values (see phoutils #655)
                     box_size=box_size,
                 )
+        except TypeError:  # See #1295 of photutils
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", AstropyWarning)
+                sources = photutils.find_peaks(
+                    detect_on,
+                    threshold=threshold,
+                    mask=self.mask,
+                    wcs=self.wcs,
+                    centroid_func=centroid_com,  # or centroid_com for faster/less precise values (see phoutils #655)
+                    box_size=box_size,
+                )
         except InconsistentAxisTypesError:
             sources = []
 
@@ -539,15 +559,22 @@ class NikaMap(NDDataArray):
             sources.meta["method"] = "find_peak"
             sources.meta["threshold"] = threshold
 
-            # pixels values are irrelevant
-            sources.remove_columns(["x_centroid", "y_centroid", "x_peak", "y_peak"])
-            # Only keep fitted value
-            sources.remove_columns(["skycoord_peak"])
-
-            # Copy column for compatibility, as "Skycoord object does not support item assignement"
-            sources["ra"] = sources["skycoord_centroid"].ra
-            sources["dec"] = sources["skycoord_centroid"].dec
-            sources.remove_columns(["skycoord_centroid"])
+            if "skycoord_centroid" in sources.colnames:
+                # If the centroid was properly computed
+                # Extract skycoord centroid positions
+                sources["ra"] = sources["skycoord_centroid"].ra
+                sources["dec"] = sources["skycoord_centroid"].dec
+                sources.remove_columns(["x_centroid", "y_centroid", "x_peak", "y_peak"])
+                sources.remove_columns(["skycoord_centroid", "skycoord_peak"])
+            elif "skycoord_peak" in sources.colnames:
+                # The centroid where not computed...
+                # Extract skycoord from peak position...
+                sources["ra"] = sources["skycoord_peak"].ra
+                sources["dec"] = sources["skycoord_peak"].dec
+                sources.remove_columns(["x_peak", "y_peak"])
+                sources.remove_columns(["skycoord_peak"])
+            else:
+                raise ValueError("No centroid nor peak positions found")
 
             # For compatibility issues
             sources["_ra"] = sources["ra"]
@@ -634,16 +661,22 @@ class NikaMap(NDDataArray):
             daogroup = DAOGroup(3 * self.beam.major.to(u.pix, self._pixel_scale).value)
             mmm_bkg = MedianBackground()
 
-            photometry = BasicPSFPhotometry(group_maker=daogroup, bkg_estimator=mmm_bkg, psf_model=psf_model, fitter=LevMarLSQFitter(), fitshape=9)
+            photometry = BasicPSFPhotometry(
+                group_maker=daogroup, bkg_estimator=mmm_bkg, psf_model=psf_model, fitter=LevMarLSQFitter(), fitshape=9
+            )
 
-            positions = Table([Column(xx, name="x_0"), Column(yy, name="y_0"), Column(self.data[y_idx, x_idx], name="flux_0")])
+            positions = Table(
+                [Column(xx, name="x_0"), Column(yy, name="y_0"), Column(self.data[y_idx, x_idx], name="flux_0")]
+            )
 
             # Fill the mask with nan to perform correct photometry on the edge
             # of the mask, and catch numpy & astropy warnings
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", AstropyWarning)
                 warnings.simplefilter("ignore", RuntimeWarning)
-                result_tab = photometry(image=np.ma.array(self.data, mask=self.mask).filled(np.nan), init_guesses=positions)
+                result_tab = photometry(
+                    image=np.ma.array(self.data, mask=self.mask).filled(np.nan), init_guesses=positions
+                )
 
             result_tab.sort("id")
             for _source, _tab in zip(["flux_psf", "eflux_psf"], ["flux_fit", "flux_unc"]):
@@ -708,7 +741,7 @@ class NikaMap(NDDataArray):
             beam = self.beam.as_kernel(pixscale)
             mf_beam = NikaBeam(array=signal.convolve(beam.array, kernel.array), pixel_scale=self._pixel_scale)
         elif not isinstance(kernel, Beam):
-            raise ValueError('Can not handle this kernel type yet')
+            raise ValueError("Can not handle this kernel type yet")
 
         if isinstance(kernel, Beam):
             mf_beam = self.beam.convolve(kernel)
@@ -982,7 +1015,8 @@ class NikaMap(NDDataArray):
 
         return islice
 
-    def to_hdus(self,
+    def to_hdus(
+        self,
         hdu_data="DATA",
         hdu_mask="MASK",
         hdu_uncertainty="UNCERT",
@@ -1034,11 +1068,11 @@ class NikaMap(NDDataArray):
             header = deepcopy(self.header)
             history = header.pop("history", None)
             comment = header.pop("comment", None)
-            
+
             dummy_data = NikaMap([1], meta=fits.Header(), unit="")
             for k, v in header.items():
                 dummy_data._insert_in_metadata_fits_safe(k, str(v))
-            header = dummy_data.header 
+            header = dummy_data.header
 
             if history is not None:
                 for item in history:
@@ -1214,12 +1248,14 @@ def idl_fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
     if append:
         hdus = fits.HDUList.fromfile(filename, mode="update")
     else:
-        hdus = fits.HDUList([fits.PrimaryHDU(None, getattr(nm_data, 'primary_header', None))])
+        hdus = fits.HDUList([fits.PrimaryHDU(None, getattr(nm_data, "primary_header", None))])
 
-    for hdu in nm_data.to_hdus(hdu_data="Brightness_{}".format(band),
-                               hdu_mask=None,
-                               hdu_uncertainty="Stddev_{}".format(band),
-                               hdu_hits='Nhits_{}'.format(band)):
+    for hdu in nm_data.to_hdus(
+        hdu_data="Brightness_{}".format(band),
+        hdu_mask=None,
+        hdu_uncertainty="Stddev_{}".format(band),
+        hdu_hits="Nhits_{}".format(band),
+    ):
         hdus.append(hdu)
 
     if append:
@@ -1248,7 +1284,9 @@ def piic_fits_nikamap_reader(filename, band=None, revert=False, unit="mJy/beam",
     data_file = Path(filename)
     rgw_file = data_file.parent / (data_file.with_suffix("").name + "rgw.fits")
 
-    assert data_file.exists() & rgw_file.exists(), "Either {} or {} could not be found".format(data_file.name, rgw_file.name)
+    assert data_file.exists() & rgw_file.exists(), "Either {} or {} could not be found".format(
+        data_file.name, rgw_file.name
+    )
 
     with fits.open(data_file) as data_hdu, fits.open(rgw_file) as rgw_hdu:
         header = data_hdu[0].header
@@ -1256,7 +1294,9 @@ def piic_fits_nikamap_reader(filename, band=None, revert=False, unit="mJy/beam",
         rgw = rgw_hdu[0].data.astype(np.float)
         rgw_header = rgw_hdu[0].header
 
-    assert WCS(rgw_header).to_header() == WCS(header).to_header(), "{} and {} do not share the same WCS".format(data_file.name, rgw_file.name)
+    assert WCS(rgw_header).to_header() == WCS(header).to_header(), "{} and {} do not share the same WCS".format(
+        data_file.name, rgw_file.name
+    )
     with np.errstate(invalid="ignore", divide="ignore"):
         e_data = 1 / np.sqrt(rgw)
 
@@ -1266,7 +1306,13 @@ def piic_fits_nikamap_reader(filename, band=None, revert=False, unit="mJy/beam",
         data *= -1
 
     data = NikaMap(
-        data, mask=unobserved, uncertainty=StdDevUncertainty(e_data), unit=unit, wcs=WCS(header), meta={"header": header, "primary_header": None, "band": band}, hit=None,
+        data,
+        mask=unobserved,
+        uncertainty=StdDevUncertainty(e_data),
+        unit=unit,
+        wcs=WCS(header),
+        meta={"header": header, "primary_header": None, "band": band},
+        hit=None,
     )
 
     return data
