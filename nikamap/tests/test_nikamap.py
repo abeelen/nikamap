@@ -80,17 +80,17 @@ def test_nikamap_init():
 
     # Should default to empty wcs and no unit
     assert nm.wcs is None
-    assert nm.unit is None
+    assert nm.unit is u.adu
     assert nm.uncertainty is None
 
     # time "empty"
-    assert np.all(nm.time == 0 * u.s)
+    assert nm.time is None
 
     # Default pixsize 1*u.deg
     assert (1 * u.pixel).to(u.deg, equivalencies=nm._pixel_scale) == 1 * u.deg
 
     # Default beam fwhm 1*u.deg
-    assert nm.beam.fwhm == 1 * u.deg
+    assert nm.beam.major == 1 * u.deg
 
 
 def test_nikamap_init_quantity():
@@ -99,24 +99,24 @@ def test_nikamap_init_quantity():
     assert nm.unit == u.Jy / u.beam
 
 
-def test_nikamap_init_time():
-    data = np.array([1, 2, 3]) * u.Jy / u.beam
+# def test_nikamap_init_time():
+#     data = np.array([1, 2, 3]) * u.Jy / u.beam
 
-    time = np.array([1, 2]) * u.s
-    with pytest.raises(ValueError):
-        nm = NikaMap(data, time=time)
+#     time = np.array([1, 2]) * u.s
+#     with pytest.raises(ValueError):
+#         nm = NikaMap(data, time=time)
 
-    time = np.array([1, 2, 3])
-    with pytest.raises(ValueError):
-        nm = NikaMap(data, time=time)
+#     time = np.array([1, 2, 3])
+#     with pytest.raises(ValueError):
+#         nm = NikaMap(data, time=time)
 
-    time = np.array([1, 2, 3]) * u.Hz
-    with pytest.raises(ValueError):
-        nm = NikaMap(data, time=time)
+#     time = np.array([1, 2, 3]) * u.Hz
+#     with pytest.raises(ValueError):
+#         nm = NikaMap(data, time=time)
 
-    time = np.array([1, 2, 3]) * u.h
-    nm = NikaMap(data, time=time)
-    assert nm.time.unit == u.h
+#     time = np.array([1, 2, 3]) * u.h
+#     nm = NikaMap(data, time=time)
+#     assert nm.time.unit == u.h
 
 
 def test_nikamap_init_meta():
@@ -125,9 +125,10 @@ def test_nikamap_init_meta():
 
     header["CDELT1"] = -1.0 / 3600, "pixel size used for pixel_scale"
     header["BMAJ"] = 1.0 / 3600, "Beam Major Axis"
-    nm = NikaMap(data, meta={"header": header})
+    nm = NikaMap(data, meta=header)
     assert (1 * u.pixel).to(u.deg, equivalencies=nm._pixel_scale) == 1 * u.arcsec
-    assert nm.beam.fwhm == 1 * u.arcsec
+    assert nm.beam.major == 1 * u.arcsec
+    assert nm.beam.minor == 1 * u.arcsec
 
     # Full header
     header["CRPIX1"] = 1
@@ -139,7 +140,7 @@ def test_nikamap_init_meta():
     header["CTYPE1"] = "RA---TAN"
     header["CTYPE2"] = "DEC--TAN"
 
-    nm = NikaMap(data, meta={"header": header}, wcs=WCS(header))
+    nm = NikaMap(data, meta=header, wcs=WCS(header))
     assert nm.wcs is not None
 
 
@@ -176,9 +177,10 @@ def test_nikamap_compressed():
     data = np.array([1, 2, 3])
     uncertainty = np.array([10, 1, 1], dtype=float)
     mask = np.array([True, False, False])
-    time = np.ones(3) * u.h
+    hits = np.ones(3)
+    sampling_freq = 1 * u.Hz
 
-    nm = NikaMap(data, uncertainty=uncertainty, mask=mask, time=time, unit=u.Jy)
+    nm = NikaMap(data, uncertainty=uncertainty, mask=mask, hits=hits, sampling_freq=sampling_freq, unit=u.Jy)
 
     assert np.all(nm.compressed() == np.array([2, 3]) * u.Jy)
     assert np.all(nm.uncertainty_compressed() == np.array([1, 1]) * u.Jy)
@@ -188,7 +190,7 @@ def test_nikamap_compressed():
 
     # To insure compatilibity with Astropy 3.0, maskedQuantity cannot evaluate
     # truth value of quantities
-    assert np.all(nm.__t_array__().data == time)
+    assert np.all(nm.__t_array__().data == hits / sampling_freq)
     assert np.all(nm.__t_array__().mask == mask)
 
 
@@ -621,11 +623,11 @@ def test_nikamap_match_filter(nms):
     y_idx = np.floor(nm.y + 0.5).astype(int)
 
     npt.assert_allclose(mf_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
-    npt.assert_allclose((nm.beam.fwhm * np.sqrt(2)).to(u.arcsec), mf_nm.beam.fwhm.to(u.arcsec))
+    npt.assert_allclose((nm.beam.major * np.sqrt(2)).to(u.arcsec), mf_nm.beam.major.to(u.arcsec))
 
-    mh_nm = nm.match_filter(MexicanHat2DKernel(nm.beam.fwhm_pix.value * gaussian_fwhm_to_sigma))
+    mh_nm = nm.match_filter(MexicanHat2DKernel(nm.beam.major.to(u.pix, nm._pixel_scale).value * gaussian_fwhm_to_sigma))
     npt.assert_allclose(mh_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
-    assert mh_nm.beam.fwhm is None
+    assert mh_nm.beam.major is None
 
 
 def test_nikamap_match_sources(nms):
@@ -645,7 +647,7 @@ def test_nikamap_match_sources_threshold(nms):
     nm.detect_sources()
     sources = nm.sources
     sources.meta["name"] = "to_match"
-    nm.match_sources(sources, dist_threshold=nm.beam.fwhm)
+    nm.match_sources(sources, dist_threshold=nm.beam.major)
 
     assert np.all(nm.sources["ID"] == nm.sources["to_match"])
 
@@ -772,8 +774,8 @@ def test_nikamap_read(generate_fits):
     assert np.all(data._data[~data.mask] == data_1mm._data[~data_1mm.mask])
     assert np.all(data._data[~data.mask] == data_2mm._data[~data_2mm.mask])
 
-    assert data.beam.fwhm.to(u.arcsec).value == primary_header["FWHM_260"]
-    assert np.all(data.time[~data.mask].value == ((primary_header["F_SAMPLI"] * u.Hz) ** -1).to(u.h).value)
+    assert data.beam.major.to(u.arcsec).value == primary_header["FWHM_260"]
+    assert np.all(data.time[~data.mask].to(u.h).value == ((primary_header["F_SAMPLI"] * u.Hz) ** -1).to(u.h).value)
 
     data_revert = NikaMap.read(filename, revert=True)
     assert np.all(data_revert._data[~data_revert.mask] == -1 * data._data[~data.mask])

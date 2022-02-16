@@ -98,29 +98,31 @@ class MultiScans(object):
             self.shape = data.shape
             self.datas = data.datas
             self.weights = data.weights
-            self.time = data.time
+            self.hits = data.hits
             self.mask = data.mask
+            self.sampling_freq = data.sampling_freq
         else:
             self.filenames = check_filenames(filenames)
 
             nm = NikaMap.read(self.filenames[0], **kwd)
 
-            self.primary_header = nm.meta.get("primary_header", None)
-            self.header = nm.meta["header"]
+            self.primary_header = getattr(nm, "primary_header", None)
+            self.header = nm.meta
             self.unit = nm.unit
             self.shape = nm.shape
+            self.sampling_freq = nm.sampling_freq
 
             # This is a low_mem=False case ...
             # TODO: How to refactor that for low_mem=True ?
             datas = np.zeros((len(self.filenames),) + self.shape)
             weights = np.zeros((len(self.filenames),) + self.shape)
-            time = np.zeros(self.shape) * u.h
+            hits = np.zeros(self.shape)
 
             for i, filename in enumerate(ProgressBar(self.filenames, ipython_widget=self.ipython_widget)):
 
                 nm = NikaMap.read(filename, **kwd)
                 try:
-                    compare_header(self.header, nm.meta["header"])
+                    compare_header(self.header, nm.meta)
                 except AssertionError as e:
                     if ignore_header:
                         warnings.warn("{} for {}".format(e, filename), UserWarning)
@@ -130,18 +132,18 @@ class MultiScans(object):
                 datas[i, :, :] = nm.data
                 with np.errstate(invalid="ignore", divide="ignore"):
                     weights[i, :, :] = nm.uncertainty.array ** -2
-                time += nm.time
+                hits += nm.hits
 
                 # make sure that we do not have nans in the data
-                datas[i, nm.time == 0] = 0
-                weights[i, nm.time == 0] = 0
+                unobserved = nm.hits == 0
+                datas[i, unobserved] = 0
+                weights[i, unobserved] = 0
 
-            unobserved = time == 0
 
             self.datas = datas
             self.weights = weights
-            self.time = time
-            self.mask = unobserved
+            self.hits = hits
+            self.mask = hits == 0
 
     def __len__(self):
         # to retrieve the legnth of the iterator, enable ProgressBar on it
@@ -255,15 +257,17 @@ class HalfDifference(MultiScans):
         data[mask] = np.nan
         e_data[mask] = np.nan
 
-        # TBC: time will have a different mask here....
+        # TBC: hits will have a different mask here....
         data = NikaMap(
             data,
             mask=mask,
             uncertainty=StdDevUncertainty(e_data),
+            hits=self.hits,
+            sampling_freq=self.sampling_freq,
             unit=self.unit,
             wcs=WCS(self.header),
-            meta={"header": self.header, "primary_header": self.primary_header},
-            time=self.time,
+            meta=self.header,
+            primary_header=self.primary_header,
         )
 
         return data  # , weighted_parity
@@ -391,15 +395,17 @@ class Jackknife(MultiScans):
         data[mask] = np.nan
         e_data[mask] = np.nan
 
-        # TBC: time will have a different mask here....
+        # TBC: hits will have a different mask here....
         data = NikaMap(
             data,
             mask=mask,
             uncertainty=StdDevUncertainty(e_data),
+            hits=self.hits,
+            sampling_freq=self.sampling_freq,
             unit=self.unit,
             wcs=WCS(self.header),
-            meta={"header": self.header, "primary_header": self.primary_header},
-            time=self.time,
+            meta=self.header,
+            primary_header=self.primary_header,
         )
 
         return data  # , weighted_parity
@@ -465,7 +471,7 @@ class Bootstrap(MultiScans):
         e_data = np.std(bs_array, axis=0, ddof=1)
 
         # Mask unobserved regions
-        unobserved = self.time == 0
+        unobserved = self.hits == 0
         data[unobserved] = np.nan
         e_data[unobserved] = np.nan
 
@@ -473,10 +479,12 @@ class Bootstrap(MultiScans):
             data,
             mask=unobserved,
             uncertainty=StdDevUncertainty(e_data),
+            hits=self.hits,
+            sampling_freq=self.sampling_freq,
             unit=self.unit,
             wcs=WCS(self.header),
-            meta={"header": self.header, "primary_header": self.primary_header},
-            time=self.time,
+            meta=self.header,
+            primary_header=self.primary_header,
         )
 
         return data

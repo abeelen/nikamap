@@ -5,18 +5,23 @@ from collections import MutableMapping
 from pathlib import Path
 
 import numpy as np
+from copy import deepcopy
 
 from astropy.io import fits, registry
 from astropy import units as u
 from astropy.wcs import WCS, InconsistentAxisTypesError
 from astropy.coordinates import match_coordinates_sky
-from astropy.nddata import NDDataArray, StdDevUncertainty, NDUncertainty
+from astropy.nddata import NDDataArray, NDUncertainty 
+from astropy.nddata import StdDevUncertainty, InverseVariance, VarianceUncertainty
 from astropy.modeling import models
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
-from astropy.convolution import Kernel2D, Box2DKernel
+from astropy.convolution import Kernel2D, Box2DKernel, Gaussian2DKernel
 
 from astropy.table import Table, MaskedColumn, Column
+
+from astropy.nddata.ccddata import _known_uncertainties, _uncertainty_unit_equivalent_to_parent
+from astropy.nddata.ccddata import _unc_name_to_cls, _unc_cls_to_name
 
 import photutils
 from photutils.psf import BasicPSFPhotometry
@@ -24,6 +29,8 @@ from photutils.psf import DAOGroup
 from photutils.background import MedianBackground
 from photutils.datasets import make_gaussian_sources_image
 from photutils.centroids import centroid_2dg
+
+from radio_beam import Beam
 
 from scipy import signal
 from scipy.optimize import curve_fit
@@ -62,7 +69,6 @@ class NikaBeam(Kernel2D):
     """
 
     def __init__(self, fwhm=None, pixel_scale=None, **kwargs):
-
         self._pixel_scale = pixel_scale
         self._fwhm = fwhm
 
@@ -75,31 +81,66 @@ class NikaBeam(Kernel2D):
         self._truncation = np.abs(1.0 - self._array.sum())
 
     def __repr__(self):
-        return "<NikaBeam(fwhm={}, pixel_scale={:.2f} / pixel)".format(self.fwhm.to(u.arcsec), (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale))
+        return "<NikaBeam(fwhm={}, pixel_scale={:.2f} / pixel)".format(self._fwhm.to(u.arcsec), (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale))
 
     @property
     def fwhm(self):
+        warnings.warn("fwhm is deprecated, use major/minor", DeprecationWarning)
         return self._fwhm
 
     @property
     def fwhm_pix(self):
+        warnings.warn("fwhm_pix is deprecated, use major/minor.to(u.pixel, u=pixel_scale)", DeprecationWarning)
         return self._fwhm.to(u.pixel, equivalencies=self._pixel_scale)
 
     @property
+    def major(self):
+        return self._fwhm
+
+    @property
+    def minor(self):
+        return self._fwhm
+
+    @property
     def sigma(self):
+        warnings.warn("sigma is deprecated, use major/minor * gaussian_fwhm_to_sigma", DeprecationWarning)
         return self._fwhm * gaussian_fwhm_to_sigma
 
     @property
     def sigma_pix(self):
+        warnings.warn("sigma is deprecated, use major/minor.to(u.pixel, u=pixel_scale)* gaussian_fwhm_to_sigma", DeprecationWarning)
         return self._fwhm.to(u.pixel, equivalencies=self._pixel_scale) * gaussian_fwhm_to_sigma
 
     @property
     def area(self):
-        return 2 * np.pi * self.sigma ** 2
+        warnings.warn("area is deprecated, use sr", DeprecationWarning)
+        return 2 * np.pi * (self._fwhm * gaussian_fwhm_to_sigma) ** 2
+
+    @property
+    def sr(self):
+        return 2 * np.pi * (self._fwhm * gaussian_fwhm_to_sigma) ** 2
 
     @property
     def area_pix(self):
+        warnings.warn("area_pix is deprecated, use np.sqrt(self.sr).to(u.pix, pixel_scale)**2", DeprecationWarning)
         return 2 * np.pi * self.sigma_pix ** 2
+
+    def convolve(self, kernel):
+
+        if isinstance(kernel, Beam):
+            pixscale = (1 * u.pix).to(u.arcsec, self._pixel_scale)
+            kernel = kernel.as_kernel(pixscale)
+
+        kernel.normalize("integral")
+
+        # Assuming the same pixel_scale
+        if isinstance(self.model, models.Gaussian2D) & isinstance(kernel.model, models.Gaussian2D):
+            fwhm = np.sqrt(self.model.x_fwhm ** 2 + kernel.model.x_fwhm ** 2) * u.pixel
+            fwhm = fwhm.to(u.arcsec, equivalencies=self._pixel_scale)
+            return NikaBeam(fwhm, pixel_scale=self._pixel_scale)
+        else:
+            # Using scipy.signal.convolve to extend the beam if necessary
+            return NikaBeam(array=signal.convolve(self.array, kernel.array), pixel_scale=self._pixel_scale)
 
 
 # TODO: Take care of operations (add/subtract/...) to add extra parameters...
@@ -118,7 +159,7 @@ class NikaMap(NDDataArray):
         the ``data`` before passing it in if that's the  desired behavior.
     uncertainty : :class:`astropy.nddata.NDUncertainty`, optional
         Uncertainties on the data.
-    mask : `~numpy.ndarray`-like, optional
+    mask : :class:`~numpy.ndarray`-like, optional
         Mask for the data, given as a boolean Numpy array or any object that
         can be converted to a boolean Numpy array with a shape
         matching that of the data. The values must be ``False`` where
@@ -126,9 +167,10 @@ class NikaMap(NDDataArray):
         masked arrays). If ``data`` is a numpy masked array, providing
         ``mask`` here will causes the mask from the masked array to be
         ignored.
-    time : :class:`astropy.units.quantity.Quantity` array
-        The time spent per pixel on the map, must have unit equivalent to time
-        and shape equivalent to data
+    hits : :class:`~numpy.ndarray`-like, optional
+        The hit per pixel on the map
+    sampling_freq : float or :class:`~astropy.units.Quantity`
+        the sampling frequency of the experiment, default 1 Hz
     wcs : undefined, optional
         WCS-object containing the world coordinate system for the data.
     meta : `dict`-like object, optional
@@ -138,9 +180,9 @@ class NikaMap(NDDataArray):
         simulation parameters, exposure time, telescope name, etc.
     unit : :class:`astropy.units.UnitBase` instance or str, optional
         The units of the data.
-    beam : :class:`nikamap.NikaBeam`
-        The beam corresponding to the data, by default a circular gaussian
-        constructed from the header 'BMAJ' keyword.
+    beam : :class:`radio_beam.Beam`
+        The beam corresponding to the data, by default a gaussian
+        constructed from the header 'BMAJ' 'BMIN', 'PA' keyword.
     fake_source : :class:`astropy.table.Table`, optional
         The table of potential fake sources included in the data
 
@@ -152,37 +194,62 @@ class NikaMap(NDDataArray):
 
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data, *args, **kwargs):
+
+        if "meta" not in kwargs:
+            kwargs["meta"] = kwargs.pop("header", None)
+        if "header" in kwargs:
+            raise ValueError("can't have both header and meta.")
+
+        # Arbitrary unit by default
+        if "unit" not in kwargs:
+            kwargs["unit"] = data.unit if isinstance(data, (u.Quantity, NikaMap)) else "adu"
 
         # Must be set AFTER the super() call
-        time = kwargs.pop("time", None)
-        beam = kwargs.pop("beam", None)
-        fake_sources = kwargs.pop("fake_sources", None)
-        sources = kwargs.pop("sources", None)
+        self.primary_header = kwargs.pop("primary_header", None)
+        self.fake_sources = kwargs.pop("fake_sources", None)
+        self.sources = kwargs.pop("sources", None)
+        self.sampling_freq = kwargs.pop('sampling_freq', None)
 
-        super(NikaMap, self).__init__(*args, **kwargs)
+        self.hits = kwargs.pop("hits", None)
+        self.beam = kwargs.pop("beam", None)
+
+        super().__init__(data, *args, **kwargs)
+
+        if isinstance(data, NikaMap):
+            if self.hits is None and data.hits is not None:
+                self.hits = data.hits
+            if self.beam is None and data.beam is not None:
+                self.beam = data.beam
 
         if isinstance(self.wcs, WCS):
             pixsize = np.abs(self.wcs.wcs.cdelt[0]) * u.deg
         else:
-            pixsize = np.abs(self.meta.get("header", {"CDELT": 1}).get("CDELT1", 1)) * u.deg
+            pixsize = np.abs(self.meta.get("CDELT1", 1)) * u.deg
 
         self._pixel_scale = u.pixel_scale(pixsize / u.pixel)
 
-        if time is not None:
-            self.time = time
-        else:
-            self.time = np.zeros(self.data.shape) * u.s
+        if self.beam is None:
+            # Default BMAJ 1 deg...
+            header = self.meta
+            if 'BMAJ' not in header:
+                header['BMAJ'] = 1
+            self.beam = Beam.from_fits_header(fits.Header(header))
 
-        if beam is None:
-            # Default gaussian beam
-            bmaj = self.meta.get("header", {"BMAJ": 1}).get("BMAJ", 1) * u.deg
-            self.beam = NikaBeam(bmaj, pixel_scale=self._pixel_scale)
-        else:
-            self.beam = beam
+    @property
+    def header(self):
+        return self._meta
 
-        self.fake_sources = fake_sources
-        self.sources = sources
+    @header.setter
+    def header(self, value):
+        self.meta = value
+            
+    @property
+    def time(self):
+        if self.hits is not None and self.sampling_freq is not None:
+            return (self.hits / self.sampling_freq).to(u.s)
+        else:
+            return None
 
     def compressed(self):
         return self.data[~self.mask] * self.unit
@@ -206,7 +273,7 @@ class NikaMap(NDDataArray):
         return np.ma.array(self.uncertainty.array, mask=self.mask)
 
     def __t_array__(self):
-        """Retrieve time array as maskedQuantity"""
+        """Retrieve hit array as maskedQuantity"""
         return np.ma.array(self.time, mask=self.mask, fill_value=0)
 
     def surface(self, box_size=None):
@@ -270,8 +337,17 @@ class NikaMap(NDDataArray):
             self._uncertainty = value
 
     @property
-    def SNR(self):
-        return np.ma.array((self.data / self.uncertainty.array), mask=self.mask)
+    def snr(self):
+        if isinstance(self.uncertainty, InverseVariance):
+            snr = self.data * np.sqrt(self.uncertainty.array)
+        elif isinstance(self.uncertainty, StdDevUncertainty):
+            snr = self.data / self.uncertainty.array
+        elif isinstance(self.uncertainty, VarianceUncertainty):
+            snr = self.data / np.sqrt(self.uncertainty.array)
+        else:
+            raise ValueError("Unknown uncertainty type")
+
+        return np.ma.array(snr, mask=self.mask)
 
     def _to_ma(self, item=None):
         """Get masked array quantities from object.
@@ -295,7 +371,7 @@ class NikaMap(NDDataArray):
         """
 
         if item == "snr":
-            data = self.SNR
+            data = self.snr
             label = "SNR"
         elif item == "uncertainty":
             data = np.ma.array(self.uncertainty.array * self.unit, mask=self.mask)
@@ -310,33 +386,24 @@ class NikaMap(NDDataArray):
 
     @property
     def beam(self):
-        beam = self._beam
-        beam.normalize("peak")
-        return beam
+        return self._beam
 
     @beam.setter
     def beam(self, value):
-        self._beam = value
-
-    @property
-    def time(self):
-        return self._time
-
-    @time.setter
-    def time(self, value):
-        value = u.Quantity(value)
-        if not value.unit.is_equivalent(u.s):
-            raise ValueError("time unit must be equivalent to seconds")
-        if value.shape != self.data.shape:
-            raise ValueError("time must have the same shape as the data.")
-        self._time = value
+        if value is None or isinstance(value, Beam):
+            self._beam = value
+        elif isinstance(value, NikaBeam):
+            warnings.warn('Using deprecated NikaBeam', DeprecationWarning)
+            self._beam = value
+        else:
+            raise ValueError('Can not handle this beam type {}'.format(type(value)))
 
     def _slice(self, item):
         # slice all normal attributes
         kwargs = super(NikaMap, self)._slice(item)
         # The arguments for creating a new instance are saved in kwargs
         # so we need to add another keyword "flags" and add the sliced flags
-        kwargs["time"] = self.time[item]
+        kwargs["hits"] = self.hits[item] if self.hits is not None else None
         kwargs["beam"] = self.beam
 
         kwargs["fake_sources"] = self.fake_sources
@@ -392,8 +459,8 @@ class NikaMap(NDDataArray):
         sources["x_mean"] = x_mean
         sources["y_mean"] = y_mean
 
-        sources["x_stddev"] = np.ones(nsources) * self.beam.sigma_pix.value
-        sources["y_stddev"] = np.ones(nsources) * self.beam.sigma_pix.value
+        sources["x_stddev"] = np.ones(nsources) * self.beam.major.to(u.pix, self._pixel_scale).value * gaussian_fwhm_to_sigma
+        sources["y_stddev"] = np.ones(nsources) * self.beam.minor.to(u.pix, self._pixel_scale).value * gaussian_fwhm_to_sigma
         sources["theta"] = np.zeros(nsources)
 
         # Crude check to be within the finite part of the map
@@ -439,7 +506,7 @@ class NikaMap(NDDataArray):
         -----
         The edge of the map is cropped by the box_size in order to insure proper subpixel fitting.
         """
-        detect_on = self.SNR.filled(0)
+        detect_on = self.snr.filled(0)
 
         if self.mask is not None:
             # Make sure that there is no detection on the edge of the map
@@ -496,7 +563,7 @@ class NikaMap(NDDataArray):
         if self.fake_sources:
             # Match to the fake catalog
             fake_sources = self.fake_sources
-            dist_threshold = self.beam.fwhm / 3
+            dist_threshold = self.beam.major / 3
 
             if sources is None or len(sources) == 0:
                 fake_sources["find_peak"] = MaskedColumn(np.ones(len(fake_sources), dtype=np.int), mask=True)
@@ -521,7 +588,7 @@ class NikaMap(NDDataArray):
     def match_sources(self, catalogs, dist_threshold=None):
 
         if dist_threshold is None:
-            dist_threshold = self.beam.fwhm / 3
+            dist_threshold = self.beam.major / 3
 
         if not isinstance(catalogs, list):
             catalogs = [catalogs]
@@ -553,7 +620,7 @@ class NikaMap(NDDataArray):
         if psf:
             # BasicPSFPhotometry with fixed positions
 
-            sigma_psf = self.beam.sigma_pix.value
+            sigma_psf = self.beam.major.to(u.pix, self._pixel_scale).value * gaussian_fwhm_to_sigma
 
             # Using an IntegratedGaussianPRF can cause biais in the photometry
             # TODO: Check the NIKA2 calibration scheme
@@ -564,7 +631,7 @@ class NikaMap(NDDataArray):
             psf_model.x_0.fixed = True
             psf_model.y_0.fixed = True
 
-            daogroup = DAOGroup(3 * self.beam.fwhm_pix.value)
+            daogroup = DAOGroup(3 * self.beam.major.to(u.pix, self._pixel_scale).value)
             mmm_bkg = MedianBackground()
 
             photometry = BasicPSFPhotometry(group_maker=daogroup, bkg_estimator=mmm_bkg, psf_model=psf_model, fitter=LevMarLSQFitter(), fitshape=9)
@@ -580,7 +647,9 @@ class NikaMap(NDDataArray):
 
             result_tab.sort("id")
             for _source, _tab in zip(["flux_psf", "eflux_psf"], ["flux_fit", "flux_unc"]):
-                sources[_source] = Column(result_tab[_tab] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
+                # Sometimes the returning fluxes has no uncertainty....
+                if _tab in result_tab.colnames:
+                    sources[_source] = Column(result_tab[_tab] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
             sources["group_id"] = result_tab["group_id"]
 
         self.sources = sources
@@ -590,7 +659,7 @@ class NikaMap(NDDataArray):
 
         Parameters
         ----------
-        kernel : :class:`nikamap.NikaBeam`
+        kernel : :class:`radio_beam.Beam` or :class:`astropy.convolution.Gaussian2Dkernel` or :class:`nikamap.NikaBeam`
             the kernel used for filtering
 
         Returns
@@ -626,19 +695,27 @@ class NikaMap(NDDataArray):
         >>> axes[0].imshow(data) ; axes[1].imshow(mf_data)
         """
 
-        # Is peak normalizerd on get
-        beam = self.beam
+        if isinstance(kernel, Gaussian2DKernel):
+            bmaj = (kernel.model.x_stddev.value * u.pix).to(u.arcsec, self._pixel_scale)
+            bmin = (kernel.model.y_stddev.value * u.pix).to(u.arcsec, self._pixel_scale)
+            pa = kernel.model.theta.value * u.radian
+            kernel = Beam(bmaj, bmin, pa)
+        elif isinstance(kernel, NikaBeam) and isinstance(kernel.model, models.Gaussian2D):
+            bmaj = kernel.fwhm
+            kernel = Beam(bmaj)
+        elif isinstance(kernel, Kernel2D):
+            pixscale = (1 * u.pix).to(u.arcsec, self._pixel_scale)
+            beam = self.beam.as_kernel(pixscale)
+            mf_beam = NikaBeam(array=signal.convolve(beam.array, kernel.array), pixel_scale=self._pixel_scale)
+        elif not isinstance(kernel, Beam):
+            raise ValueError('Can not handle this kernel type yet')
+
+        if isinstance(kernel, Beam):
+            mf_beam = self.beam.convolve(kernel)
+            pixscale = (1 * u.pix).to(u.arcsec, self._pixel_scale)
+            kernel = kernel.as_kernel(pixscale)
 
         kernel.normalize("integral")
-
-        # Assuming the same pixel_scale
-        if isinstance(beam.model, models.Gaussian2D) & isinstance(kernel.model, models.Gaussian2D):
-            fwhm = np.sqrt(beam.model.x_fwhm ** 2 + kernel.model.x_fwhm ** 2) * u.pixel
-            fwhm = fwhm.to(u.arcsec, equivalencies=beam._pixel_scale)
-            mf_beam = NikaBeam(fwhm, pixel_scale=beam._pixel_scale)
-        else:
-            # Using scipy.signal.convolve to extend the beam if necessary
-            mf_beam = NikaBeam(array=signal.convolve(beam.array, kernel.array), pixel_scale=beam._pixel_scale)
 
         # Convolve the mask and retrieve the fully sampled region, this
         # will remove one kernel width on the edges
@@ -652,10 +729,12 @@ class NikaMap(NDDataArray):
         # with warnings.catch_warnings():
         #     warnings.simplefilter('ignore', AstropyWarning)
         #     mf_time = convolve(self.time, kernel, normalize_kernel=False)*self.time.unit
-        mf_time = signal.fftconvolve(np.asarray(self.__t_array__().filled(0)), kernel, mode="same") * self.time.unit
-
-        if mf_mask is not None:
-            mf_time[mf_mask] = 0
+        if self.hits is not None:
+            mf_hits = signal.fftconvolve(np.asarray(self.hits), kernel, mode="same")
+            if mf_mask is not None:
+                mf_hits[mf_mask] = 0
+        else:
+            mf_hits = None
 
         # Convolve the data (peak for unit conservation)
         kernel.normalize("peak")
@@ -676,14 +755,16 @@ class NikaMap(NDDataArray):
 
         mf_data = NikaMap(
             mf_data,
-            unit=self.unit,
             mask=mf_mask,
-            time=mf_time,
+            hits=mf_hits,
             uncertainty=StdDevUncertainty(mf_uncertainty),
+            beam=mf_beam,
+            unit=self.unit,
+            sampling_freq=self.sampling_freq,
             wcs=self.wcs,
             meta=self.meta,
+            primary_header=self.primary_header,
             fake_sources=self.fake_sources,
-            beam=mf_beam,
         )
 
         return mf_data
@@ -796,10 +877,10 @@ class NikaMap(NDDataArray):
         >>> std = data.check_SNR()
         >>> data.uncertainty.array *= std
         """
-        SN = self.SNR.compressed()
+        SN = self.snr.compressed()
         hist, bin_edges = np.histogram(SN, bins=bins, density=True, range=(-5, 5))
 
-        # is biased if signal is presmf_beament
+        # is biased if signal is present
         # is biased if trimmed
         # mu, std = norm.fit(SN)
 
@@ -854,7 +935,7 @@ class NikaMap(NDDataArray):
             powspec /= res ** 2
         else:
             pk_unit = u.Jy ** 2 / u.sr
-            powspec /= (self.beam.area / u.beam) ** 2
+            powspec /= (self.beam.sr / u.beam) ** 2
             powspec = powspec.to(pk_unit)
             label = "P(k) {} [{}]".format(label, pk_unit)
 
@@ -901,26 +982,146 @@ class NikaMap(NDDataArray):
 
         return islice
 
-    def to_hdus(self):
-        hdus = []
-        if isinstance(self.meta["header"], fits.Header):
-            header = self.meta["header"].copy()
+    def to_hdus(self,
+        hdu_data="DATA",
+        hdu_mask="MASK",
+        hdu_uncertainty="UNCERT",
+        hdu_hits="HITS",
+        wcs_relax=True,
+        key_uncertainty_type="UTYPE",
+    ):
+        """Creates an HDUList object from a NikaMap object.
+        Parameters
+        ----------
+        hdu_data, hdu_mask, hdu_uncertainty, hdu_hits : str or None, optional
+            If it is a string append this attribute to the HDUList as
+            `~astropy.io.fits.ImageHDU` with the string as extension name.
+            Default is ``'DATA'`` for data, ``'MASK'`` for mask, ``'UNCERT'``
+            for uncertainty and ``HITS`` for hits.
+        wcs_relax : bool
+            Value of the ``relax`` parameter to use in converting the WCS to a
+            FITS header using `~astropy.wcs.WCS.to_header`. The common
+            ``CTYPE`` ``RA---TAN-SIP`` and ``DEC--TAN-SIP`` requires
+            ``relax=True`` for the ``-SIP`` part of the ``CTYPE`` to be
+            preserved.
+        key_uncertainty_type : str, optional
+            The header key name for the class name of the uncertainty (if any)
+            that is used to store the uncertainty type in the uncertainty hdu.
+            Default is ``UTYPE``.
+
+        Raises
+        -------
+        ValueError
+            - If ``self.mask`` is set but not a `numpy.ndarray`.
+            - If ``self.uncertainty`` is set but not a astropy uncertainty type.
+            - If ``self.uncertainty`` is set but has another unit then
+              ``self.data``.
+
+        Returns
+        -------
+        hdulist : `~astropy.io.fits.HDUList`
+        """
+        if isinstance(self.header, fits.Header):
+            # Copy here so that we can modify the HDU header by adding WCS
+            # information without changing the header of the CCDData object.
+            header = self.header.copy()
         else:
-            header = fits.Header()
+            # Because _insert_in_metadata_fits_safe is written as a method
+            # we need to create a dummy CCDData instance to hold the FITS
+            # header we are constructing. This probably indicates that
+            # _insert_in_metadata_fits_safe should be rewritten in a more
+            # sensible way...
+            header = deepcopy(self.header)
+            history = header.pop("history", None)
+            comment = header.pop("comment", None)
+            
+            dummy_data = NikaMap([1], meta=fits.Header(), unit="")
+            for k, v in header.items():
+                dummy_data._insert_in_metadata_fits_safe(k, str(v))
+            header = dummy_data.header 
+
+            if history is not None:
+                for item in history:
+                    header["history"] = item
+            if comment is not None:
+                for item in comment:
+                    header["comment"] = item
+
+            for key, comment in FITS_HEADER_COMMENT.items():
+                if key in header:
+                    header.set(key, comment=comment)
+
+        if self.unit is not u.dimensionless_unscaled:
+            header["bunit"] = self.unit.to_string()
 
         if self.wcs:
-            header.extend(self.wcs.to_header(), update=True)
+            # Simply extending the FITS header with the WCS can lead to
+            # duplicates of the WCS keywords; iterating over the WCS
+            # header should be safer.
+            #
+            # Turns out if I had read the io.fits.Header.extend docs more
+            # carefully, I would have realized that the keywords exist to
+            # avoid duplicates and preserve, as much as possible, the
+            # structure of the commentary cards.
+            #
+            # Note that until astropy/astropy#3967 is closed, the extend
+            # will fail if there are comment cards in the WCS header but
+            # not header.
+            wcs_header = self.wcs.to_header(relax=wcs_relax)
+            header.extend(wcs_header, useblanks=False, update=True)
 
-        if self.data is not None:
-            hdus.append(fits.ImageHDU(self.data, header, name="Brightness_{}".format(self.meta["band"])))
+        hdus = [fits.ImageHDU(self.data, header, name=hdu_data)]
 
-        if self.uncertainty is not None:
-            hdus.append(fits.ImageHDU(self.uncertainty.array, header, name="Stddev_{}".format(self.meta["band"])))
+        if hdu_mask and self.mask is not None:
+            # Always assuming that the mask is a np.ndarray (check that it has
+            # a 'shape').
+            if not hasattr(self.mask, "shape"):
+                raise ValueError("only a numpy.ndarray mask can be saved.")
 
-        if self.time is not None:
-            f_sampling = self.meta.get("primaty_header", {"f_sampli": 1}).get("f_sampli") * u.Hz
-            hdus.append(fits.ImageHDU(np.asarray((self.time * f_sampling).decompose()), header, name="Nhits_{}".format(self.meta["band"])))
-        return hdus
+            # Convert boolean mask to uint since io.fits cannot handle bool.
+            hduMask = fits.ImageHDU(self.mask.astype(np.uint8), header, name=hdu_mask)
+            hdus.append(hduMask)
+
+        if hdu_uncertainty and self.uncertainty is not None:
+            # We need to save some kind of information which uncertainty was
+            # used so that loading the HDUList can infer the uncertainty type.
+            # No idea how this can be done so only allow StdDevUncertainty.
+            uncertainty_cls = self.uncertainty.__class__
+            if uncertainty_cls not in _known_uncertainties:
+                raise ValueError("only uncertainties of type {} can be saved.".format(_known_uncertainties))
+            uncertainty_name = _unc_cls_to_name[uncertainty_cls]
+
+            hdr_uncertainty = fits.Header(header)
+            hdr_uncertainty[key_uncertainty_type] = uncertainty_name
+
+            # Assuming uncertainty is an StdDevUncertainty save just the array
+            # this might be problematic if the Uncertainty has a unit differing
+            # from the data so abort for different units. This is important for
+            # astropy > 1.2
+            if hasattr(self.uncertainty, "unit") and self.uncertainty.unit is not None:
+                if not _uncertainty_unit_equivalent_to_parent(uncertainty_cls, self.uncertainty.unit, self.unit):
+                    raise ValueError(
+                        "saving uncertainties with a unit that is not "
+                        "equivalent to the unit from the data unit is not "
+                        "supported."
+                    )
+
+            hduUncert = fits.ImageHDU(self.uncertainty.array, hdr_uncertainty, name=hdu_uncertainty)
+            hdus.append(hduUncert)
+
+        if hdu_hits and self.hits is not None:
+            # Always assuming that the hits is a np.ndarray (check that it has
+            # a 'shape').
+            if not hasattr(self.hits, "shape"):
+                raise ValueError("only a numpy.ndarray hits can be saved.")
+
+            # Convert boolean mask to uint since io.fits cannot handle bool.
+            hduHits = fits.ImageHDU(self.hits.astype(np.uint8), header, name=hdu_hits)
+            hdus.append(hduHits)
+
+        hdulist = fits.HDUList(hdus)
+
+        return hdulist
 
 
 def retrieve_primary_keys(filename, band="1mm", **kwd):
@@ -971,7 +1172,7 @@ def idl_fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
 
     header = update_header(header, bmaj)
 
-    time = (hits / f_sampling).to(u.h)
+    # time = (hits / f_sampling).to(u.h)
 
     # Mask unobserved regions
     unobserved = hits == 0
@@ -985,10 +1186,12 @@ def idl_fits_nikamap_reader(filename, band="1mm", revert=False, **kwd):
         data,
         mask=unobserved,
         uncertainty=StdDevUncertainty(e_data),
+        hits=hits,
+        sampling_freq=f_sampling,
         unit=header["UNIT"],
         wcs=WCS(header),
-        meta={"header": header, "primary_header": primary_header, "band": band},
-        time=time,
+        header=header,
+        primary_header=primary_header,
     )
 
     return data
@@ -1011,9 +1214,12 @@ def idl_fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
     if append:
         hdus = fits.HDUList.fromfile(filename, mode="update")
     else:
-        hdus = fits.HDUList([fits.PrimaryHDU(None, nm_data.meta.get("primary_header", None))])
+        hdus = fits.HDUList([fits.PrimaryHDU(None, getattr(nm_data, 'primary_header', None))])
 
-    for hdu in nm_data.to_hdus():
+    for hdu in nm_data.to_hdus(hdu_data="Brightness_{}".format(band),
+                               hdu_mask=None,
+                               hdu_uncertainty="Stddev_{}".format(band),
+                               hdu_hits='Nhits_{}'.format(band)):
         hdus.append(hdu)
 
     if append:
@@ -1023,7 +1229,7 @@ def idl_fits_nikamap_writer(nm_data, filename, band="1mm", append=False, **kwd):
 
 
 def piic_fits_nikamap_reader(filename, band=None, revert=False, unit="mJy/beam", **kwd):
-    """NIKA2 IDL Pipeline Map reader.
+    """NIKA2 PIIC Pipeline Map reader.
 
     Parameters
     ----------
@@ -1056,15 +1262,11 @@ def piic_fits_nikamap_reader(filename, band=None, revert=False, unit="mJy/beam",
 
     unobserved = np.isnan(data) | np.isnan(e_data)
 
-    # No time or hit information....
-    time = np.ones_like(data) * u.h
-    time[unobserved] = 0
-
     if revert:
         data *= -1
 
     data = NikaMap(
-        data, mask=unobserved, uncertainty=StdDevUncertainty(e_data), unit=unit, wcs=WCS(header), meta={"header": header, "primary_header": None, "band": band}, time=time,
+        data, mask=unobserved, uncertainty=StdDevUncertainty(e_data), unit=unit, wcs=WCS(header), meta={"header": header, "primary_header": None, "band": band}, hit=None,
     )
 
     return data

@@ -323,6 +323,7 @@ def fake_data(
     beam_fwhm=12.5 * u.arcsec,
     pixsize=2 * u.arcsec,
     nefd=50e-3 * Jy_beam * u.s ** 0.5,
+    sampling_freq=25*u.Hz,
     time_fwhm=1.0 / 5,
     jk_data=None,
     e_data=None,
@@ -341,12 +342,15 @@ def fake_data(
         data = jk_data.data
         e_data = jk_data.uncertainty
         mask = jk_data.mask
-        time = jk_data.time
+        hits = jk_data.hits
         shape = data.shape
+        primary_header = data.primary_header
+        sampling_freq = data.sampling_freq
     elif e_data is not None:
         # Only gave e_data
         mask = np.isnan(e_data)
         time = ((e_data / nefd) ** (-1.0 / 0.5)).to(u.h)
+        hits = (time / sampling_freq).decompose().value.astype(int)
         e_data = e_data.to(Jy_beam).value
 
         data = np.random.normal(0, 1, size=shape) * e_data
@@ -360,8 +364,10 @@ def fake_data(
             # Time is uniform
             time = np.ones(shape) * u.h
 
+        hits = (time / sampling_freq).decompose().value.astype(int)
         mask = time < 1 * u.s
-        time[mask] = np.nan
+        time[mask] = 0
+        hits[mask] = 0
 
         e_data = (nefd * time ** (-0.5)).to(Jy_beam).value
 
@@ -377,7 +383,7 @@ def fake_data(
         peak_flux = 3 * (nefd / np.sqrt(np.nanmax(time)) * u.beam).to(u.mJy)
 
     data = NikaMap(
-        data, mask=mask, unit=Jy_beam, uncertainty=StdDevUncertainty(e_data), wcs=WCS(header), meta=header, time=time
+        data, mask=mask, unit=Jy_beam, uncertainty=StdDevUncertainty(e_data), wcs=WCS(header), meta=header, hits=hits
     )
 
     if nsources:
