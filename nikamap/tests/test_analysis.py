@@ -172,7 +172,7 @@ def test_MultiScans_init(generate_nikamaps):
     assert ms.filenames == ms2.filenames
     npt.assert_equal(ms.datas, ms2.datas)
     npt.assert_equal(ms.weights, ms2.weights)
-    npt.assert_equal(ms.time, ms2.time)
+    npt.assert_equal(ms.hits, ms2.hits)
     npt.assert_equal(ms.mask, ms2.mask)
 
 
@@ -214,7 +214,7 @@ def test_HalfDifference_call(generate_nikamaps):
     data = hd()
 
     shape = data.shape
-    norm = data.time.value / data.time.value[(shape[1] - 1) // 2, (shape[0] - 1) // 2]
+    norm = data.hits / data.hits[(shape[1] - 1) // 2, (shape[0] - 1) // 2]
     npt.assert_allclose(
         (data.uncertainty.array * norm ** 0.5)[~data.mask], weighted_noise
     )
