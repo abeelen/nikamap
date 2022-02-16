@@ -28,7 +28,7 @@ from photutils.psf import BasicPSFPhotometry
 from photutils.psf import DAOGroup
 from photutils.background import MedianBackground
 from photutils.datasets import make_gaussian_sources_image
-from photutils.centroids import centroid_2dg, centroid_com
+from photutils.centroids import centroid_2dg, centroid_sources
 
 from radio_beam import Beam
 
@@ -536,52 +536,38 @@ class NikaMap(NDDataArray):
                     threshold=threshold,
                     mask=self.mask,
                     wcs=self.wcs,
-                    centroid_func=centroid_2dg,  # or centroid_com for faster/less precise values (see phoutils #655)
-                    box_size=box_size,
-                )
-        except TypeError:  # See #1295 of photutils
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", AstropyWarning)
-                sources = photutils.find_peaks(
-                    detect_on,
-                    threshold=threshold,
-                    mask=self.mask,
-                    wcs=self.wcs,
-                    centroid_func=centroid_com,  # or centroid_com for faster/less precise values (see phoutils #655)
                     box_size=box_size,
                 )
         except InconsistentAxisTypesError:
             sources = []
 
         if sources is not None and len(sources) > 0:
+            # To avoid #1294 photutils issue, compute the centroid outside of find_peak
+            x_centroids, y_centroids = centroid_sources(
+                detect_on,
+                sources["x_peak"],
+                sources["y_peak"],
+                box_size=box_size,
+                mask=self.mask,
+                centroid_func=centroid_2dg,
+            )
+
+            skycoord_centroids = self.wcs.pixel_to_world(x_centroids, y_centroids)
+            sources["ra"] = skycoord_centroids.ra
+            sources["dec"] = skycoord_centroids.dec
+            sources.remove_columns(["x_peak", "y_peak"])
+            sources.rename_column("peak_value", "SNR")
+
             # Transform to masked Table here to avoid future warnings
             sources = Table(sources, masked=True)
             sources.meta["method"] = "find_peak"
             sources.meta["threshold"] = threshold
-
-            if "skycoord_centroid" in sources.colnames:
-                # If the centroid was properly computed
-                # Extract skycoord centroid positions
-                sources["ra"] = sources["skycoord_centroid"].ra
-                sources["dec"] = sources["skycoord_centroid"].dec
-                sources.remove_columns(["x_centroid", "y_centroid", "x_peak", "y_peak"])
-                sources.remove_columns(["skycoord_centroid", "skycoord_peak"])
-            elif "skycoord_peak" in sources.colnames:
-                # The centroid where not computed...
-                # Extract skycoord from peak position...
-                sources["ra"] = sources["skycoord_peak"].ra
-                sources["dec"] = sources["skycoord_peak"].dec
-                sources.remove_columns(["x_peak", "y_peak"])
-                sources.remove_columns(["skycoord_peak"])
-            else:
-                raise ValueError("No centroid nor peak positions found")
 
             # For compatibility issues
             sources["_ra"] = sources["ra"]
             sources["_dec"] = sources["dec"]
 
             # Sort by decreasing SNR
-            sources.rename_column("peak_value", "SNR")
             sources.sort("SNR")
             sources.reverse()
 
