@@ -135,19 +135,9 @@ def generate_nikamaps(
         hdus = fits.hdu.HDUList(hdus=[primary])
 
         for band in ["1mm", "2mm"]:
-            hdus.append(
-                fits.hdu.ImageHDU(
-                    data.value, header=header, name="Brightness_{}".format(band)
-                )
-            )
-            hdus.append(
-                fits.hdu.ImageHDU(
-                    uncertainty.value, header=header, name="Stddev_{}".format(band)
-                )
-            )
-            hdus.append(
-                fits.hdu.ImageHDU(hits, header=header, name="Nhits_{}".format(band))
-            )
+            hdus.append(fits.hdu.ImageHDU(data.value, header=header, name="Brightness_{}".format(band)))
+            hdus.append(fits.hdu.ImageHDU(uncertainty.value, header=header, name="Stddev_{}".format(band)))
+            hdus.append(fits.hdu.ImageHDU(hits, header=header, name="Nhits_{}".format(band)))
             hdus.append(fits.hdu.BinTableHDU(sources, name="fake_sources"))
 
         hdus.writeto(filename, overwrite=True)
@@ -215,9 +205,7 @@ def test_HalfDifference_call(generate_nikamaps):
 
     shape = data.shape
     norm = data.hits / data.hits[(shape[1] - 1) // 2, (shape[0] - 1) // 2]
-    npt.assert_allclose(
-        (data.uncertainty.array * norm ** 0.5)[~data.mask], weighted_noise
-    )
+    npt.assert_allclose((data.uncertainty.array * norm ** 0.5)[~data.mask], weighted_noise)
 
 
 def test_HalfDifference_parity_set(generate_nikamaps):
@@ -243,53 +231,31 @@ def test_HalfDifference_parity(generate_nikamaps):
     filenames = generate_nikamaps
 
     primary_header = fits.getheader(filenames[0], 0)
-    weighted_noises = primary_header["NOISE"] / np.sqrt(
-        np.arange(1, primary_header["NMAPS"] + 1)
-    )
+    weighted_noises = primary_header["NOISE"] / np.sqrt(np.arange(1, primary_header["NMAPS"] + 1))
 
     hd = HalfDifference(filenames, n=None, parity_threshold=0)
     data = hd()
     uncertainties = np.unique(data.uncertainty.array[~data.mask])
 
-    assert np.all(
-        [
-            True if uncertainty in weighted_noises else False
-            for uncertainty in uncertainties
-        ]
-    )
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
 
     hd.parity_threshold = 0.5
     data = hd()
     uncertainties = np.unique(data.uncertainty.array[~data.mask])
 
-    assert np.all(
-        [
-            True if uncertainty in weighted_noises else False
-            for uncertainty in uncertainties
-        ]
-    )
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
 
     hd = HalfDifference(filenames, n=1, parity_threshold=0)
     data = hd()
     uncertainties = np.unique(data.uncertainty.array[~data.mask])
 
-    assert np.all(
-        [
-            True if uncertainty in weighted_noises else False
-            for uncertainty in uncertainties
-        ]
-    )
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
 
     hd.parity_threshold = 0.5
     data = hd()
     uncertainties = np.unique(data.uncertainty.array[~data.mask])
 
-    assert np.all(
-        [
-            True if uncertainty in weighted_noises else False
-            for uncertainty in uncertainties
-        ]
-    )
+    assert np.all([True if uncertainty in weighted_noises else False for uncertainty in uncertainties])
 
 
 def test_HalfDifference_odd(generate_nikamaps):
@@ -321,9 +287,7 @@ def test_Bootstrap(generate_nikamaps):
     filenames = generate_nikamaps
 
     primary_header = fits.getheader(filenames[0], 0)
-    weighted_noises = primary_header["NOISE"] / np.sqrt(
-        np.arange(1, primary_header["NMAPS"] + 1)
-    )
+    weighted_noises = primary_header["NOISE"] / np.sqrt(np.arange(1, primary_header["NMAPS"] + 1))
 
     # Weighted average
     bs = Bootstrap(filenames, n=None)
@@ -341,9 +305,7 @@ def test_Jackknife(generate_nikamaps):
     filenames = generate_nikamaps
 
     primary_header = fits.getheader(filenames[0], 0)
-    weighted_noises = primary_header["NOISE"] / np.sqrt(
-        np.arange(1, primary_header["NMAPS"] + 1)
-    )
+    weighted_noises = primary_header["NOISE"] / np.sqrt(np.arange(1, primary_header["NMAPS"] + 1))
 
     # Weighted average
     jk = Jackknife(filenames, n=None)

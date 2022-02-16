@@ -375,7 +375,9 @@ def single_source_mask_edge():
 
     data += g(xx, yy)
 
-    nm = NikaMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, mask=mask, fake_sources=fake_sources)
+    nm = NikaMap(
+        data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, mask=mask, fake_sources=fake_sources
+    )
 
     nm.x = fake_sources["x_mean"]
     nm.y = fake_sources["y_mean"]
@@ -519,7 +521,9 @@ def test_nikamap_phot_mask_edge(single_source_mask_edge):
     npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
 
 
-@pytest.fixture(params=["single_source", "single_source_side", "single_source_mask", "grid_sources", "wobble_grid_sources"])
+@pytest.fixture(
+    params=["single_source", "single_source_side", "single_source_mask", "grid_sources", "wobble_grid_sources"]
+)
 def nms(request):
     return getfixturevalue(request, request.param)
 

@@ -139,7 +139,6 @@ class MultiScans(object):
                 datas[i, unobserved] = 0
                 weights[i, unobserved] = 0
 
-
             self.datas = datas
             self.weights = weights
             self.hits = hits
@@ -337,7 +336,10 @@ class Jackknife(MultiScans):
         remainder = n_filenames % value
 
         if remainder:
-            warnings.warn("Remainder in number of files for {} samples, dropping the last {}".format(value, remainder), UserWarning)
+            warnings.warn(
+                "Remainder in number of files for {} samples, dropping the last {}".format(value, remainder),
+                UserWarning,
+            )
             n_filenames -= remainder
 
         assert n_filenames, "Less than 2 existing files in filenames"
@@ -377,7 +379,7 @@ class Jackknife(MultiScans):
             data = np.ma.average(sub_datas, weights=sub_weights, axis=0)
             # unweighted sample variance
             V1 = self.n_samples
-            e_data = np.sqrt(np.sum((sub_datas - data)**2, axis=0) / (V1 * (V1 - 1)))
+            e_data = np.sqrt(np.sum((sub_datas - data) ** 2, axis=0) / (V1 * (V1 - 1)))
             # TODO : weighted sample variance (NOT WORKING !!!)
             # V1 = np.sum(sub_weights, axis=0)
             # V2 = np.sum(sub_weights**2, axis=0)
@@ -451,7 +453,9 @@ class Bootstrap(MultiScans):
         for _ in range(n_shuffle):
             shuffled_index = np.floor(np.random.uniform(0, n_scans, n_scans)).astype(np.int)
             # np.ma.average is needed as some of the pixels have zero weights (should be masked)
-            outputs.append(np.ma.average(self.datas[shuffled_index], weights=self.weights[shuffled_index], axis=0, returned=False))
+            outputs.append(
+                np.ma.average(self.datas[shuffled_index], weights=self.weights[shuffled_index], axis=0, returned=False)
+            )
         return outputs
 
     def __call__(self):
@@ -464,7 +468,12 @@ class Bootstrap(MultiScans):
         """
 
         bs_array = np.concatenate(
-            ProgressBar.map(self.shuffled_average, np.array_split(np.arange(self.n_bootstrap), cpu_count()), ipython_widget=self.ipython_widget, multiprocess=True,)
+            ProgressBar.map(
+                self.shuffled_average,
+                np.array_split(np.arange(self.n_bootstrap), cpu_count()),
+                ipython_widget=self.ipython_widget,
+                multiprocess=True,
+            )
         )
 
         data = np.mean(bs_array, axis=0)
