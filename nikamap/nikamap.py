@@ -1376,7 +1376,12 @@ class NikaFits(MutableMapping):
             the fits filename
         """
         hdus = [fits.PrimaryHDU(None, self.primary_header)]
-        for item in self.values():
-            hdus += item.to_hdus()
+        for band, item in self.items():
+            hdus += item.to_hdus(
+                hdu_data="Brightness_{}".format(band),
+                hdu_mask=None,
+                hdu_uncertainty="Stddev_{}".format(band),
+                hdu_hits="Nhits_{}".format(band),
+            )
         hdus = fits.HDUList(hdus)
         hdus.writeto(filename, **kwargs)
