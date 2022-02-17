@@ -598,25 +598,21 @@ class ContMap(NDDataArray):
     @uncertainty.setter
     def uncertainty(self, value):
         if value is not None:
-            # Ugly trick to overcome bug in NDDataArray uncertainty setter
-            unit = getattr(value, "unit", None)
-            _class = value.__class__
-            if isinstance(value, (np.ndarray, u.Quantity)):
-                if self.unit and unit:
-                    value = value.to(self.unit).value
-                _class = StdDevUncertainty
-            elif isinstance(value, NDUncertainty):
-                # Ugly trick to overcome bug in NDDataArray uncertainty setter
-                if self.unit and unit:
-                    value = (value.array * unit).to(self.unit).value
+            if isinstance(value, NDUncertainty):
+                if getattr(value, '_parent_nddata', None) is not None:
+                    value = value.__class__(value, copy=False)
+                self._uncertainty = value
+            elif isinstance(value, np.ndarray):
+                if value.shape != self.shape:
+                    raise ValueError("uncertainty must have same shape as "
+                                     "data.")
+                self._uncertainty = StdDevUncertainty(value)
+                warnings.warn("array provided for uncertainty; assuming it is a "
+                         "StdDevUncertainty.")
             else:
-                raise TypeError("uncertainty must be an instance of a NDUncertainty object or a numpy array.")
-
-            value = _class(value, unit=None)
-            if value.array is not None and value.array.shape != self.shape:
-                raise ValueError("uncertainty must have same shape as data.")
-
-            NDDataArray.uncertainty.__set__(self, value)
+                raise TypeError("uncertainty must be an instance of a "
+                                "NDUncertainty object or a numpy array.")
+            self._uncertainty.parent_nddata = self
         else:
             self._uncertainty = value
 

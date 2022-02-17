@@ -10,7 +10,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.table import Table
 
-from astropy.nddata import StdDevUncertainty
+from astropy.nddata import StdDevUncertainty, InverseVariance
 from astropy.modeling import models
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
 from astropy.convolution import RickerWavelet2DKernel
@@ -48,7 +48,30 @@ def test_contbeam_init():
         str(beam)
         == "ContBeam: BMAJ=18.0 arcsec BMIN=18.0 arcsec BPA=0.0 deg as (63, 63) Kernel2D at pixscale 2.0 arcsec"
     )
-    assert isinstance(kernel, Kernel2D)
+    assert isinstance(kernel, Kernel2D)    @uncertainty.setter
+    def uncertainty(self, value):
+        if value is not None:
+            # Ugly trick to overcome bug in NDDataArray uncertainty setter
+            unit = getattr(value, "unit", None)
+            _class = value.__class__
+            if isinstance(value, (np.ndarray, u.Quantity)):
+                if self.unit and unit:
+                    value = value.to(self.unit).value
+                _class = StdDevUncertainty
+            elif isinstance(value, NDUncertainty):
+                # Ugly trick to overcome bug in NDDataArray uncertainty setter
+                if self.unit and unit:
+                    value = (value.array * unit).to(self.unit).value
+            else:
+                raise TypeError("uncertainty must be an instance of a NDUncertainty object or a numpy array.")
+
+            value = _class(value, unit=None)
+            if value.array is not None and value.array.shape != self.shape:
+                raise ValueError("uncertainty must have same shape as data.")
+
+            NDDataArray.uncertainty.__set__(self, value)
+        else:
+            self._uncertainty = value
     assert np.all((ref_kernel.array - kernel.array) == 0)
     assert beam.sr == (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma) ** 2).to(u.sr)
 
@@ -104,7 +127,30 @@ def test_contmap_init():
 
 def test_contmap_init_quantity():
     data = np.array([1, 2, 3]) * u.Jy / u.beam
-    nm = ContMap(data)
+    nm = ContMap(data)    @uncertainty.setter
+    def uncertainty(self, value):
+        if value is not None:
+            # Ugly trick to overcome bug in NDDataArray uncertainty setter
+            unit = getattr(value, "unit", None)
+            _class = value.__class__
+            if isinstance(value, (np.ndarray, u.Quantity)):
+                if self.unit and unit:
+                    value = value.to(self.unit).value
+                _class = StdDevUncertainty
+            elif isinstance(value, NDUncertainty):
+                # Ugly trick to overcome bug in NDDataArray uncertainty setter
+                if self.unit and unit:
+                    value = (value.array * unit).to(self.unit).value
+            else:
+                raise TypeError("uncertainty must be an instance of a NDUncertainty object or a numpy array.")
+
+            value = _class(value, unit=None)
+            if value.array is not None and value.array.shape != self.shape:
+                raise ValueError("uncertainty must have same shape as data.")
+
+            NDDataArray.uncertainty.__set__(self, value)
+        else:
+            self._uncertainty = value
     assert nm.unit == u.Jy / u.beam
 
 
@@ -158,10 +204,10 @@ def test_contmap_init_uncertainty():
     uncertainty = np.array([1, 1, 1])
 
     # Default to StdDevUncertainty...
-    nm = ContMap(data, uncertainty=uncertainty)
+    with pytest.warns(UserWarning):
+        nm = ContMap(data, uncertainty=uncertainty)
     assert isinstance(nm.uncertainty, StdDevUncertainty)
     assert np.all(nm.uncertainty.array == np.array([1, 1, 1]))
-    assert nm.unit == nm.uncertainty.unit
 
     nm_mean = nm.add(nm).divide(2)
     assert np.all(nm_mean.data == nm.data)
@@ -175,12 +221,8 @@ def test_contmap_init_uncertainty():
     with pytest.raises(TypeError):
         nm = ContMap(data, uncertainty=list(uncertainty))
 
-    # Different Units
-    st_uncertainty = StdDevUncertainty(uncertainty * 1e-3, unit=u.Jy)
-    nm = ContMap(data * u.mJy, uncertainty=st_uncertainty)
-    assert nm.uncertainty.unit == nm.unit
-    npt.assert_equal(nm.uncertainty.array, uncertainty)
-
+    iv_uncertainty = InverseVariance(uncertainty)
+    nm = ContMap(data, uncertainty=iv_uncertainty)
 
 def test_contmap_compressed():
     data = np.array([1, 2, 3])
