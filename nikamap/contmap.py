@@ -1010,7 +1010,15 @@ class ContMap(NDDataArray):
         kernel_sqr = kernel.array ** 2
 
         # ma.filled(0) required for the fft convolution
-        weights = 1.0 / self.uncertainty.array ** 2
+        if isinstance(self.uncertainty, InverseVariance):
+            weights = self.uncertainty.array
+        elif isinstance(self.uncertainty, StdDevUncertainty):
+            weights = 1 / self.uncertainty.array**2
+        elif isinstance(self.uncertainty, VarianceUncertainty):
+            weights = 1 / self.uncertainty.array
+        else:
+            raise ValueError("Unknown uncertainty type")
+
         if self.mask is not None:
             weights[self.mask] = 0
 
