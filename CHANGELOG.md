@@ -1,10 +1,25 @@
 master
 =====
+
 Added
 -----
 
 Fixed
 -----
+
+Version 0.3
+===========
+
+Added
+-----
+* Full refactoring splitting NikaMap into ContMap (general) & NikaMap
+* Better handling of beams with ContBeam, same API as radio_beam
+* Removed NikaBeam, replaced by ContBeam
+
+Fixed
+-----
+* Better PIIC map handling
+* Some newer version of photutils centroids would have crashed `find_sources`
 
 Version 0.2.2
 =============
