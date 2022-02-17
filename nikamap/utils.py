@@ -21,14 +21,41 @@ Jy_beam = u.Jy / u.beam
 __all__ = ["fake_data", "cat_to_sc", "CircularGaussianPSF", "pos_uniform", "pos_gridded", "pos_list", "powspec_k"]
 
 
-# Forking from astropy.convolution.kernels
-def _round_up_to_odd_integer(value):
-    i = int(np.ceil(value))  # TODO: int() call is only needed for six.PY2
-    if i % 2 == 0:
-        return i + 1
-    else:
-        return i
+# from radio_beam.utils.convolve
+# https://github.com/radio-astro-tools/radio-beam/blob/master/radio_beam/utils.py
 
+def beam_convolve(beam, other): # pragma: no cover
+
+    # blame: https://github.com/pkgw/carma-miriad/blob/CVSHEAD/src/subs/gaupar.for
+    # (github checkin of MIRIAD, code by Sault)
+
+    alpha = ((beam.major * np.cos(beam.pa))**2 +
+             (beam.minor * np.sin(beam.pa))**2 +
+             (other.major * np.cos(other.pa))**2 +
+             (other.minor * np.sin(other.pa))**2)
+
+    beta = ((beam.major * np.sin(beam.pa))**2 +
+            (beam.minor * np.cos(beam.pa))**2 +
+            (other.major * np.sin(other.pa))**2 +
+            (other.minor * np.cos(other.pa))**2)
+
+    gamma = (2 * ((beam.minor**2 - beam.major**2) *
+                  np.sin(beam.pa) * np.cos(beam.pa) +
+                  (other.minor**2 - other.major**2) *
+                  np.sin(other.pa) * np.cos(other.pa)))
+
+    s = alpha + beta
+    t = np.sqrt((alpha - beta)**2 + gamma**2)
+
+    new_major = np.sqrt(0.5 * (s + t))
+    new_minor = np.sqrt(0.5 * (s - t))
+    # absolute tolerance needs to be <<1 microarcsec
+    if np.isclose(((abs(gamma) + abs(alpha - beta))**0.5).to(u.arcsec).value, 1e-7):
+        new_pa = 0.0 * u.deg
+    else:
+        new_pa = 0.5 * np.arctan2(-1. * gamma, alpha - beta)
+
+    return new_major, new_minor, new_pa
 
 class CircularGaussianPSF(Fittable2DModel):
     r"""
@@ -191,7 +218,7 @@ def pos_too_close(pos, dist_threshold=0):
     -----
     Based on Euclidian distances
     """
-    dist_mask = np.ones(len(pos), dtype=np.bool)
+    dist_mask = np.ones(len(pos), dtype=bool)
 
     while not np.all(~dist_mask):
         # Computing pixel distances between all sources
@@ -224,7 +251,7 @@ def pos_uniform(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * 
     depending on the distance threshold and the number of loop, the requested number of sources might not be returned
     """
 
-    pos = np.array([[], []], dtype=np.float).T
+    pos = np.array([[], []], dtype=float).T
 
     i_loop = 0
     while i_loop < max_loop and len(pos) < nsources:
@@ -267,7 +294,7 @@ def pos_gridded(
 
     # square distribution with step margin on the side
     within_step = (within[1] - within[0]) / (sq_sources + 1)
-    pos = np.indices([sq_sources] * 2, dtype=np.float) * within_step + within[0] + within_step
+    pos = np.indices([sq_sources] * 2, dtype=float) * within_step + within[0] + within_step
 
     if wobble:
         # With some wobbling if needed
@@ -310,7 +337,7 @@ def pos_list(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * u.m
 
 
 def centered_circular_gaussian(fwhm, shape):
-    y_idx, x_idx = np.indices(shape, dtype=np.float)
+    y_idx, x_idx = np.indices(shape, dtype=float)
     sigma = gaussian_fwhm_to_sigma * fwhm * np.asarray(shape)
     delta_x = (x_idx - shape[1] / 2) ** 2 / (2 * sigma[1] ** 2)
     delta_y = (y_idx - shape[0] / 2) ** 2 / (2 * sigma[0] ** 2)

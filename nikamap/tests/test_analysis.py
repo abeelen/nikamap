@@ -120,8 +120,8 @@ def generate_nikamaps(
 
         filename = str(tmpdir.join("map_{}.fits".format(i_map)))
 
-        hits = np.ones(shape=shape, dtype=np.float)
-        uncertainty = np.ones(shape=shape, dtype=np.float) * noise_level
+        hits = np.ones(shape=shape, dtype=float)
+        uncertainty = np.ones(shape=shape, dtype=float) * noise_level
         data = np.random.normal(loc=0, scale=1, size=shape) * uncertainty
 
         data += data_sources

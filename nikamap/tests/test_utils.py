@@ -74,7 +74,7 @@ def test_pos_uniform():
     assert -0.5 < y.min() or y.max() < shape[0] - 0.5, "pixel coordinate outside boundaries"
     assert np.all(f == np.repeat(1 * u.mJy, f.shape))
 
-    mask = np.zeros(shape, dtype=np.bool)
+    mask = np.zeros(shape, dtype=bool)
     mask[:, :5] = True
     x, y, f = pos_uniform(nsources=100, shape=shape, mask=mask)
     assert 4 < np.floor(x.min() + 0.5), "pixel coordinate inside max"
@@ -105,7 +105,7 @@ def test_pos_gridded():
     ), "unexpected pixel coordinate"
     assert np.all(f == np.repeat(1 * u.mJy, f.shape))
 
-    mask = np.zeros(shape, dtype=np.bool)
+    mask = np.zeros(shape, dtype=bool)
     mask[:, :5] = True
     with pytest.warns(UserWarning):
         x, y, f = pos_gridded(nsources=10 ** 2, shape=shape, mask=mask)
@@ -144,7 +144,7 @@ def test_pos_list():
     assert np.all(x == x_mean), "should be identical"
     assert np.all(y == y_mean), "should be identical"
 
-    mask = np.zeros(shape, dtype=np.bool)
+    mask = np.zeros(shape, dtype=bool)
     mask[:, :5] = True
     with pytest.warns(UserWarning):
         x, y, f = pos_list(nsources=nsources, shape=shape, mask=mask, x_mean=x_mean, y_mean=y_mean)
