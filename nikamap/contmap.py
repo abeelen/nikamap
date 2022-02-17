@@ -600,19 +600,16 @@ class ContMap(NDDataArray):
     def uncertainty(self, value):
         if value is not None:
             if isinstance(value, NDUncertainty):
-                if getattr(value, '_parent_nddata', None) is not None:
+                if getattr(value, "_parent_nddata", None) is not None:
                     value = value.__class__(value, copy=False)
                 self._uncertainty = value
             elif isinstance(value, np.ndarray):
                 if value.shape != self.shape:
-                    raise ValueError("uncertainty must have same shape as "
-                                     "data.")
+                    raise ValueError("uncertainty must have same shape as " "data.")
                 self._uncertainty = StdDevUncertainty(value)
-                warnings.warn("array provided for uncertainty; assuming it is a "
-                         "StdDevUncertainty.")
+                warnings.warn("array provided for uncertainty; assuming it is a " "StdDevUncertainty.")
             else:
-                raise TypeError("uncertainty must be an instance of a "
-                                "NDUncertainty object or a numpy array.")
+                raise TypeError("uncertainty must be an instance of a " "NDUncertainty object or a numpy array.")
             self._uncertainty.parent_nddata = self
         else:
             self._uncertainty = value
@@ -1013,7 +1010,7 @@ class ContMap(NDDataArray):
         if isinstance(self.uncertainty, InverseVariance):
             weights = self.uncertainty.array
         elif isinstance(self.uncertainty, StdDevUncertainty):
-            weights = 1 / self.uncertainty.array**2
+            weights = 1 / self.uncertainty.array ** 2
         elif isinstance(self.uncertainty, VarianceUncertainty):
             weights = 1 / self.uncertainty.array
         else:

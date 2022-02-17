@@ -585,23 +585,22 @@ def setup_ax(ax=None, wcs=None):
 
     return ax
 
+
 def meta_to_header(meta):
     """Transform a meta object into a fits Header
-    
+
     Parameters
     ----------
     meta : dict-like
         a meta object
-    
+
     Returns
     -------
     header : :class:`~astropy.io.fits.Header`
         the corresponding header
     """
 
-    header = {
-        key: value for key, value in meta.items() if key not in ["history", "comment", "HISTORY", "COMMENT"]
-    }
+    header = {key: value for key, value in meta.items() if key not in ["history", "comment", "HISTORY", "COMMENT"]}
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=fits.verify.VerifyWarning)
