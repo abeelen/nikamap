@@ -87,7 +87,7 @@ class ContBeam(Kernel2D):
         pixscale=None,
         array=None,
         support_scaling=8,
-        **kwargs
+        **kwargs,
     ):
         """
         Create a new Gaussian beam
@@ -197,14 +197,14 @@ class ContBeam(Kernel2D):
         repr += "{} Kernel2D at pixscale {}".format(self._array.shape, self._pixscale)
         return repr
 
-    def to_header_keywords(self): # pragma: no cover
+    def to_header_keywords(self):  # pragma: no cover
         return {
             "BMAJ": self.major.to(u.deg).value,
             "BMIN": self.minor.to(u.deg).value,
             "BPA": self.pa.to(u.deg).value,
         }
 
-    def ellipse_to_plot(self, xcen, ycen, pixscale): # pragma: no cover
+    def ellipse_to_plot(self, xcen, ycen, pixscale):  # pragma: no cover
         """
         Return a matplotlib ellipse for plotting
         Parameters
@@ -264,7 +264,7 @@ class ContBeam(Kernel2D):
         if self.major is not None:
             return (2 * np.pi * (self.major * self.minor) * gaussian_fwhm_to_sigma ** 2).to(u.sr)
         else:
-            return (self._array.sum() / self._array.max() * (self.pixscale**2)).to(u.sr)
+            return (self._array.sum() / self._array.max() * (self.pixscale ** 2)).to(u.sr)
 
     def as_kernel(self, pixscale, **kwargs):
         """
@@ -288,7 +288,7 @@ class ContBeam(Kernel2D):
                 meta=self.meta,
                 pixscale=pixscale,
                 support_scaling=self.support_scaling,
-                **kwargs
+                **kwargs,
             )
         else:
             raise ValueError("Do not rescale array kernel with different pixscale")
@@ -321,7 +321,9 @@ class ContBeam(Kernel2D):
             major = other.model.x_fwhm.value * self.pixscale
             minor = other.model.y_fwhm.value * self.pixscale
             pa = other.model.theta.value * u.radian - 90 * u.deg
-            new_major, new_minor, new_pa = beam_convolve(self, ContBeam(major=major, minor=minor, pa=pa, pixscale=self.pixscale))
+            new_major, new_minor, new_pa = beam_convolve(
+                self, ContBeam(major=major, minor=minor, pa=pa, pixscale=self.pixscale)
+            )
             return ContBeam(
                 major=new_major,
                 minor=new_minor,
@@ -342,7 +344,7 @@ class ContBeam(Kernel2D):
             ValueError("Do not know how to handle {}".format(type(other)))
 
     @classmethod
-    def from_fits_header(cls, hdr, unit=u.deg, pixscale=None): # pragma: no cover
+    def from_fits_header(cls, hdr, unit=u.deg, pixscale=None):  # pragma: no cover
         """
         Instantiate the beam from a header. Attempts to extract the
         beam from standard keywords. Failing that, it looks for an
@@ -384,7 +386,7 @@ class ContBeam(Kernel2D):
         return cls(major=major, minor=minor, pa=pa, pixscale=pixscale)
 
     @classmethod
-    def from_fits_history(cls, hdr, pixscale=None): # pragma: no cover
+    def from_fits_history(cls, hdr, pixscale=None):  # pragma: no cover
         """
         Instantiate the beam from an AIPS header. AIPS holds the beam
         in history. This method of initializing uses the last such
@@ -392,12 +394,12 @@ class ContBeam(Kernel2D):
         """
         # a line looks like
         # HISTORY AIPS   CLEAN BMAJ=  1.7599E-03 BMIN=  1.5740E-03 BPA=   2.61
-        if 'HISTORY' not in hdr:
+        if "HISTORY" not in hdr:
             return None
 
         aipsline = None
-        for line in hdr['HISTORY']:
-            if 'BMAJ' in line:
+        for line in hdr["HISTORY"]:
+            if "BMAJ" in line:
                 aipsline = line
 
         # a line looks like
@@ -407,10 +409,10 @@ class ContBeam(Kernel2D):
         #        at pa 82.8827 (deg)
 
         casaline = None
-        for line in hdr['HISTORY']:
-            if ('restoration' in line) and ('arcsec' in line):
+        for line in hdr["HISTORY"]:
+            if ("restoration" in line) and ("arcsec" in line):
                 casaline = line
-        #assert precedence for CASA style over AIPS
+        # assert precedence for CASA style over AIPS
         #        this is a dubious choice
 
         if casaline is not None:
@@ -427,6 +429,7 @@ class ContBeam(Kernel2D):
 
         else:
             return None
+
 
 class ContMap(NDDataArray):
     """A ContMap object represent a continuum map with additionnal capabilities.
@@ -737,12 +740,8 @@ class ContMap(NDDataArray):
         sources["x_mean"] = x_mean
         sources["y_mean"] = y_mean
 
-        sources["x_stddev"] = (
-            np.ones(nsources) * self.beam.stddev_maj.to(u.pix, self._pixel_scale).value
-        )
-        sources["y_stddev"] = (
-            np.ones(nsources) * self.beam.stddev_min.to(u.pix, self._pixel_scale).value
-        )
+        sources["x_stddev"] = np.ones(nsources) * self.beam.stddev_maj.to(u.pix, self._pixel_scale).value
+        sources["y_stddev"] = np.ones(nsources) * self.beam.stddev_min.to(u.pix, self._pixel_scale).value
         sources["theta"] = np.zeros(nsources)
 
         # Crude check to be within the finite part of the map
@@ -1178,7 +1177,7 @@ class ContMap(NDDataArray):
 
     def check_SNR_simple(self):
         """Perform normality test on SNR maps
-        
+
         This perform a simple mad absolute deviation on snr pixels
         """
         snr = self.snr.compressed()
@@ -1186,7 +1185,7 @@ class ContMap(NDDataArray):
 
     def normalize_uncertainty(self, factor=None, method="check_SNR_simple"):
         """Normalize the uncertainty.value
-        
+
         Parameters
         ----------
         factor : float, optionnal
@@ -1194,14 +1193,14 @@ class ContMap(NDDataArray):
         method : str, (check_SNR_simple|check_SNR),
             the method to compute this factor if not provided, by default `check_SNR_simple`
         """
-        assert method in ('check_SNR_simple', 'check_SNR', None)
+        assert method in ("check_SNR_simple", "check_SNR", None)
 
         if factor is None:
             if method is None:
-                raise ValueError('You must provide either `factor` or `method`.')
-            elif method == 'check_SNR_simple':
+                raise ValueError("You must provide either `factor` or `method`.")
+            elif method == "check_SNR_simple":
                 factor = self.check_SNR_simple()
-            elif method == 'check_SNR':
+            elif method == "check_SNR":
                 factor = self.check_SNR()
 
         if isinstance(self.uncertainty, StdDevUncertainty):
@@ -1211,14 +1210,13 @@ class ContMap(NDDataArray):
         elif isinstance(self.uncertainty, VarianceUncertainty):
             self.uncertainty.array *= factor ** 2
         else:
-            raise ValueError("Unknown uncertainty type")        
+            raise ValueError("Unknown uncertainty type")
 
         # Add the factor in the meta
         if "FACTOR" in self.meta:
             self.meta["FACTOR"] *= factor
         else:
             self.meta["FACTOR"] = factor
-
 
     def plot_PSD(self, to_plot=None, ax=None, bins=100, range=None, apod_size=None, **kwargs):
         """Plot the power spectrum of the map.
@@ -1323,7 +1321,7 @@ class ContMap(NDDataArray):
         return result, kwargs  # these must be returned
 
     # from astropy.nddata.ccddata
-    def _insert_in_metadata_fits_safe(self, key, value): # pragma: no cover
+    def _insert_in_metadata_fits_safe(self, key, value):  # pragma: no cover
         """
         Insert key/value pair into metadata in a way that FITS can serialize.
 
@@ -1362,7 +1360,7 @@ class ContMap(NDDataArray):
         hdu_hits="HITS",
         wcs_relax=True,
         key_uncertainty_type="UTYPE",
-        fits_header_comment = None,
+        fits_header_comment=None,
     ):
         """Creates an HDUList object from a ContMap object.
         Parameters
@@ -1516,14 +1514,14 @@ def fits_contmap_reader(
 
         hdr = hdus[0].header
 
-        sampling_freq = hdr.get('sampling_freq', None)
+        sampling_freq = hdr.get("sampling_freq", None)
         if sampling_freq is not None:
             sampling_freq = sampling_freq * u.Hz
 
         if hdu_data is not None and hdu_data in hdus:
             data = hdus[hdu_data].data
             wcs = WCS(hdus[hdu_data].header)
-            unit = hdus[hdu_data].header.get('BUNIT', None)
+            unit = hdus[hdu_data].header.get("BUNIT", None)
         else:
             data = None
             wcs = None
@@ -1546,7 +1544,9 @@ def fits_contmap_reader(
         else:
             hits = None
 
-    c_data = ContMap(data, wcs=wcs, uncertainty=uncertainty, mask=mask, hits=hits, meta=hdr, unit=unit, sampling_freq=sampling_freq)
+    c_data = ContMap(
+        data, wcs=wcs, uncertainty=uncertainty, mask=mask, hits=hits, meta=hdr, unit=unit, sampling_freq=sampling_freq
+    )
 
     return c_data
 
@@ -1586,16 +1586,18 @@ def fits_contmap_writer(
         Saving flags is not supported.
     """
     # Build the primary header with history and comments
-    header = {key: value for key, value in c_data.header.items() if key not in ["history", "comment", "HISTORY", "COMMENT"]}
+    header = {
+        key: value for key, value in c_data.header.items() if key not in ["history", "comment", "HISTORY", "COMMENT"]
+    }
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=fits.verify.VerifyWarning)
         header = fits.Header(header)
 
         if c_data.sampling_freq is not None:
-            header['sampling_freq'] = c_data.sampling_freq.to(u.Hz).value
+            header["sampling_freq"] = c_data.sampling_freq.to(u.Hz).value
 
-    for key in ['history', 'comments']:
+    for key in ["history", "comments"]:
         if key in c_data.header:
             for item in c_data.header[key]:
                 header[key] = item
@@ -1610,6 +1612,7 @@ def fits_contmap_writer(
 
     hdu = fits.HDUList(hdu)
     hdu.writeto(filename, **kwd)
+
 
 with registry.delay_doc_updates(ContMap):
     registry.register_reader("fits", ContMap, fits_contmap_reader)

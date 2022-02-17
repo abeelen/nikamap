@@ -44,16 +44,18 @@ def test_contbeam_init():
     kernel = beam.as_kernel(pixscale)
 
     assert beam.major == fwhm
-    assert str(beam) == "ContBeam: BMAJ=18.0 arcsec BMIN=18.0 arcsec BPA=0.0 deg as (63, 63) Kernel2D at pixscale 2.0 arcsec"
+    assert (
+        str(beam)
+        == "ContBeam: BMAJ=18.0 arcsec BMIN=18.0 arcsec BPA=0.0 deg as (63, 63) Kernel2D at pixscale 2.0 arcsec"
+    )
     assert isinstance(kernel, Kernel2D)
     assert np.all((ref_kernel.array - kernel.array) == 0)
-    assert beam.sr == (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma)**2).to(u.sr)
-
+    assert beam.sr == (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma) ** 2).to(u.sr)
 
     beam = ContBeam(array=ref_kernel.array, pixscale=pixscale)
     assert beam.major is None
     assert str(beam) == "ContBeam: (63, 63) Kernel2D at pixscale 2.0 arcsec"
-    npt.assert_almost_equal(beam.sr.value, (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma)**2).to(u.sr).value)
+    npt.assert_almost_equal(beam.sr.value, (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma) ** 2).to(u.sr).value)
     with pytest.raises(TypeError):
         beam.as_kernel()
 
@@ -66,17 +68,17 @@ def test_contbeam_convolve():
     pixscale = 2 * u.arcsec
 
     ref_kernel = Gaussian2DKernel(fwhm * gaussian_fwhm_to_sigma / pixscale, x_size=63, y_size=63)
- 
+
     beam = ContBeam(fwhm, pixscale=pixscale)
     beam_convolve = beam.convolve(beam)
     npt.assert_almost_equal(beam_convolve.major.to(u.arcsec).value, (np.sqrt(2) * fwhm).to(u.arcsec).value)
 
     with pytest.warns(UserWarning):
         beam_refconvolve = beam.convolve(ref_kernel)
-    
-    center = (beam_refconvolve.shape[0] - 1 ) // 2
+
+    center = (beam_refconvolve.shape[0] - 1) // 2
     size = (beam_convolve.shape[0] - 1) // 2
-    _slice = slice(center - size,  center+size + 1) 
+    _slice = slice(center - size, center + size + 1)
     npt.assert_almost_equal(beam_refconvolve.array[_slice, _slice], beam_convolve.array)
 
 
@@ -207,6 +209,7 @@ def getfixturevalue(request, value):
         return request.getfixturevalue(value)
 
     return request.getfuncargvalue(value)
+
 
 @pytest.fixture()
 def no_source():
@@ -622,7 +625,9 @@ def test_contmap_match_filter(nms):
     npt.assert_allclose(mf_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
     npt.assert_allclose((nm.beam.major * np.sqrt(2)).to(u.arcsec), mf_nm.beam.major.to(u.arcsec))
 
-    mh_nm = nm.match_filter(RickerWavelet2DKernel(nm.beam.major.to(u.pix, nm._pixel_scale).value * gaussian_fwhm_to_sigma))
+    mh_nm = nm.match_filter(
+        RickerWavelet2DKernel(nm.beam.major.to(u.pix, nm._pixel_scale).value * gaussian_fwhm_to_sigma)
+    )
     npt.assert_allclose(mh_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
     assert mh_nm.beam.major is None
 
@@ -812,7 +817,6 @@ def test_surface_shrink():
     assert np.isclose(surface.to_value(u.arcsec ** 2), 4)
 
 
-
 @pytest.fixture(scope="session")
 def generate_fits(tmpdir_factory):
 
@@ -860,14 +864,14 @@ def generate_fits(tmpdir_factory):
     header["BUNIT"] = "Jy / beam", "Fake Unit"
 
     primary_header = fits.Header()
-    primary_header['HISTORY'] = 'this'
-    primary_header['HISTORY'] = 'and that'
-    primary_header['COMMENT'] = 'or that'
-    primary_header['COMMENT'] = 'and this'
-    primary_header['BMAJ'] = fwhm.to(u.deg).value
+    primary_header["HISTORY"] = "this"
+    primary_header["HISTORY"] = "and that"
+    primary_header["COMMENT"] = "or that"
+    primary_header["COMMENT"] = "and this"
+    primary_header["BMAJ"] = fwhm.to(u.deg).value
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=fits.verify.VerifyWarning)
-        primary_header['sampling_freq'] = 10
+        primary_header["sampling_freq"] = 10
 
     hdus = [fits.hdu.PrimaryHDU(None, primary_header)]
     hdus.append(fits.hdu.ImageHDU(data, header=header, name="DATA"))
@@ -887,13 +891,14 @@ def test_contmap_read(generate_fits):
     filename = generate_fits
 
     data = ContMap.read(filename)
-    assert data.sampling_freq == 10 *u.Hz
+    assert data.sampling_freq == 10 * u.Hz
     assert data.shape == (256, 256)
-    assert str(data.unit) == 'Jy / beam'
+    assert str(data.unit) == "Jy / beam"
     assert data.beam.major.to(u.arcsec).value == 3600
-    assert list(data.meta['HISTORY']) == ['this', 'and that']
-    assert list(data.meta['COMMENT']) == ['or that', 'and this']
+    assert list(data.meta["HISTORY"]) == ["this", "and that"]
+    assert list(data.meta["COMMENT"]) == ["or that", "and this"]
     assert data.hits is not None
+
 
 def test_nikamap_write(generate_fits):
     filename = generate_fits

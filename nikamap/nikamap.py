@@ -28,6 +28,7 @@ __all__ = ["NikaMap", "NikaFits"]
 
 # TODO: Take care of operations (add/subtract/...) to add extra parameters...
 
+
 class NikaMap(ContMap):
     """A NikaMap object represent a nika map with additionnal capabilities.
 

@@ -24,38 +24,44 @@ __all__ = ["fake_data", "cat_to_sc", "CircularGaussianPSF", "pos_uniform", "pos_
 # from radio_beam.utils.convolve
 # https://github.com/radio-astro-tools/radio-beam/blob/master/radio_beam/utils.py
 
-def beam_convolve(beam, other): # pragma: no cover
+
+def beam_convolve(beam, other):  # pragma: no cover
 
     # blame: https://github.com/pkgw/carma-miriad/blob/CVSHEAD/src/subs/gaupar.for
     # (github checkin of MIRIAD, code by Sault)
 
-    alpha = ((beam.major * np.cos(beam.pa))**2 +
-             (beam.minor * np.sin(beam.pa))**2 +
-             (other.major * np.cos(other.pa))**2 +
-             (other.minor * np.sin(other.pa))**2)
+    alpha = (
+        (beam.major * np.cos(beam.pa)) ** 2
+        + (beam.minor * np.sin(beam.pa)) ** 2
+        + (other.major * np.cos(other.pa)) ** 2
+        + (other.minor * np.sin(other.pa)) ** 2
+    )
 
-    beta = ((beam.major * np.sin(beam.pa))**2 +
-            (beam.minor * np.cos(beam.pa))**2 +
-            (other.major * np.sin(other.pa))**2 +
-            (other.minor * np.cos(other.pa))**2)
+    beta = (
+        (beam.major * np.sin(beam.pa)) ** 2
+        + (beam.minor * np.cos(beam.pa)) ** 2
+        + (other.major * np.sin(other.pa)) ** 2
+        + (other.minor * np.cos(other.pa)) ** 2
+    )
 
-    gamma = (2 * ((beam.minor**2 - beam.major**2) *
-                  np.sin(beam.pa) * np.cos(beam.pa) +
-                  (other.minor**2 - other.major**2) *
-                  np.sin(other.pa) * np.cos(other.pa)))
+    gamma = 2 * (
+        (beam.minor ** 2 - beam.major ** 2) * np.sin(beam.pa) * np.cos(beam.pa)
+        + (other.minor ** 2 - other.major ** 2) * np.sin(other.pa) * np.cos(other.pa)
+    )
 
     s = alpha + beta
-    t = np.sqrt((alpha - beta)**2 + gamma**2)
+    t = np.sqrt((alpha - beta) ** 2 + gamma ** 2)
 
     new_major = np.sqrt(0.5 * (s + t))
     new_minor = np.sqrt(0.5 * (s - t))
     # absolute tolerance needs to be <<1 microarcsec
-    if np.isclose(((abs(gamma) + abs(alpha - beta))**0.5).to(u.arcsec).value, 1e-7):
+    if np.isclose(((abs(gamma) + abs(alpha - beta)) ** 0.5).to(u.arcsec).value, 1e-7):
         new_pa = 0.0 * u.deg
     else:
-        new_pa = 0.5 * np.arctan2(-1. * gamma, alpha - beta)
+        new_pa = 0.5 * np.arctan2(-1.0 * gamma, alpha - beta)
 
     return new_major, new_minor, new_pa
+
 
 class CircularGaussianPSF(Fittable2DModel):
     r"""
