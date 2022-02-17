@@ -48,30 +48,7 @@ def test_contbeam_init():
         str(beam)
         == "ContBeam: BMAJ=18.0 arcsec BMIN=18.0 arcsec BPA=0.0 deg as (63, 63) Kernel2D at pixscale 2.0 arcsec"
     )
-    assert isinstance(kernel, Kernel2D)    @uncertainty.setter
-    def uncertainty(self, value):
-        if value is not None:
-            # Ugly trick to overcome bug in NDDataArray uncertainty setter
-            unit = getattr(value, "unit", None)
-            _class = value.__class__
-            if isinstance(value, (np.ndarray, u.Quantity)):
-                if self.unit and unit:
-                    value = value.to(self.unit).value
-                _class = StdDevUncertainty
-            elif isinstance(value, NDUncertainty):
-                # Ugly trick to overcome bug in NDDataArray uncertainty setter
-                if self.unit and unit:
-                    value = (value.array * unit).to(self.unit).value
-            else:
-                raise TypeError("uncertainty must be an instance of a NDUncertainty object or a numpy array.")
-
-            value = _class(value, unit=None)
-            if value.array is not None and value.array.shape != self.shape:
-                raise ValueError("uncertainty must have same shape as data.")
-
-            NDDataArray.uncertainty.__set__(self, value)
-        else:
-            self._uncertainty = value
+    assert isinstance(kernel, Kernel2D)
     assert np.all((ref_kernel.array - kernel.array) == 0)
     assert beam.sr == (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma) ** 2).to(u.sr)
 
@@ -127,51 +104,8 @@ def test_contmap_init():
 
 def test_contmap_init_quantity():
     data = np.array([1, 2, 3]) * u.Jy / u.beam
-    nm = ContMap(data)    @uncertainty.setter
-    def uncertainty(self, value):
-        if value is not None:
-            # Ugly trick to overcome bug in NDDataArray uncertainty setter
-            unit = getattr(value, "unit", None)
-            _class = value.__class__
-            if isinstance(value, (np.ndarray, u.Quantity)):
-                if self.unit and unit:
-                    value = value.to(self.unit).value
-                _class = StdDevUncertainty
-            elif isinstance(value, NDUncertainty):
-                # Ugly trick to overcome bug in NDDataArray uncertainty setter
-                if self.unit and unit:
-                    value = (value.array * unit).to(self.unit).value
-            else:
-                raise TypeError("uncertainty must be an instance of a NDUncertainty object or a numpy array.")
-
-            value = _class(value, unit=None)
-            if value.array is not None and value.array.shape != self.shape:
-                raise ValueError("uncertainty must have same shape as data.")
-
-            NDDataArray.uncertainty.__set__(self, value)
-        else:
-            self._uncertainty = value
+    nm = ContMap(data)
     assert nm.unit == u.Jy / u.beam
-
-
-# def test_contmap_init_time():
-#     data = np.array([1, 2, 3]) * u.Jy / u.beam
-
-#     time = np.array([1, 2]) * u.s
-#     with pytest.raises(ValueError):
-#         nm = ContMap(data, time=time)
-
-#     time = np.array([1, 2, 3])
-#     with pytest.raises(ValueError):
-#         nm = ContMap(data, time=time)
-
-#     time = np.array([1, 2, 3]) * u.Hz
-#     with pytest.raises(ValueError):
-#         nm = ContMap(data, time=time)
-
-#     time = np.array([1, 2, 3]) * u.h
-#     nm = ContMap(data, time=time)
-#     assert nm.time.unit == u.h
 
 
 def test_contmap_init_meta():

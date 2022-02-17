@@ -48,6 +48,7 @@ from .utils import powspec_k
 from .utils import update_header
 from .utils import shrink_mask
 from .utils import setup_ax
+from .utils import meta_to_header
 
 Jy_beam = u.Jy / u.beam
 
@@ -515,10 +516,10 @@ class ContMap(NDDataArray):
 
         if self.beam is None:
             # Default BMAJ 1 deg...
-            header = self.meta
+            header = meta_to_header(self.meta)
             if "BMAJ" not in header:
                 header["BMAJ"] = 1
-            self.beam = ContBeam.from_fits_header(fits.Header(header), pixscale=pixscale)
+            self.beam = ContBeam.from_fits_header(header, pixscale=pixscale)
 
     @property
     def header(self):
@@ -1316,38 +1317,6 @@ class ContMap(NDDataArray):
         kwargs["hits"] = result_hits
         return result, kwargs  # these must be returned
 
-    # from astropy.nddata.ccddata
-    def _insert_in_metadata_fits_safe(self, key, value):  # pragma: no cover
-        """
-        Insert key/value pair into metadata in a way that FITS can serialize.
-
-        Parameters
-        ----------
-        key : str
-            Key to be inserted in dictionary.
-
-        value : str or None
-            Value to be inserted.
-
-        Notes
-        -----
-        This addresses a shortcoming of the FITS standard. There are length
-        restrictions on both the ``key`` (8 characters) and ``value`` (72
-        characters) in the FITS standard. There is a convention for handling
-        long keywords and a convention for handling long values, but the
-        two conventions cannot be used at the same time.
-
-        This addresses that case by checking the length of the ``key`` and
-        ``value`` and, if necessary, shortening the key.
-        """
-
-        if len(key) > 8 and len(value) > 72:
-            short_name = key[:8]
-            self.meta["HIERARCH {}".format(key.upper())] = (short_name, f"Shortened name for {key}")
-            self.meta[short_name] = value
-        else:
-            self.meta[key] = value
-
     def to_hdus(
         self,
         hdu_data="DATA",
@@ -1401,21 +1370,7 @@ class ContMap(NDDataArray):
             # header we are constructing. This probably indicates that
             # _insert_in_metadata_fits_safe should be rewritten in a more
             # sensible way...
-            header = deepcopy(self.header)
-            history = header.pop("history", None)
-            comment = header.pop("comment", None)
-
-            dummy_data = ContMap([1], meta=fits.Header(), unit="")
-            for k, v in header.items():
-                dummy_data._insert_in_metadata_fits_safe(k, str(v))
-            header = dummy_data.header
-
-            if history is not None:
-                for item in history:
-                    header["history"] = item
-            if comment is not None:
-                for item in comment:
-                    header["comment"] = item
+            header = meta_to_header(self.header)
 
             if fits_header_comment is not None:
                 for key, comment in fits_header_comment.items():
@@ -1582,21 +1537,13 @@ def fits_contmap_writer(
         Saving flags is not supported.
     """
     # Build the primary header with history and comments
-    header = {
-        key: value for key, value in c_data.header.items() if key not in ["history", "comment", "HISTORY", "COMMENT"]
-    }
+
+    header = meta_to_header(c_data.header)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=fits.verify.VerifyWarning)
-        header = fits.Header(header)
-
         if c_data.sampling_freq is not None:
             header["sampling_freq"] = c_data.sampling_freq.to(u.Hz).value
-
-    for key in ["history", "comments"]:
-        if key in c_data.header:
-            for item in c_data.header[key]:
-                header[key] = item
 
     hdu = [fits.PrimaryHDU(None, header=header)]
     hdu += c_data.to_hdus(
