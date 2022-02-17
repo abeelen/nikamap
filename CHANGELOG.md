@@ -7,6 +7,15 @@ Added
 Fixed
 -----
 
+Version 0.3.2
+=============
+
+Fixed
+-----
+
+* Proper Handling of all NDUncertainty
+* Proper Handling for history and comment in meta/header
+
 Version 0.3
 ===========
 
