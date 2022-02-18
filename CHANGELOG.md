@@ -7,8 +7,13 @@ Added
 Fixed
 -----
 
-Version 0.3.4
+Version 0.3.5
 =============
+
+Added
+-----
+* `find_sources` save pixels coordinates for peak and centroids
+* `phot_sources` with `psf=True` save residual map
 
 Fixed
 -----
