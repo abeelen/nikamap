@@ -478,7 +478,10 @@ class ContMap(NDDataArray):
     sources : :class`astropy.table.Table`, optional
         The table of detected sources in the data.
 
+
     """
+
+    _residual = None
 
     def __init__(self, data, *args, **kwargs):
 
@@ -632,7 +635,7 @@ class ContMap(NDDataArray):
 
         Parameters
         ----------
-        item : str, optional (None|signal,uncertainty|snr)
+        item : str, optional (None|signal|uncertainty|snr|residual)
             The quantity to retrieve, by default None, ie signal
 
         Returns
@@ -657,8 +660,11 @@ class ContMap(NDDataArray):
         elif item in ["signal", None]:
             data = np.ma.array(self.data * self.unit, mask=self.mask)
             label = "Brightness"
+        elif item == 'residual':
+            data = np.ma.array(self._residual * self.unit, mask=self.mask)
+            label = "Residual"
         else:
-            raise ValueError("must be in (None|signal|uncertainty|snr)")
+            raise ValueError("must be in (None|signal|uncertainty|snr|residual)")
 
         return data, label
 
@@ -920,7 +926,7 @@ class ContMap(NDDataArray):
             mmm_bkg = MedianBackground()
 
             photometry = BasicPSFPhotometry(
-                group_maker=daogroup, bkg_estimator=mmm_bkg, psf_model=psf_model, fitter=LevMarLSQFitter(), fitshape=9
+                group_maker=daogroup, bkg_estimator=mmm_bkg, psf_model=psf_model, fitter=LevMarLSQFitter(), fitshape=11
             )
 
             positions = Table(
@@ -942,6 +948,8 @@ class ContMap(NDDataArray):
                 if _tab in result_tab.colnames:
                     sources[_source] = Column(result_tab[_tab] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
             sources["group_id"] = result_tab["group_id"]
+
+            self._residual = photometry.get_residual_image()
 
         self.sources = sources
 
@@ -1053,7 +1061,7 @@ class ContMap(NDDataArray):
 
         Parameters
         ----------
-        to_plot : str, optionnal (snr|uncertainty|None)
+        to_plot : str, optionnal (None|signal|uncertainty|snr|residual)
             Choose which quantity to plot, by default None (signal)
         ax : :class:`matplotlib.axes.Axes`, optional
             Axe to plot the power spectrum
@@ -1231,7 +1239,7 @@ class ContMap(NDDataArray):
 
         Parameters
         ----------
-        to_plot : str, optionnal (snr|uncertainty|signal|None)
+        to_plot : str, optionnal (None|signal|uncertainty|snr|residual)
             Choose which quantity to plot, by default None (signal)
         ax : :class:`matplotlib.axes.Axes`, optional
             Axe to plot the power spectrum
