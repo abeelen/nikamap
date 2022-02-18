@@ -801,13 +801,15 @@ class ContMap(NDDataArray):
                     detect_on,
                     threshold=threshold,
                     mask=self.mask,
-                    wcs=self.wcs,
                     box_size=box_size,
                 )
         except InconsistentAxisTypesError:
             sources = []
 
         if sources is not None and len(sources) > 0:
+
+            sources.rename_column("peak_value", "SNR")
+
             # To avoid #1294 photutils issue, compute the centroid outside of find_peak
             x_centroids, y_centroids = centroid_sources(
                 detect_on,
@@ -818,20 +820,24 @@ class ContMap(NDDataArray):
                 centroid_func=centroid_2dg,
             )
 
-            skycoord_centroids = self.wcs.pixel_to_world(x_centroids, y_centroids)
-            sources["ra"] = skycoord_centroids.ra
-            sources["dec"] = skycoord_centroids.dec
-            sources.remove_columns(["x_peak", "y_peak"])
-            sources.rename_column("peak_value", "SNR")
+            sources["x_centroid"] = x_centroids
+            sources["y_centroid"] = y_centroids
+
+            lonlat = self.wcs.pixel_to_world_values(x_centroids, y_centroids)
+
+            for key, item, unit in zip(self.wcs.world_axis_physical_types, lonlat, self.wcs.world_axis_units):
+                sources[key] = item * u.Unit(unit)
+
+            if "pos.eq.ra" in sources.colnames and "pos.eq.dec" in sources.colnames:
+                sources.rename_columns(["pos.eq.ra", "pos.eq.dec"], ["ra", "dec"])
+                # For compatibility issues
+                sources["_ra"] = sources["ra"]
+                sources["_dec"] = sources["dec"]
 
             # Transform to masked Table here to avoid future warnings
             sources = Table(sources, masked=True)
             sources.meta["method"] = "find_peak"
             sources.meta["threshold"] = threshold
-
-            # For compatibility issues
-            sources["_ra"] = sources["ra"]
-            sources["_dec"] = sources["dec"]
 
             # Sort by decreasing SNR
             sources.sort("SNR")
@@ -1097,7 +1103,7 @@ class ContMap(NDDataArray):
 
         if cat is True and self.sources is not None:
             cat = [(self.sources, {"marker": "^", "color": "red"})]
-        else:
+        elif cat is None:
             cat = []
 
         # In case of fake sources, overplot them
