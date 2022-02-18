@@ -7,7 +7,7 @@ Added
 Fixed
 -----
 
-Version 0.3.3
+Version 0.3.4
 =============
 
 Fixed
@@ -15,6 +15,7 @@ Fixed
 
 * Proper Handling of all NDUncertainty
 * Proper Handling for history and comment in meta/header
+* Better Handling of custom WCS ctype in find_peak
 
 Version 0.3
 ===========
