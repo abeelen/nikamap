@@ -31,9 +31,6 @@ from photutils.background import MedianBackground
 from photutils.datasets import make_gaussian_sources_image
 from photutils.centroids import centroid_2dg, centroid_sources
 
-import radio_beam.utils
-from radio_beam import Beam
-
 
 from scipy import signal
 from scipy.optimize import curve_fit
@@ -1491,7 +1488,8 @@ def fits_contmap_reader(
         if hdu_data is not None and hdu_data in hdus:
             data = hdus[hdu_data].data
             wcs = WCS(hdus[hdu_data].header)
-            unit = hdus[hdu_data].header.get("BUNIT", None)
+            if unit is None:
+                unit = hdus[hdu_data].header.get("BUNIT", None)
         else:
             data = None
             wcs = None
