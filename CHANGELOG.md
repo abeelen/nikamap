@@ -1,5 +1,15 @@
 master
-=====
+======
+
+Added
+-----
+
+Fixed
+-----
+
+
+Version 0.3.7
+=============
 
 Added
 -----
@@ -9,7 +19,7 @@ Added
 Fixed
 -----
 
-* PIIC reading support was broken
+* PIIC support is fixed
 
 Version 0.3.6
 =============
