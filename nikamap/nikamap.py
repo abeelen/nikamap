@@ -18,7 +18,7 @@ from scipy.optimize import curve_fit
 import warnings
 from astropy.utils.exceptions import AstropyWarning
 
-from .contmap import ContMap
+from .contmap import ContMap, ContBeam
 from .utils import update_header
 
 Jy_beam = u.Jy / u.beam
@@ -27,6 +27,31 @@ __all__ = ["NikaMap", "NikaFits"]
 
 
 # TODO: Take care of operations (add/subtract/...) to add extra parameters...
+
+
+class NikaBeam(object):
+    """NikaBeam describe the beam of a NikaMap.
+
+    This class is for back-compatibility, returning a ContBeam object
+
+    Parameters
+    ----------
+    fwhm : :class:`astropy.units.Quantity`
+        Full width half maximum of the Gaussian kernel.
+    pixel_scale : `astropy.units.equivalencies.pixel_scale`
+        The pixel scale either in units of angle/pixel or pixel/angle.
+
+    See also
+    --------
+    :class:`astropy.convolution.Gaussian2DKernel`
+
+    """
+
+    def __new__(cls, *args, **kwargs):
+        warnings.warn("NikaBeam is deprecated, use ContBeam instead")
+        fwhm = args[0] if len(args) > 0 else kwargs.pop("fwhm", None)
+        pixel_scale = args[1] if len(args) > 1 else kwargs.pop("pixel_scale", None)
+        return ContBeam(major=fwhm, pixscale=(1 * u.pix).to(fwhm.unit, equivalencies=pixel_scale))
 
 
 class NikaMap(ContMap):
