@@ -8,13 +8,14 @@ Fixed
 -----
 
 
-Version 0.3.7
+Version 0.3.8
 =============
 
 Added
 -----
 
 * Add `range` and `return_mean` to `check_SNR()`
+* Re-introducing `NikaBeam` with old API for back compatibility
 
 Fixed
 -----
