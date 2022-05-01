@@ -304,16 +304,17 @@ def test_fake_data():
     # Dummy test for now
     nm = fake_data()
 
+
 def test_meta_to_header():
-    meta = {'toto': 'tata'}
+    meta = {"toto": "tata"}
 
     hdr = meta_to_header(meta)
-    assert hdr['toto'] == meta['toto']
+    assert hdr["toto"] == meta["toto"]
 
-    meta['history'] = ['first', 'second']
+    meta["history"] = ["first", "second"]
     hdr = meta_to_header(meta)
-    assert list(hdr['history']) == meta['history']
+    assert list(hdr["history"]) == meta["history"]
 
-    meta['comment'] = ['first', 'second']
+    meta["comment"] = ["first", "second"]
     hdr = meta_to_header(meta)
-    assert list(hdr['comment']) == meta['comment']
+    assert list(hdr["comment"]) == meta["comment"]

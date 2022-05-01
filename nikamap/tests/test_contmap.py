@@ -17,9 +17,6 @@ from astropy.convolution import RickerWavelet2DKernel
 
 from photutils.datasets import make_gaussian_sources_image
 
-
-import astropy.units as u
-from astropy.stats.funcs import gaussian_fwhm_to_sigma
 from astropy.convolution import Kernel2D, Gaussian2DKernel
 
 import matplotlib.pyplot as plt
@@ -157,6 +154,7 @@ def test_contmap_init_uncertainty():
 
     iv_uncertainty = InverseVariance(uncertainty)
     nm = ContMap(data, uncertainty=iv_uncertainty)
+
 
 def test_contmap_compressed():
     data = np.array([1, 2, 3])
