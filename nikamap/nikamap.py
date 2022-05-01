@@ -241,8 +241,9 @@ def piic_fits_nikamap_reader(filename, band=None, revert=False, unit="mJy/beam",
         uncertainty=StdDevUncertainty(e_data),
         unit=unit,
         wcs=WCS(header),
-        meta={"header": header, "primary_header": None, "band": band},
-        hit=None,
+        header=header,
+        primary_header=None,
+        hits=None,
     )
 
     return data

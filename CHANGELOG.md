@@ -7,6 +7,8 @@ Added
 Fixed
 -----
 
+* PIIC reading support was broken
+
 Version 0.3.6
 =============
 
