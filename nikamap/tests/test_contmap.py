@@ -708,6 +708,9 @@ def test_contmap_check_SNR(large_map_source):
     # cut for the fit
     npt.assert_allclose(std, 1, rtol=1e-2)
 
+    std, mu = nm.check_SNR(return_mean=True)
+    npt.assert_allclose(std, 1, rtol=1e-2)
+    npt.assert_allclose(mu, 0, atol=1e-2)
 
 # Different Freetype version on travis... 2.8.0 vs 2.6.1
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)

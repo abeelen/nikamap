@@ -1139,7 +1139,7 @@ class ContMap(NDDataArray):
         """
         return self.plot(to_plot="snr", vmin=vmin, vmax=vmax, **kwargs)
 
-    def check_SNR(self, ax=None, bins=100):
+    def check_SNR(self, ax=None, bins=100, range=(-6, 3), return_mean=False):
         """Perform normality test on SNR map.
 
         This perform a gaussian fit on snr pixels histogram clipped between -6 and 3
@@ -1150,10 +1150,14 @@ class ContMap(NDDataArray):
             axe to plot the histogram and fits
         bins: int
             number of bins for the histogram. Default 100.
+        range: tuple of 2 floats
+            perform the fit on the histogram between range[0] and range[1], default (-6, 3)
+        return_mean: bool
+            if True, return the mean of the histogram, default False
 
         Returns
         -------
-        std : float
+        std : float[robust]
             return the robust standard deviation of the SNR
 
         Notes
@@ -1165,7 +1169,7 @@ class ContMap(NDDataArray):
         >>> data.uncertainty.array *= std
         """
         snr = self.snr.compressed()
-        hist, bin_edges = np.histogram(snr, bins=bins, density=True, range=(-5, 5))
+        hist, bin_edges = np.histogram(snr, bins=bins, density=True, range=range)
 
         # is biased if signal is present
         # is biased if trimmed
@@ -1173,20 +1177,20 @@ class ContMap(NDDataArray):
 
         bin_center = (bin_edges[1:] + bin_edges[:-1]) / 2
 
-        # Clip to 3 sigma, this will biais the result
-        robust = (-6 < bin_center) & (bin_center < 3)
-
         def gauss(x, a, c, s):
             return a * np.exp(-((x - c) ** 2) / (2 * s ** 2))
 
-        popt, pcov = curve_fit(gauss, bin_center[robust].astype(np.float32), hist[robust].astype(np.float32))
-        mu, std = popt[1:]
+        popt, _ = curve_fit(gauss, bin_center.astype(np.float32), hist.astype(np.float32))
+        mean, std = popt[1:]
 
         if ax is not None:
             ax.plot(bin_center, hist, drawstyle="steps-mid")
             ax.plot(bin_center, gauss(bin_center, *popt))
 
-        return std
+        if return_mean:
+            return std, mean
+        else:
+            return std
 
     def check_SNR_simple(self):
         """Perform normality test on SNR maps

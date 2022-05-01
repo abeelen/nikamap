@@ -4,6 +4,8 @@ master
 Added
 -----
 
+* Add `range` and `return_mean` to `check_SNR()`
+
 Fixed
 -----
 
