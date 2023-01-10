@@ -8,10 +8,10 @@ Simple example of bootstrap on G2 dataset from the N2CLS GTO.
 """
 
 ################################################################################
-# First import the :func:`nikamap.bootstrap` function
+# First import the :class:`nikamap.analysis.Bootstrap` class
 
 from pathlib import Path
-from nikamap import bootstrap
+from nikamap import Bootstrap
 
 ################################################################################
 # This define the root directory where all the data ...
@@ -21,7 +21,7 @@ DATA_DIR = Path("/data/NIKA/Reduced/G2_COMMON_MODE_ONE_BLOCK/v_1")
 ################################################################################
 # can be retrieved using a simple regular expression
 
-filenames = list(DATA_DIR.glob('*/map.fits'))
+filenames = list(DATA_DIR.glob("*/map.fits"))
 filenames
 
 
@@ -32,7 +32,7 @@ filenames
 #           ```map_size * (len(filenames) + n_bootstrap))```
 
 
-nm = bootstrap(filenames, n_bootstrap=200, ipython_widget=True)
+nm = Bootstrap(filenames, n_bootstrap=200, ipython_widget=True)
 
 
 #################################################################################

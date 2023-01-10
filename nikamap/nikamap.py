@@ -23,7 +23,7 @@ from .utils import update_header
 
 Jy_beam = u.Jy / u.beam
 
-__all__ = ["NikaMap", "NikaFits"]
+__all__ = ["NikaMap", "NikaFits", "NikaBeam"]
 
 
 # TODO: Take care of operations (add/subtract/...) to add extra parameters...

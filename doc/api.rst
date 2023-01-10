@@ -11,9 +11,12 @@ Classes
    :template: class.rst
    :toctree: gen_api
 
+   ContMap
    NikaBeam
    NikaMap
+   HalfDifference
    Jackknife
+   Bootstrap
 
 Functions
 ---------
@@ -22,5 +25,4 @@ Functions
     :template: function.rst
     :toctree: gen_api
 
-    bootstrap
     fake_data
