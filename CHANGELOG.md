@@ -7,6 +7,18 @@ Added
 Fixed
 -----
 
+Version 0.4
+===========
+
+Added
+-----
+* First release for Zenodo
+* Early CITATION.cff
+
+Fixed
+-----
+* Documentation is running again
+
 
 Version 0.3.8
 =============
