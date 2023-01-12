@@ -451,7 +451,7 @@ class Bootstrap(MultiScans):
         n_scans = self.datas.shape[0]
         outputs = []
         for _ in range(n_shuffle):
-            shuffled_index = np.floor(np.random.uniform(0, n_scans, n_scans)).astype(np.int)
+            shuffled_index = np.floor(np.random.uniform(0, n_scans, n_scans)).astype(int)
             # np.ma.average is needed as some of the pixels have zero weights (should be masked)
             outputs.append(
                 np.ma.average(self.datas[shuffled_index], weights=self.weights[shuffled_index], axis=0, returned=False)
