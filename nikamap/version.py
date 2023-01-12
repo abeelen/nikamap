@@ -6,7 +6,7 @@ _version_major = 0
 _version_minor = 4
 _version_micro = ''  # use '' for first of series, number for 1 and above
 _version_extra = "dev0"
-_version_extra = ""  # Uncomment this for full releases
+# _version_extra = ""  # Uncomment this for full releases
 
 # Construct full version string from these.
 _ver = [_version_major, _version_minor]
@@ -72,4 +72,4 @@ VERSION = __version__
 PACKAGE_DATA = {"nikamap": [pjoin("data", "*")]}
 INSTALL_REQUIRES = ["numpy", "scipy", "matplotlib", "astropy", "photutils", "scikit_image"]
 SETUP_REQUIRES = ["pytest-runner"]
-TESTS_REQUIRE = ["pytest", "pytest-mpl"]
+TESTS_REQUIRE = ["pytest", "pytest-cov", "pytest-mpl"]

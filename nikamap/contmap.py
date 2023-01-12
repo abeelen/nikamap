@@ -179,8 +179,9 @@ class ContBeam(Kernel2D):
 
             max_extent = np.max(ellipse_extent(stddev_maj, stddev_min, angle))
             self._default_size = _round_up_to_odd_integer(self.support_scaling * 2 * max_extent)
-
             super(ContBeam, self).__init__(**kwargs)
+            self.normalize()
+
         elif array is not None:
             super(ContBeam, self).__init__(array=array, **kwargs)
         else:
@@ -800,7 +801,7 @@ class ContMap(NDDataArray):
             # To avoid bad fit warnings...
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", AstropyWarning)
-                sources = photutils.find_peaks(
+                sources = photutils.detection.find_peaks(
                     detect_on,
                     threshold=threshold,
                     mask=self.mask,

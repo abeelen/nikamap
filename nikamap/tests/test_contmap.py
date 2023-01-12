@@ -46,7 +46,7 @@ def test_contbeam_init():
         == "ContBeam: BMAJ=18.0 arcsec BMIN=18.0 arcsec BPA=0.0 deg as (63, 63) Kernel2D at pixscale 2.0 arcsec"
     )
     assert isinstance(kernel, Kernel2D)
-    assert np.all((ref_kernel.array - kernel.array) == 0)
+    npt.assert_almost_equal(ref_kernel.array, kernel.array)
     assert beam.sr == (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma) ** 2).to(u.sr)
 
     beam = ContBeam(array=ref_kernel.array, pixscale=pixscale)
@@ -643,8 +643,9 @@ def test_contmap_match_sources_list(nms):
     assert np.all(nm.sources["ID"] == nm.sources["to_match_2"])
 
 
-# Different Freetype version on travis... 2.8.0 vs 2.6.1
-@pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)
+# Different Freetype version on travis... 2.8.0 vs 2.6.1 -> tolerance 20
+# Different Freetype version on circleci... 2.12.1 vs 2.6.1 -> tolerance 21
+@pytest.mark.mpl_image_compare(remove_text=True, tolerance=21)
 def test_contmap_plot(nms):
 
     nm = nms
@@ -653,8 +654,9 @@ def test_contmap_plot(nms):
     return cax.get_figure()
 
 
-# Different Freetype version on travis... 2.8.0 vs 2.6.1
-@pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)
+# Different Freetype version on travis... 2.8.0 vs 2.6.1 -> tolerance 20
+# Different Freetype version on circleci... 2.12.1 vs 2.6.1 -> tolerance 21
+@pytest.mark.mpl_image_compare(remove_text=True, tolerance=21)
 def test_contmap_plot_SNR(nms):
 
     nm = nms
@@ -663,8 +665,9 @@ def test_contmap_plot_SNR(nms):
     return cax.get_figure()
 
 
-# Different Freetype version on travis... 2.8.0 vs 2.6.1
-@pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)
+# Different Freetype version on travis... 2.8.0 vs 2.6.1 -> tolerance 20
+# Different Freetype version on circleci... 2.12.1 vs 2.6.1 -> tolerance 21
+@pytest.mark.mpl_image_compare(remove_text=True, tolerance=21)
 def test_contmap_plot_ax(nms):
 
     nm = nms
@@ -683,8 +686,9 @@ def test_contmap_plot_ax(nms):
     return fig
 
 
-# Different Freetype version on travis... 2.8.0 vs 2.6.1
-@pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)
+# Different Freetype version on travis... 2.8.0 vs 2.6.1 -> tolerance 20
+# Different Freetype version on circleci... 2.12.1 vs 2.6.1 -> tolerance 21
+@pytest.mark.mpl_image_compare(remove_text=True, tolerance=21)
 def test_contmap_plot_PSD(nms):
 
     nm = nms
@@ -774,7 +778,7 @@ def test_surface():
     wcs.wcs.cdelt = np.array([-2 / 60 ** 2, 2 / 60 ** 2])
     wcs.wcs.ctype = ["RA---AIR", "DEC--AIR"]
 
-    nm = ContMap(data=data, mask=mask, wcs=wcs)
+    nm = ContMap(data=data, mask=mask, wcs=wcs, meta={'BMAJ': 1/3600})
     surface = nm.surface()
     assert np.isclose(surface.to_value(u.arcsec ** 2), 8)
 
@@ -789,7 +793,7 @@ def test_surface_shrink():
     wcs.wcs.cdelt = np.array([-2 / 60 ** 2, 2 / 60 ** 2])
     wcs.wcs.ctype = ["RA---AIR", "DEC--AIR"]
 
-    nm = ContMap(data=data, mask=mask, wcs=wcs)
+    nm = ContMap(data=data, mask=mask, wcs=wcs, meta={'BMAJ': 1/3600})
     surface = nm.surface(box_size=1.001)
     assert np.isclose(surface.to_value(u.arcsec ** 2), 4)
 
