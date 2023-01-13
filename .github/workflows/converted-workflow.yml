@@ -9,16 +9,16 @@ jobs:
           - ubuntu-18.04
         python-version:
           - '3.6'
-          - '3.8'
+          - '3.8'     
     steps:
       - name: 'Set up Python ${{ matrix.python-version }}'
         uses: actions/setup-python@v2
         with:
           python-version: '${{ matrix.python-version }}'
       - uses: actions/checkout@v2
-      - run: pip install $PIP_DEPS
-      - run: pip install -q scipy==$SCIPY_VERSION
-      - run: pip install -q astropy==$ASTROPY_VERSION
+      - run:  pip install pytest coveralls pytest-cov==2.5.0 flake8 pytest-mpl matplotlib
+      - run: pip install -q scipy
+      - run: pip install -q astropy
       - run: pip install -r requirements.txt
       - run: pip install .
       - run: >-
