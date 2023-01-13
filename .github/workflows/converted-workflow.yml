@@ -1,5 +1,8 @@
 name: Converted Workflow
 on: [push]
+env:
+  PIP_DEPS: "pytest coveralls pytest-cov==2.5.0 flake8 pytest-mpl matplotlib"
+
 jobs:
   build:
     runs-on: '${{ matrix.os }}'
@@ -16,7 +19,7 @@ jobs:
         with:
           python-version: '${{ matrix.python-version }}'
       - uses: actions/checkout@v2
-      - run:  pip install pytest coveralls pytest-cov==2.5.0 flake8 pytest-mpl matplotlib
+      - run: pip install $PIP_DEPS
       - run: pip install -q scipy
       - run: pip install -q astropy
       - run: pip install -r requirements.txt
