@@ -11,7 +11,8 @@ from astropy.table import Table
 from astropy.nddata import StdDevUncertainty
 from astropy.modeling import models
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
-try: 
+
+try:
     from astropy.convolution import MexicanHat2DKernel
 except ImportError:
     from astropy.convolution import RickerWavelet2DKernel as MexicanHat2DKernel

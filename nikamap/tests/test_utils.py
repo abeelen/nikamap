@@ -29,7 +29,7 @@ def test_shrink_mask():
     result[center_slice, center_slice] = False
 
     xx = np.arange(2 * kernel_size + 1) - kernel_size
-    kernel = np.exp(-(xx ** 2 + xx[:, np.newaxis] ** 2) / 2)
+    kernel = np.exp(-(xx**2 + xx[:, np.newaxis] ** 2) / 2)
     kernel /= kernel.sum()
 
     shrinked_mask = shrink_mask(mask, kernel)
@@ -97,7 +97,7 @@ def test_pos_uniform():
 def test_pos_gridded():
 
     shape = (9, 21)
-    x, y, f = pos_gridded(nsources=3 ** 2, shape=shape)
+    x, y, f = pos_gridded(nsources=3**2, shape=shape)
     assert np.all(
         x.reshape(3, 3) == np.linspace(shape[1] / 4, shape[1] * 3 / 4, 3) - 0.5
     ), "unexpected pixel coordinate"
@@ -109,7 +109,7 @@ def test_pos_gridded():
     mask = np.zeros(shape, dtype=bool)
     mask[:, :5] = True
     with pytest.warns(UserWarning):
-        x, y, f = pos_gridded(nsources=10 ** 2, shape=shape, mask=mask)
+        x, y, f = pos_gridded(nsources=10**2, shape=shape, mask=mask)
     assert 4 < np.floor(x.min() + 0.5), "pixel coordinate inside max"
 
     with pytest.raises(AssertionError):
@@ -121,9 +121,9 @@ def test_pos_gridded():
     np.random.seed(26)
     # This can raise an exception
     with pytest.warns(UserWarning):
-        x, y, f = pos_gridded(nsources=3 ** 2, shape=shape, wobble=True)
+        x, y, f = pos_gridded(nsources=3**2, shape=shape, wobble=True)
 
-    x, y, f = pos_gridded(nsources=3 ** 2, shape=shape, wobble=True, within=(1 / 3, 2 / 3))
+    x, y, f = pos_gridded(nsources=3**2, shape=shape, wobble=True, within=(1 / 3, 2 / 3))
     assert -0.5 < x.min() or x.max() < shape[1] - 0.5, "pixel coordinate outside boundaries"
     assert -0.5 < y.min() or y.max() < shape[0] - 0.5, "pixel coordinate outside boundaries"
 
@@ -225,7 +225,7 @@ def gen_pkfield(npix=32, alpha=-11.0 / 3, fknee=1, res=1):
     """Generate a 2D square map with P(k) field"""
 
     ufreq = np.fft.fftfreq(npix, d=res)
-    kfreq = np.sqrt(ufreq[:, np.newaxis] ** 2 + ufreq ** 2)
+    kfreq = np.sqrt(ufreq[:, np.newaxis] ** 2 + ufreq**2)
 
     with np.errstate(divide="ignore"):
         psd = 2 * P(kfreq, alpha=alpha, fknee=fknee)
@@ -234,7 +234,7 @@ def gen_pkfield(npix=32, alpha=-11.0 / 3, fknee=1, res=1):
     pha = np.random.uniform(low=-np.pi, high=np.pi, size=(npix, npix))
 
     fft_img = np.sqrt(psd) * (np.cos(pha) + 1j * np.sin(pha))
-    return np.real(np.fft.ifft2(fft_img)) * npix / res ** 2
+    return np.real(np.fft.ifft2(fft_img)) * npix / res**2
 
 
 def test_powspec_k():
@@ -287,7 +287,7 @@ def test_powspec_k_unit():
             powspec_k(img[i : i + nsub, j : j + nsub], res=res, bins=bins)[0]  # noqa: E203
             for i, j in np.random.randint(size=(128, 2), low=0, high=npix - nsub)
         ]
-    ).to(u.Jy ** 2 / u.sr)
+    ).to(u.Jy**2 / u.sr)
 
     # plt.close('all')
     # plt.loglog(bins[1:], powspec_full.to(u.Jy**2/u.sr), c='k')
@@ -296,7 +296,7 @@ def test_powspec_k_unit():
     # plt.loglog(bins[1:], np.mean(powspecs, axis=0) - np.std(powspecs, axis=0), linestyle='dashed')
     # plt.loglog(bins, (P(bins, alpha=alpha, fknee=1/u.arcsec) / res **2 * u.Jy**2).to(u.Jy**2 / u.sr))
 
-    assert np.all((np.mean(powspecs, axis=0) - powspec_full.to(u.Jy ** 2 / u.sr)) < np.std(powspecs, axis=0))
+    assert np.all((np.mean(powspecs, axis=0) - powspec_full.to(u.Jy**2 / u.sr)) < np.std(powspecs, axis=0))
 
 
 def test_fake_data():

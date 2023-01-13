@@ -45,12 +45,12 @@ def beam_convolve(beam, other):  # pragma: no cover
     )
 
     gamma = 2 * (
-        (beam.minor ** 2 - beam.major ** 2) * np.sin(beam.pa) * np.cos(beam.pa)
-        + (other.minor ** 2 - other.major ** 2) * np.sin(other.pa) * np.cos(other.pa)
+        (beam.minor**2 - beam.major**2) * np.sin(beam.pa) * np.cos(beam.pa)
+        + (other.minor**2 - other.major**2) * np.sin(other.pa) * np.cos(other.pa)
     )
 
     s = alpha + beta
-    t = np.sqrt((alpha - beta) ** 2 + gamma ** 2)
+    t = np.sqrt((alpha - beta) ** 2 + gamma**2)
 
     new_major = np.sqrt(0.5 * (s + t))
     new_minor = np.sqrt(0.5 * (s - t))
@@ -107,7 +107,7 @@ class CircularGaussianPSF(Fittable2DModel):
     def evaluate(self, x, y, flux, x_0, y_0, sigma):
         """Model function Gaussian PSF model."""
 
-        return flux * np.exp(-((x - x_0) ** 2 + (y - y_0) ** 2) / (2 * sigma ** 2))
+        return flux * np.exp(-((x - x_0) ** 2 + (y - y_0) ** 2) / (2 * sigma**2))
 
 
 def fake_header(shape=(512, 512), beam_fwhm=12.5 * u.arcsec, pixsize=2 * u.arcsec):
@@ -281,7 +281,7 @@ def pos_uniform(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * 
 
 
 def pos_gridded(
-    shape=None, within=(0, 1), mask=None, nsources=2 ** 2, peak_flux=1 * u.mJy, wobble=False, wobble_frac=1
+    shape=None, within=(0, 1), mask=None, nsources=2**2, peak_flux=1 * u.mJy, wobble=False, wobble_frac=1
 ):
     """Generate x, y gridded position within a mask
 
@@ -295,7 +295,7 @@ def pos_gridded(
     requested number of sources might not be returned"""
 
     sq_sources = int(np.sqrt(nsources))
-    assert sq_sources ** 2 == nsources, "nsources must be a squared number"
+    assert sq_sources**2 == nsources, "nsources must be a squared number"
     assert nsources > 1, "nsouces can not be 1"
 
     # square distribution with step margin on the side
@@ -355,7 +355,7 @@ def fake_data(
     shape=(512, 512),
     beam_fwhm=12.5 * u.arcsec,
     pixsize=2 * u.arcsec,
-    nefd=50e-3 * Jy_beam * u.s ** 0.5,
+    nefd=50e-3 * Jy_beam * u.s**0.5,
     sampling_freq=25 * u.Hz,
     time_fwhm=1.0 / 5,
     jk_data=None,
@@ -408,7 +408,7 @@ def fake_data(
         data = np.random.normal(0, 1, size=shape) * e_data
 
     header = fake_header(shape, beam_fwhm, pixsize)
-    header["NEFD"] = (nefd.to(Jy_beam * u.s ** 0.5).value, "[Jy/beam sqrt(s)], NEFD")
+    header["NEFD"] = (nefd.to(Jy_beam * u.s**0.5).value, "[Jy/beam sqrt(s)], NEFD")
 
     # min flux which should be recoverable at the center of the field at 3
     # sigma
@@ -454,7 +454,7 @@ def fft_2d_hanning(mask, size=2):
 
     idx = np.linspace(-0.5, 0.5, size * 2 + 1, endpoint=True)
     xx, yy = np.meshgrid(idx, idx)
-    n = np.sqrt(xx ** 2 + yy ** 2)
+    n = np.sqrt(xx**2 + yy**2)
     hann_kernel = (1 + np.cos(2 * np.pi * n)) / 2
     hann_kernel[n > 0.5] = 0
 
@@ -540,13 +540,13 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
     # https://en.wikipedia.org/wiki/Spectral_density
     # Note that the factor 2 is accounted for the fact that we count each
     # frequency twice...
-    pow_sqr = np.absolute(np.fft.fft2(img) ** 2 * res ** 2 / (npix_x * npix_y))
+    pow_sqr = np.absolute(np.fft.fft2(img) ** 2 * res**2 / (npix_x * npix_y))
 
     # Define corresponding fourier modes
     u_freq = np.fft.fftfreq(npix_x, d=res)
     v_freq = np.fft.fftfreq(npix_y, d=res)
 
-    k_freq = np.sqrt(u_freq[:, np.newaxis] ** 2 + v_freq ** 2)
+    k_freq = np.sqrt(u_freq[:, np.newaxis] ** 2 + v_freq**2)
 
     hist, bin_edges = np.histogram(k_freq, bins=bins, range=range, weights=pow_sqr)
     norm, _ = np.histogram(k_freq, bins=bins, range=range)
@@ -554,8 +554,8 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
         hist /= norm
 
     # we drop units in histogram so put it back here
-    hist = hist * img_unit ** 2 * pix_unit ** 2
-    bin_edges = bin_edges * pix_unit ** -1
+    hist = hist * img_unit**2 * pix_unit**2
+    bin_edges = bin_edges * pix_unit**-1
 
     return hist, bin_edges
 

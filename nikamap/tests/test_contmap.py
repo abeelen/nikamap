@@ -393,7 +393,7 @@ def grid_sources():
     nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam)
 
     # Additionnal attribute just for the tests...
-    nm.add_gaussian_sources(nsources=2 ** 2, peak_flux=1 * u.Jy, cat_gen=pos_gridded, within=(1 / 4, 3 / 4))
+    nm.add_gaussian_sources(nsources=2**2, peak_flux=1 * u.Jy, cat_gen=pos_gridded, within=(1 / 4, 3 / 4))
 
     x, y = nm.wcs.wcs_world2pix(nm.fake_sources["ra"], nm.fake_sources["dec"], 0)
 
@@ -419,7 +419,7 @@ def wobble_grid_sources():
 
     np.random.seed(0)
     # Additionnal attribute just for the tests...
-    nm.add_gaussian_sources(nsources=2 ** 2, peak_flux=1 * u.Jy, cat_gen=pos_gridded, wobble=True, wobble_frac=0.2)
+    nm.add_gaussian_sources(nsources=2**2, peak_flux=1 * u.Jy, cat_gen=pos_gridded, wobble=True, wobble_frac=0.2)
 
     x, y = nm.wcs.wcs_world2pix(nm.fake_sources["ra"], nm.fake_sources["dec"], 0)
 
@@ -716,6 +716,7 @@ def test_contmap_check_SNR(large_map_source):
     npt.assert_allclose(std, 1, rtol=1e-2)
     npt.assert_allclose(mu, 0, atol=1e-2)
 
+
 # Different Freetype version on travis... 2.8.0 vs 2.6.1
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)
 def test_contmap_check_SNR_ax(large_map_source):
@@ -775,12 +776,12 @@ def test_surface():
     mask = np.zeros(shape, dtype=bool)
     mask[0, :] = True
     wcs = WCS()
-    wcs.wcs.cdelt = np.array([-2 / 60 ** 2, 2 / 60 ** 2])
+    wcs.wcs.cdelt = np.array([-2 / 60**2, 2 / 60**2])
     wcs.wcs.ctype = ["RA---AIR", "DEC--AIR"]
 
-    nm = ContMap(data=data, mask=mask, wcs=wcs, meta={'BMAJ': 1/3600})
+    nm = ContMap(data=data, mask=mask, wcs=wcs, meta={"BMAJ": 1 / 3600})
     surface = nm.surface()
-    assert np.isclose(surface.to_value(u.arcsec ** 2), 8)
+    assert np.isclose(surface.to_value(u.arcsec**2), 8)
 
 
 def test_surface_shrink():
@@ -790,12 +791,12 @@ def test_surface_shrink():
     mask[1:-1, 1:-1] = False
 
     wcs = WCS()
-    wcs.wcs.cdelt = np.array([-2 / 60 ** 2, 2 / 60 ** 2])
+    wcs.wcs.cdelt = np.array([-2 / 60**2, 2 / 60**2])
     wcs.wcs.ctype = ["RA---AIR", "DEC--AIR"]
 
-    nm = ContMap(data=data, mask=mask, wcs=wcs, meta={'BMAJ': 1/3600})
+    nm = ContMap(data=data, mask=mask, wcs=wcs, meta={"BMAJ": 1 / 3600})
     surface = nm.surface(box_size=1.001)
-    assert np.isclose(surface.to_value(u.arcsec ** 2), 4)
+    assert np.isclose(surface.to_value(u.arcsec**2), 4)
 
 
 @pytest.fixture(scope="session")

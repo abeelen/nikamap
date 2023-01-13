@@ -205,7 +205,7 @@ def test_HalfDifference_call(generate_nikamaps):
 
     shape = data.shape
     norm = data.hits / data.hits[(shape[1] - 1) // 2, (shape[0] - 1) // 2]
-    npt.assert_allclose((data.uncertainty.array * norm ** 0.5)[~data.mask], weighted_noise)
+    npt.assert_allclose((data.uncertainty.array * norm**0.5)[~data.mask], weighted_noise)
 
 
 def test_HalfDifference_parity_set(generate_nikamaps):
