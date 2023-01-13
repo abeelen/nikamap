@@ -1,11 +1,5 @@
 name: Converted Workflow
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: [push]
 jobs:
   build:
     runs-on: '${{ matrix.os }}'
