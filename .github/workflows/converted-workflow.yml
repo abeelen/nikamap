@@ -16,11 +16,11 @@ jobs:
         with:
           python-version: '${{ matrix.python-version }}'
       - uses: actions/checkout@v2
-      - run: travis_retry pip install $PIP_DEPS
-      - run: travis_retry pip install -q scipy==$SCIPY_VERSION
-      - run: travis_retry pip install -q astropy==$ASTROPY_VERSION
-      - run: travis_retry pip install -r requirements.txt
-      - run: travis_retry pip install .
+      - run: pip install $PIP_DEPS
+      - run: pip install -q scipy==$SCIPY_VERSION
+      - run: pip install -q astropy==$ASTROPY_VERSION
+      - run: pip install -r requirements.txt
+      - run: pip install .
       - run: >-
           flake8 --ignore N802,N806,E501,F841,F401,W504 `find . -name \*.py |
           grep -v setup.py | grep -v version.py | grep -v __init__.py | grep -v
