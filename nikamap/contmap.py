@@ -33,6 +33,7 @@ from photutils.centroids import centroid_2dg, centroid_sources
 
 
 from scipy import signal
+from scipy import stats
 from scipy.optimize import curve_fit
 
 import warnings
@@ -1054,7 +1055,7 @@ class ContMap(NDDataArray):
 
         return mf_data
 
-    def plot(self, to_plot=None, ax=None, cbar=False, cat=None, levels=None, **kwargs):
+    def plot(self, to_plot=None, ax=None, cbar=False, cat=None, levels=None, beam=False, **kwargs):
         """Convenience routine to plot the dataset.
 
         Parameters
@@ -1063,14 +1064,17 @@ class ContMap(NDDataArray):
             Choose which quantity to plot, by default None (signal)
         ax : :class:`matplotlib.axes.Axes`, optional
             Axe to plot the power spectrum
-        cbar: boolean, optionnal
-            Draw a colorbar (ax must be None)
+        cbar: boolean
+            Draw a colorbar (ax must be None), default=False
         cat : boolean of list of tuple [(cat, kwargs)], optionnal
             If True, overplot the current self.source catalog
             with '^' as marker.
             Otherwise overplot the given catalogs on the map, with kwargs.
         levels: array_like, optionnal
             Overplot levels contours, add negative contours as dashed line
+        beam: boolean
+            Draw a beam in the lower left corner, default False
+        
         **kwargs
             Arbitrary keyword arguments for :func:`matplotib.pyplot.imshow `
 
@@ -1126,8 +1130,12 @@ class ContMap(NDDataArray):
                     _kwargs = {"alpha": 0.8}
                 ax.scatter(x, y, **_kwargs, label=label)
 
-        ax.set_xlim(0, self.shape[1])
-        ax.set_ylim(0, self.shape[0])
+        if beam and hasattr(self, 'beam'):
+            ellipse_artist = self.beam.ellipse_to_plot(self.beam.support_scaling / 2, self.beam.support_scaling / 2 , self.beam.pixscale)
+            ax.add_artist(ellipse_artist)
+
+        ax.set_xlim(0, self.shape[1] - 1)
+        ax.set_ylim(0, self.shape[0] - 1)
 
         return iax
 
@@ -1140,7 +1148,59 @@ class ContMap(NDDataArray):
         """
         return self.plot(to_plot="snr", vmin=vmin, vmax=vmax, **kwargs)
 
-    def check_SNR(self, ax=None, bins=100, range=(-6, 3), return_mean=False):
+    def check_SNR_pdf(self, ax=None, range=(-6, 3), return_mean=False):
+        """Perform normality test on SNR map.
+
+        This perform a normal distribution fit on snr pixels clipped between -6 and 3
+
+        Parameters
+        ----------
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            axe to plot the histogram and fits
+        range: tuple of 2 floats
+            perform the fit on the histogram between range[0] and range[1], default (-6, 3)
+        return_mean: bool
+            if True, return the mean of the histogram, default False
+
+        Returns
+        -------
+        std : float[robust]
+            return the robust standard deviation of the SNR
+
+        Notes
+        -----
+        To recover the normality you must multiply the uncertainty array by the returned stddev value,
+        if uncertainty is StdDevUncertainty.
+
+        >>> std = data.check_SNR_pdf()
+        >>> data.uncertainty.array *= std
+        """
+        snr = self.snr.compressed()
+        if range is not None:
+            snr = snr[(snr > np.min(range)) & (snr < np.max(range))]
+
+        snr_sorted = np.sort(snr)
+        # p = np.linspace(0, 1, len(snr))
+        p = np.linspace(stats.norm.cdf(np.min(range)), stats.norm.cdf(np.max(range)), len(snr))
+        func = lambda x, loc, scale: stats.norm.cdf(x, loc=loc, scale=scale)
+
+        popt, pcov = curve_fit(func, snr_sorted, p)
+
+        ## WARNING DOES NOT WORK WITH SKEWED disttribution !!!
+        # mean, std = stats.norm.fit(snr)
+        mean, std = popt
+
+
+        if ax is not None:
+            _, bins_edges, _ = ax.hist(snr, bins='auto', histtype='stepfilled', alpha=0.2, density=True, range=range)
+            ax.plot(bins_edges,  stats.norm(mean, std).pdf(bins_edges))
+
+        if return_mean:
+            return std, mean
+        else:
+            return std
+
+    def check_SNR(self, ax=None, bins='auto', range=(-6, 3), return_mean=False):
         """Perform normality test on SNR map.
 
         This perform a gaussian fit on snr pixels histogram clipped between -6 and 3
@@ -1149,8 +1209,8 @@ class ContMap(NDDataArray):
         ----------
         ax : :class:`~matplotlib.axes.Axes`, optional
             axe to plot the histogram and fits
-        bins: int
-            number of bins for the histogram. Default 100.
+        bins: int or 'auto'
+            number of bins for the histogram. Default 'auto'.
         range: tuple of 2 floats
             perform the fit on the histogram between range[0] and range[1], default (-6, 3)
         return_mean: bool
@@ -1185,7 +1245,7 @@ class ContMap(NDDataArray):
         mean, std = popt[1:]
 
         if ax is not None:
-            ax.plot(bin_center, hist, drawstyle="steps-mid")
+            ax.bar(bin_center, hist, width=np.median(np.diff(bin_center)), fill=True, alpha=0.2)
             ax.plot(bin_center, gauss(bin_center, *popt))
 
         if return_mean:
@@ -1201,17 +1261,17 @@ class ContMap(NDDataArray):
         snr = self.snr.compressed()
         return np.median(np.abs(snr - np.median(snr)))
 
-    def normalize_uncertainty(self, factor=None, method="check_SNR_simple"):
+    def normalize_uncertainty(self, factor=None, method="check_SNR"):
         """Normalize the uncertainty.value
 
         Parameters
         ----------
         factor : float, optionnal
             the factor which normalize the snr distribution
-        method : str, (check_SNR_simple|check_SNR),
-            the method to compute this factor if not provided, by default `check_SNR_simple`
+        method : str, (check_SNR_simple|check_SNR|check_SNR_pdf),
+            the method to compute this factor if not provided, by default `check_SNR`
         """
-        assert method in ("check_SNR_simple", "check_SNR", None)
+        assert method in ("check_SNR_simple", "check_SNR", "check_SNR_pdf", None)
 
         if factor is None:
             if method is None:
