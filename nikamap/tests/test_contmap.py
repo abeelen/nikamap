@@ -10,7 +10,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.table import Table
 
-from astropy.nddata import StdDevUncertainty, InverseVariance
+from astropy.nddata import StdDevUncertainty, InverseVariance, VarianceUncertainty
 from astropy.modeling import models
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
 from astropy.convolution import RickerWavelet2DKernel
@@ -45,16 +45,26 @@ def test_contbeam_init():
         str(beam)
         == "ContBeam: BMAJ=18.0 arcsec BMIN=18.0 arcsec BPA=0.0 deg as (63, 63) Kernel2D at pixscale 2.0 arcsec"
     )
+
     assert isinstance(kernel, Kernel2D)
     npt.assert_almost_equal(ref_kernel.array, kernel.array)
-    assert beam.sr == (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma) ** 2).to(u.sr)
+    gaussian_area = (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma) ** 2).to(u.sr)
+    assert beam.sr == gaussian_area
+
+    with pytest.raises(ValueError):
+        beam = ContBeam(fwhm, area=gaussian_area, pixscale=pixscale)
+        beam = ContBeam(area=fwhm, pixscale=pixscale)
+
+    beam = ContBeam(area=gaussian_area, pixscale=pixscale)
+    kernel = beam.as_kernel(pixscale)
 
     beam = ContBeam(array=ref_kernel.array, pixscale=pixscale)
     assert beam.major is None
     assert str(beam) == "ContBeam: (63, 63) Kernel2D at pixscale 2.0 arcsec"
     npt.assert_almost_equal(beam.sr.value, (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma) ** 2).to(u.sr).value)
     with pytest.raises(TypeError):
-        beam.as_kernel()
+        kernel = beam.as_kernel()
+        kernel = beam.as_kernel(2 * pixscale)
 
     kernel = beam.as_kernel(pixscale)
     assert np.all(kernel.array == ref_kernel.array)
@@ -72,6 +82,7 @@ def test_contbeam_convolve():
 
     with pytest.warns(UserWarning):
         beam_refconvolve = beam.convolve(ref_kernel)
+        beam_refconvolve = beam.convolve(ContBeam(fwhm, pixscale=2 * pixscale))
 
     center = (beam_refconvolve.shape[0] - 1) // 2
     size = (beam_convolve.shape[0] - 1) // 2
@@ -154,6 +165,11 @@ def test_contmap_init_uncertainty():
 
     iv_uncertainty = InverseVariance(uncertainty)
     nm = ContMap(data, uncertainty=iv_uncertainty)
+    assert np.all(nm.snr == data)
+
+    v_uncertainty = VarianceUncertainty(uncertainty)
+    nm = ContMap(data, uncertainty=v_uncertainty)
+    assert np.all(nm.snr == data)
 
 
 def test_contmap_compressed():
@@ -431,7 +447,6 @@ def wobble_grid_sources():
 
 @pytest.fixture()
 def large_map_source():
-
     np.random.seed(0)
 
     shape = (256, 256)
@@ -471,7 +486,32 @@ def large_map_source():
     header = wcs.to_header()
     header["UNIT"] = "Jy / beam", "Fake Unit"
 
-    nm = ContMap(data, uncertainty=uncertainty, wcs=wcs, unit=u.Jy / u.beam)
+    nm = ContMap(data, uncertainty=StdDevUncertainty(uncertainty), hits=hits, mask=mask, wcs=wcs, unit=u.Jy / u.beam)
+
+    return nm
+
+
+@pytest.fixture()
+def large_map_nosource():
+    np.random.seed(0)
+
+    shape = (256, 256)
+    pixsize = 1 / 3 * u.deg
+    noise_level = 0.1 * u.Jy / u.beam
+
+    wcs = WCS()
+    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
+    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
+    wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
+
+    hits = np.ones(shape=shape, dtype=float)
+    uncertainty = np.ones(shape, dtype=float) * noise_level.to(u.Jy / u.beam).value
+    data = np.random.normal(loc=0, scale=1, size=shape) * uncertainty
+
+    header = wcs.to_header()
+    header["UNIT"] = "Jy / beam", "Fake Unit"
+
+    nm = ContMap(data, uncertainty=StdDevUncertainty(uncertainty), hits=hits, wcs=wcs, unit=u.Jy / u.beam)
 
     return nm
 
@@ -499,7 +539,6 @@ def nms(request):
 
 
 def test_contmap_trim(single_source_mask):
-
     nm = single_source_mask
     nm_trimed = nm.trim()
     assert nm_trimed.shape == (21, 21)
@@ -511,7 +550,6 @@ def test_contmap_trim(single_source_mask):
 
 
 def test_contmap_add_gaussian_sources(nms):
-
     nm = nms
     shape = nm.shape
     pixsize = np.abs(nm.wcs.wcs.cdelt[0])
@@ -533,7 +571,6 @@ def test_contmap_add_gaussian_sources(nms):
 
 
 def test_contmap_detect_sources(nms):
-
     nm = nms
     nm.detect_sources()
 
@@ -574,7 +611,6 @@ def test_contmap_detect_sources(nms):
 
 
 def test_contmap_phot_sources(nms):
-
     nm = nms
     nm.detect_sources()
     nm.phot_sources(peak=True, psf=False)
@@ -589,7 +625,6 @@ def test_contmap_phot_sources(nms):
 
 
 def test_contmap_match_filter(nms):
-
     nm = nms
     mf_nm = nm.match_filter(nm.beam)
 
@@ -606,8 +641,51 @@ def test_contmap_match_filter(nms):
     assert mh_nm.beam.major is None
 
 
-def test_contmap_match_sources(nms):
+def test_contmap_match_filter_checkSNR(large_map_nosource):
+    nm = large_map_nosource
+    std = nm.check_SNR()
+    # Tolerance comes from the fact that we biased the result using the SNR
+    # cut for the fit
+    npt.assert_allclose(std, 1, rtol=1e-2)
 
+    std, mu = nm.check_SNR(return_mean=True)
+    npt.assert_allclose(std, 1, rtol=1e-2)
+    npt.assert_allclose(mu, 0, atol=1e-2)
+
+    mf_nm = nm.match_filter(nm.beam)
+    std = mf_nm.check_SNR()
+    # Tolerance comes from the fact that we biased the result using the SNR
+    # cut for the fit
+    npt.assert_allclose(std, 1, rtol=1e-2)
+
+    std, mu = mf_nm.check_SNR(return_mean=True)
+    npt.assert_allclose(std, 1, rtol=1e-2)
+    npt.assert_allclose(mu, 0, atol=1e-2)
+
+
+def test_contmap_match_filter_checkSNR_pdf(large_map_nosource):
+    nm = large_map_nosource
+    std = nm.check_SNR_pdf()
+    # Tolerance comes from the fact that we biased the result using the SNR
+    # cut for the fit
+    npt.assert_allclose(std, 1, rtol=1e-2)
+
+    std, mu = nm.check_SNR_pdf(return_mean=True)
+    npt.assert_allclose(std, 1, rtol=1e-2)
+    npt.assert_allclose(mu, 0, atol=1e-2)
+
+    mf_nm = nm.match_filter(nm.beam)
+    std = mf_nm.check_SNR_pdf()
+    # Tolerance comes from the fact that we biased the result using the SNR
+    # cut for the fit
+    npt.assert_allclose(std, 1, rtol=1e-2)
+
+    std, mu = mf_nm.check_SNR_pdf(return_mean=True)
+    npt.assert_allclose(std, 1, rtol=1e-2)
+    npt.assert_allclose(mu, 0, atol=2e-2)
+
+
+def test_contmap_match_sources(nms):
     nm = nms
     nm.detect_sources()
     sources = nm.sources
@@ -618,7 +696,6 @@ def test_contmap_match_sources(nms):
 
 
 def test_contmap_match_sources_threshold(nms):
-
     nm = nms
     nm.detect_sources()
     sources = nm.sources
@@ -629,7 +706,6 @@ def test_contmap_match_sources_threshold(nms):
 
 
 def test_contmap_match_sources_list(nms):
-
     nm = nms
     nm.detect_sources()
     sources = nm.sources.copy()
@@ -647,7 +723,6 @@ def test_contmap_match_sources_list(nms):
 # Different Freetype version on circleci... 2.12.1 vs 2.6.1 -> tolerance 21
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=21)
 def test_contmap_plot(nms):
-
     nm = nms
     cax = nm.plot()
 
@@ -658,7 +733,6 @@ def test_contmap_plot(nms):
 # Different Freetype version on circleci... 2.12.1 vs 2.6.1 -> tolerance 21
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=21)
 def test_contmap_plot_SNR(nms):
-
     nm = nms
     cax = nm.plot_SNR(cbar=True)
 
@@ -668,8 +742,17 @@ def test_contmap_plot_SNR(nms):
 # Different Freetype version on travis... 2.8.0 vs 2.6.1 -> tolerance 20
 # Different Freetype version on circleci... 2.12.1 vs 2.6.1 -> tolerance 21
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=21)
-def test_contmap_plot_ax(nms):
+def test_contmap_plot_beam(nms):
+    nm = nms
+    cax = nm.plot(beam=True)
 
+    return cax.get_figure()
+
+
+# Different Freetype version on travis... 2.8.0 vs 2.6.1 -> tolerance 20
+# Different Freetype version on circleci... 2.12.1 vs 2.6.1 -> tolerance 21
+@pytest.mark.mpl_image_compare(remove_text=True, tolerance=21)
+def test_contmap_plot_ax(nms):
     nm = nms
     fig, axes = plt.subplots(nrows=2, ncols=2, subplot_kw={"projection": nm.wcs})
     axes = axes.flatten()
@@ -690,7 +773,6 @@ def test_contmap_plot_ax(nms):
 # Different Freetype version on circleci... 2.12.1 vs 2.6.1 -> tolerance 21
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=21)
 def test_contmap_plot_PSD(nms):
-
     nm = nms
     fig, axes = plt.subplots(nrows=4, sharex=True)
     nm.plot_PSD(ax=axes[0])
@@ -704,7 +786,6 @@ def test_contmap_plot_PSD(nms):
 
 
 def test_contmap_check_SNR(large_map_source):
-
     nm = large_map_source
 
     std = nm.check_SNR()
@@ -720,7 +801,6 @@ def test_contmap_check_SNR(large_map_source):
 # Different Freetype version on travis... 2.8.0 vs 2.6.1
 @pytest.mark.mpl_image_compare(remove_text=True, tolerance=20)
 def test_contmap_check_SNR_ax(large_map_source):
-
     nm = large_map_source
 
     fig, ax = plt.subplots()
@@ -730,7 +810,6 @@ def test_contmap_check_SNR_ax(large_map_source):
 
 
 def test_blended_sources(blended_sources):
-
     nm = blended_sources
     nm.detect_sources()
     nm.phot_sources()
@@ -744,7 +823,6 @@ def test_blended_sources(blended_sources):
 
 
 def test_get_square_slice(single_source_mask):
-
     nm = single_source_mask
     islice = nm.get_square_slice()
 
@@ -755,7 +833,6 @@ def test_get_square_slice(single_source_mask):
 
 
 def test_get_square_slice_start(single_source_mask):
-
     nm = single_source_mask
 
     with pytest.raises(AssertionError):
@@ -801,7 +878,6 @@ def test_surface_shrink():
 
 @pytest.fixture(scope="session")
 def generate_fits(tmpdir_factory):
-
     tmpdir = tmpdir_factory.mktemp("cm_map")
     filename = str(tmpdir.join("map.fits"))
     # Larger map to perform check_SNR
@@ -869,7 +945,6 @@ def generate_fits(tmpdir_factory):
 
 
 def test_contmap_read(generate_fits):
-
     filename = generate_fits
 
     data = ContMap.read(filename)

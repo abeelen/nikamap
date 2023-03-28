@@ -17,13 +17,15 @@ import numpy.testing as npt
 # data_path = op.join(nm.__path__[0], 'data')
 
 from ..analysis import HalfDifference, MultiScans, Jackknife, Bootstrap
+from ..contmap import contmap_average
+from ..nikamap import NikaMap
 
 Jybeam = u.Jy / u.beam
 
 
 def generate_nikamaps(
     tmpdir_factory,
-    shape=(61, 61),
+    shape=(257, 257),
     pixsize=1 / 3 * u.deg,
     noise_level=1 * Jybeam,
     nmaps=10,
@@ -152,6 +154,19 @@ def generate_nikamaps_fixture(tmpdir_factory):
     # default arguments
     return generate_nikamaps(tmpdir_factory)
 
+
+def test_contmap_average(generate_nikamaps):
+    filenames = generate_nikamaps
+
+    # Read the nikamap as contmap
+    nms = [NikaMap.read(filename) for filename in filenames]
+    nm = contmap_average(nms)
+    assert nm.shape == nms[0].shape
+    npt.assert_allclose(nm.check_SNR(range=(-6, 1)), 1, atol=1e-2)
+
+    nm = contmap_average(nms, normalize=True)
+    assert nm.shape == nms[0].shape
+    npt.assert_allclose(nm.check_SNR(range=(-6, 1)), 1, atol=1e-2)
 
 def test_MultiScans_init(generate_nikamaps):
     filenames = generate_nikamaps
@@ -290,12 +305,13 @@ def test_Bootstrap(generate_nikamaps):
     weighted_noises = primary_header["NOISE"] / np.sqrt(np.arange(1, primary_header["NMAPS"] + 1))
 
     # Weighted average
-    bs = Bootstrap(filenames, n=None)
+    bs = Bootstrap(filenames)
     data = bs()
 
     # Most likely weight and median absolute deviation should be the minimal noise
-    med = np.nanmedian(data.uncertainty.array)
-    mad = np.nanmedian(np.abs(data.uncertainty.array - med))
+    full_coverage = data.hits==len(filenames)
+    med = np.nanmedian(data.uncertainty.array[full_coverage])
+    mad = np.nanmedian(np.abs(data.uncertainty.array[full_coverage] - med))
     assert (weighted_noises.min() - med) < mad
 
     # Trouble to find a proper test for this
@@ -312,8 +328,9 @@ def test_Jackknife(generate_nikamaps):
     data = jk()
 
     # Most likely weight and median absolute deviation should be the minimal noise
-    med = np.nanmedian(data.uncertainty.array)
-    mad = np.nanmedian(np.abs(data.uncertainty.array - med))
+    full_coverage = data.hits==len(filenames)
+    med = np.nanmedian(data.uncertainty.array[full_coverage])
+    mad = np.nanmedian(np.abs(data.uncertainty.array[full_coverage] - med))
     assert (weighted_noises.min() - med) < mad
 
     # Trouble to find a proper test for this

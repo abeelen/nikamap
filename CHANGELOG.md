@@ -3,9 +3,11 @@ master
 
 Added
 -----
+* beam option in plot* methods
 
 Fixed
 -----
+* default n_boostrap increased
 
 Version 0.4
 ===========

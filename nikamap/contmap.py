@@ -169,7 +169,6 @@ class ContBeam(Kernel2D):
             raise ValueError("You must define pixscale.")
 
         if self._major is not None:
-
             stddev_maj = (self.stddev_maj / self.pixscale).decompose()
             stddev_min = (self.stddev_min / self.pixscale).decompose()
             angle = (90 * u.deg + self.pa).to(u.radian).value
@@ -262,9 +261,9 @@ class ContBeam(Kernel2D):
     @property
     def sr(self):
         if self.major is not None:
-            return (2 * np.pi * (self.major * self.minor) * gaussian_fwhm_to_sigma ** 2).to(u.sr)
+            return (2 * np.pi * (self.major * self.minor) * gaussian_fwhm_to_sigma**2).to(u.sr)
         else:
-            return (self._array.sum() / self._array.max() * (self.pixscale ** 2)).to(u.sr)
+            return (self._array.sum() / self._array.max() * (self.pixscale**2)).to(u.sr)
 
     def as_kernel(self, pixscale, **kwargs):
         """
@@ -483,7 +482,6 @@ class ContMap(NDDataArray):
     _residual = None
 
     def __init__(self, data, *args, **kwargs):
-
         if "meta" not in kwargs:
             kwargs["meta"] = kwargs.pop("header", None)
         if "header" in kwargs:
@@ -592,7 +590,7 @@ class ContMap(NDDataArray):
 
         conversion = (u.pix.to(u.arcsec, equivalencies=self._pixel_scale)) ** 2
 
-        return nvalid * conversion * u.arcsec ** 2
+        return nvalid * conversion * u.arcsec**2
 
     @property
     def uncertainty(self):
@@ -659,7 +657,7 @@ class ContMap(NDDataArray):
         elif item in ["signal", None]:
             data = np.ma.array(self.data * self.unit, mask=self.mask)
             label = "Brightness"
-        elif item == 'residual':
+        elif item == "residual":
             data = np.ma.array(self._residual * self.unit, mask=self.mask)
             label = "Residual"
         else:
@@ -812,7 +810,6 @@ class ContMap(NDDataArray):
             sources = []
 
         if sources is not None and len(sources) > 0:
-
             sources.rename_column("peak_value", "SNR")
 
             # To avoid #1294 photutils issue, compute the centroid outside of find_peak
@@ -858,7 +855,6 @@ class ContMap(NDDataArray):
             if sources is None or len(sources) == 0:
                 fake_sources["find_peak"] = MaskedColumn(np.ones(len(fake_sources), dtype=int), mask=True)
             else:
-
                 fake_sc = cat_to_sc(fake_sources)
                 sources_sc = cat_to_sc(sources)
 
@@ -876,7 +872,6 @@ class ContMap(NDDataArray):
             self.sources = None
 
     def match_sources(self, catalogs, dist_threshold=None):
-
         if dist_threshold is None:
             dist_threshold = self.beam.major / 3
 
@@ -891,7 +886,6 @@ class ContMap(NDDataArray):
             cat[ref_cat.meta["name"]] = MaskedColumn(idx, mask=mask)
 
     def phot_sources(self, sources=None, peak=True, psf=True):
-
         if sources is None:
             sources = self.sources
 
@@ -1017,13 +1011,13 @@ class ContMap(NDDataArray):
 
         # Convolve the data (peak for unit conservation)
         kernel.normalize("peak")
-        kernel_sqr = kernel.array ** 2
+        kernel_sqr = kernel.array**2
 
         # ma.filled(0) required for the fft convolution
         if isinstance(self.uncertainty, InverseVariance):
             weights = self.uncertainty.array
         elif isinstance(self.uncertainty, StdDevUncertainty):
-            weights = 1 / self.uncertainty.array ** 2
+            weights = 1 / self.uncertainty.array**2
         elif isinstance(self.uncertainty, VarianceUncertainty):
             weights = 1 / self.uncertainty.array
         else:
@@ -1038,7 +1032,7 @@ class ContMap(NDDataArray):
             mf_uncertainty[mf_mask] = np.nan
 
         # Units are not propagated in masked arrays...
-        mf_data = signal.fftconvolve(weights * self.__array__().filled(0), kernel, mode="same") * mf_uncertainty ** 2
+        mf_data = signal.fftconvolve(weights * self.__array__().filled(0), kernel, mode="same") * mf_uncertainty**2
 
         mf_data = ContMap(
             mf_data,
@@ -1074,7 +1068,7 @@ class ContMap(NDDataArray):
             Overplot levels contours, add negative contours as dashed line
         beam: boolean
             Draw a beam in the lower left corner, default False
-        
+
         **kwargs
             Arbitrary keyword arguments for :func:`matplotib.pyplot.imshow `
 
@@ -1130,8 +1124,10 @@ class ContMap(NDDataArray):
                     _kwargs = {"alpha": 0.8}
                 ax.scatter(x, y, **_kwargs, label=label)
 
-        if beam and hasattr(self, 'beam'):
-            ellipse_artist = self.beam.ellipse_to_plot(self.beam.support_scaling / 2, self.beam.support_scaling / 2 , self.beam.pixscale)
+        if beam and hasattr(self, "beam"):
+            ellipse_artist = self.beam.ellipse_to_plot(
+                self.beam.support_scaling / 2, self.beam.support_scaling / 2, self.beam.pixscale
+            )
             ax.add_artist(ellipse_artist)
 
         ax.set_xlim(0, self.shape[1] - 1)
@@ -1190,17 +1186,16 @@ class ContMap(NDDataArray):
         # mean, std = stats.norm.fit(snr)
         mean, std = popt
 
-
         if ax is not None:
-            _, bins_edges, _ = ax.hist(snr, bins='auto', histtype='stepfilled', alpha=0.2, density=True, range=range)
-            ax.plot(bins_edges,  stats.norm(mean, std).pdf(bins_edges))
+            _, bins_edges, _ = ax.hist(snr, bins="auto", histtype="stepfilled", alpha=0.2, density=True, range=range)
+            ax.plot(bins_edges, stats.norm(mean, std).pdf(bins_edges))
 
         if return_mean:
             return std, mean
         else:
             return std
 
-    def check_SNR(self, ax=None, bins='auto', range=(-6, 3), return_mean=False):
+    def check_SNR(self, ax=None, bins="auto", range=(-6, 3), return_mean=False):
         """Perform normality test on SNR map.
 
         This perform a gaussian fit on snr pixels histogram clipped between -6 and 3
@@ -1239,7 +1234,7 @@ class ContMap(NDDataArray):
         bin_center = (bin_edges[1:] + bin_edges[:-1]) / 2
 
         def gauss(x, a, c, s):
-            return a * np.exp(-((x - c) ** 2) / (2 * s ** 2))
+            return a * np.exp(-((x - c) ** 2) / (2 * s**2))
 
         popt, _ = curve_fit(gauss, bin_center.astype(np.float32), hist.astype(np.float32))
         mean, std = popt[1:]
@@ -1284,9 +1279,9 @@ class ContMap(NDDataArray):
         if isinstance(self.uncertainty, StdDevUncertainty):
             self.uncertainty.array *= factor
         elif isinstance(self.uncertainty, InverseVariance):
-            self.uncertainty.array /= factor ** 2
+            self.uncertainty.array /= factor**2
         elif isinstance(self.uncertainty, VarianceUncertainty):
-            self.uncertainty.array *= factor ** 2
+            self.uncertainty.array *= factor**2
         else:
             raise ValueError("Unknown uncertainty type")
 
@@ -1327,9 +1322,9 @@ class ContMap(NDDataArray):
         powspec, bin_edges = powspec_k(data, res=res, bins=bins, range=range, apod_size=apod_size)
 
         if to_plot == "snr":
-            powspec /= res ** 2
+            powspec /= res**2
         else:
-            pk_unit = u.Jy ** 2 / u.sr
+            pk_unit = u.Jy**2 / u.sr
             powspec /= (self.beam.sr / u.beam) ** 2
             powspec = powspec.to(pk_unit)
             label = "P(k) {} [{}]".format(label, pk_unit)
@@ -1541,9 +1536,7 @@ def fits_contmap_reader(
     key_uncertainty_type="UTYPE",
     **kwd,
 ):
-
     with fits.open(filename, **kwd) as hdus:
-
         hdr = hdus[0].header
 
         sampling_freq = hdr.get("sampling_freq", None)
@@ -1674,7 +1667,7 @@ def contmap_average(continuum_datas, normalize=False):
         if isinstance(item.uncertainty, InverseVariance):
             weight = item.uncertainty.array
         elif isinstance(item.uncertainty, StdDevUncertainty):
-            weight = 1 / item.uncertainty.array ** 2
+            weight = 1 / item.uncertainty.array**2
         elif isinstance(item.uncertainty, VarianceUncertainty):
             weight = 1 / item.uncertainty.array
         else:

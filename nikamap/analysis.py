@@ -438,7 +438,7 @@ class Bootstrap(MultiScans):
         super(Bootstrap, self).__init__(filenames, **kwd)
 
         if n_bootstrap is None:
-            n_bootstrap = 20 * len(self.filenames)
+            n_bootstrap = 50 * len(self.filenames)
 
         self.n_bootstrap = n_bootstrap
 
@@ -476,8 +476,11 @@ class Bootstrap(MultiScans):
             )
         )
 
-        data = np.mean(bs_array, axis=0)
-        e_data = np.std(bs_array, axis=0, ddof=1)
+        bs_array[bs_array == 0] = np.nan
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            data = np.nanmean(bs_array, axis=0)
+            e_data = np.nanstd(bs_array, axis=0)
 
         # Mask unobserved regions
         unobserved = self.hits == 0
