@@ -4,10 +4,13 @@ master
 Added
 -----
 * beam option in plot* methods
+* StackMap class for stacking
+
 
 Fixed
 -----
 * default n_boostrap increased
+* Bootstrap and Jackknife now applies to ContMap as well
 
 Version 0.4
 ===========
