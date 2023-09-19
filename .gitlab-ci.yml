@@ -28,6 +28,7 @@ before_script:
   - virtualenv venv
   - source venv/bin/activate
 
+
 test:
   script:
     - python setup.py test

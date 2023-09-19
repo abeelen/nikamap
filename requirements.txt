@@ -4,3 +4,4 @@ matplotlib>=1.5
 astropy>=2.0
 photutils>=0.7
 scikit-image
+reproject

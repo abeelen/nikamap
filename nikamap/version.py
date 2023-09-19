@@ -70,6 +70,6 @@ MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {"nikamap": [pjoin("data", "*")]}
-INSTALL_REQUIRES = ["numpy", "scipy", "matplotlib", "astropy", "photutils", "scikit_image"]
+INSTALL_REQUIRES = ["numpy", "scipy", "matplotlib", "astropy", "photutils", "scikit_image", 'reproject']
 SETUP_REQUIRES = ["pytest-runner"]
 TESTS_REQUIRE = ["pytest", "pytest-cov", "pytest-mpl"]

@@ -11,11 +11,7 @@ from astropy.table import Table
 from astropy.nddata import StdDevUncertainty
 from astropy.modeling import models
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
-
-try:
-    from astropy.convolution import MexicanHat2DKernel
-except ImportError:
-    from astropy.convolution import RickerWavelet2DKernel as MexicanHat2DKernel
+from astropy.convolution import RickerWavelet2DKernel
 
 from photutils.datasets import make_gaussian_sources_image
 
@@ -26,7 +22,6 @@ from ..nikamap import NikaMap, NikaFits, retrieve_primary_keys
 
 @pytest.fixture(scope="session")
 def generate_fits(tmpdir_factory):
-
     tmpdir = tmpdir_factory.mktemp("nm_map")
     filename = str(tmpdir.join("map.fits"))
     # Larger map to perform check_SNR
@@ -93,7 +88,6 @@ def generate_fits(tmpdir_factory):
 
 
 def test_retrieve_primary_keys(generate_fits):
-
     filename = generate_fits
 
     with pytest.raises(AssertionError):
@@ -108,7 +102,6 @@ def test_retrieve_primary_keys(generate_fits):
 
 
 def test_nikamap_read(generate_fits):
-
     filename = generate_fits
     primary_header = fits.getheader(filename, 0)
 

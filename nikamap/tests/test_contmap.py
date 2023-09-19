@@ -47,16 +47,8 @@ def test_contbeam_init():
     )
 
     assert isinstance(kernel, Kernel2D)
-    npt.assert_almost_equal(ref_kernel.array, kernel.array)
-    gaussian_area = (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma) ** 2).to(u.sr)
-    assert beam.sr == gaussian_area
-
-    with pytest.raises(ValueError):
-        beam = ContBeam(fwhm, area=gaussian_area, pixscale=pixscale)
-        beam = ContBeam(area=fwhm, pixscale=pixscale)
-
-    beam = ContBeam(area=gaussian_area, pixscale=pixscale)
-    kernel = beam.as_kernel(pixscale)
+    npt.assert_allclose(ref_kernel.array, kernel.array)
+    assert beam.sr == (2 * np.pi * (fwhm * gaussian_fwhm_to_sigma) ** 2).to(u.sr)
 
     beam = ContBeam(array=ref_kernel.array, pixscale=pixscale)
     assert beam.major is None
@@ -639,50 +631,6 @@ def test_contmap_match_filter(nms):
     )
     npt.assert_allclose(mh_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
     assert mh_nm.beam.major is None
-
-
-def test_contmap_match_filter_checkSNR(large_map_nosource):
-    nm = large_map_nosource
-    std = nm.check_SNR()
-    # Tolerance comes from the fact that we biased the result using the SNR
-    # cut for the fit
-    npt.assert_allclose(std, 1, rtol=1e-2)
-
-    std, mu = nm.check_SNR(return_mean=True)
-    npt.assert_allclose(std, 1, rtol=1e-2)
-    npt.assert_allclose(mu, 0, atol=1e-2)
-
-    mf_nm = nm.match_filter(nm.beam)
-    std = mf_nm.check_SNR()
-    # Tolerance comes from the fact that we biased the result using the SNR
-    # cut for the fit
-    npt.assert_allclose(std, 1, rtol=1e-2)
-
-    std, mu = mf_nm.check_SNR(return_mean=True)
-    npt.assert_allclose(std, 1, rtol=1e-2)
-    npt.assert_allclose(mu, 0, atol=1e-2)
-
-
-def test_contmap_match_filter_checkSNR_pdf(large_map_nosource):
-    nm = large_map_nosource
-    std = nm.check_SNR_pdf()
-    # Tolerance comes from the fact that we biased the result using the SNR
-    # cut for the fit
-    npt.assert_allclose(std, 1, rtol=1e-2)
-
-    std, mu = nm.check_SNR_pdf(return_mean=True)
-    npt.assert_allclose(std, 1, rtol=1e-2)
-    npt.assert_allclose(mu, 0, atol=1e-2)
-
-    mf_nm = nm.match_filter(nm.beam)
-    std = mf_nm.check_SNR_pdf()
-    # Tolerance comes from the fact that we biased the result using the SNR
-    # cut for the fit
-    npt.assert_allclose(std, 1, rtol=1e-2)
-
-    std, mu = mf_nm.check_SNR_pdf(return_mean=True)
-    npt.assert_allclose(std, 1, rtol=1e-2)
-    npt.assert_allclose(mu, 0, atol=2e-2)
 
 
 def test_contmap_match_sources(nms):

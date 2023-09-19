@@ -169,6 +169,7 @@ class ContBeam(Kernel2D):
             raise ValueError("You must define pixscale.")
 
         if self._major is not None:
+
             stddev_maj = (self.stddev_maj / self.pixscale).decompose()
             stddev_min = (self.stddev_min / self.pixscale).decompose()
             angle = (90 * u.deg + self.pa).to(u.radian).value
@@ -489,7 +490,7 @@ class ContMap(NDDataArray):
 
         # Arbitrary unit by default
         if "unit" not in kwargs:
-            kwargs["unit"] = data.unit if isinstance(data, (u.Quantity, ContMap)) else "adu"
+            kwargs["unit"] = getattr(data, "unit", "adu")
 
         # Must be set AFTER the super() call
         self.fake_sources = kwargs.pop("fake_sources", None)
@@ -615,15 +616,22 @@ class ContMap(NDDataArray):
             self._uncertainty = value
 
     @property
-    def snr(self):
+    def weights(self):
+        """Return the weights as inverse variance regardless of the uncertainty type"""
         if isinstance(self.uncertainty, InverseVariance):
-            snr = self.data * np.sqrt(self.uncertainty.array)
+            weights = self.uncertainty.array
         elif isinstance(self.uncertainty, StdDevUncertainty):
-            snr = self.data / self.uncertainty.array
+            weights = 1 / self.uncertainty.array**2
         elif isinstance(self.uncertainty, VarianceUncertainty):
-            snr = self.data / np.sqrt(self.uncertainty.array)
+            weights = 1 / self.uncertainty.array
         else:
             raise ValueError("Unknown uncertainty type")
+
+        return weights
+
+    @property
+    def snr(self):
+        snr = self.data * np.sqrt(self.weights)
 
         return np.ma.array(snr, mask=self.mask)
 
@@ -898,8 +906,8 @@ class ContMap(NDDataArray):
             # Crude Peak Photometry
             # From pixel indexes to array indexing
 
-            sources["flux_peak"] = Column(self.data[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
-            sources["eflux_peak"] = Column(self.uncertainty.array[y_idx, x_idx], unit=self.unit * u.beam).to(u.mJy)
+            sources["flux_peak"] = Column(self.data[y_idx, x_idx], unit=self.unit * u.beam)
+            sources["eflux_peak"] = Column(self.uncertainty.array[y_idx, x_idx], unit=self.unit * u.beam)
 
         if psf:
             # BasicPSFPhotometry with fixed positions
@@ -939,7 +947,7 @@ class ContMap(NDDataArray):
             for _source, _tab in zip(["flux_psf", "eflux_psf"], ["flux_fit", "flux_unc"]):
                 # Sometimes the returning fluxes has no uncertainty....
                 if _tab in result_tab.colnames:
-                    sources[_source] = Column(result_tab[_tab] * psf_model(0, 0), unit=self.unit * u.beam).to(u.mJy)
+                    sources[_source] = Column(result_tab[_tab] * psf_model(0, 0), unit=self.unit * u.beam)
             sources["group_id"] = result_tab["group_id"]
 
             self._residual = photometry.get_residual_image()
@@ -1014,14 +1022,7 @@ class ContMap(NDDataArray):
         kernel_sqr = kernel.array**2
 
         # ma.filled(0) required for the fft convolution
-        if isinstance(self.uncertainty, InverseVariance):
-            weights = self.uncertainty.array
-        elif isinstance(self.uncertainty, StdDevUncertainty):
-            weights = 1 / self.uncertainty.array**2
-        elif isinstance(self.uncertainty, VarianceUncertainty):
-            weights = 1 / self.uncertainty.array
-        else:
-            raise ValueError("Unknown uncertainty type")
+        weights = self.weights
 
         if self.mask is not None:
             weights[self.mask] = 0
@@ -1662,19 +1663,7 @@ def contmap_average(continuum_datas, normalize=False):
 
     assert all([wcs[0].wcs == item.wcs for item in wcs[1:]]), "All wcs must be equal"
 
-    weights = []
-    for item in continuum_datas:
-        if isinstance(item.uncertainty, InverseVariance):
-            weight = item.uncertainty.array
-        elif isinstance(item.uncertainty, StdDevUncertainty):
-            weight = 1 / item.uncertainty.array**2
-        elif isinstance(item.uncertainty, VarianceUncertainty):
-            weight = 1 / item.uncertainty.array
-        else:
-            raise ValueError("Unknown uncertainty type")
-        weights.append(weight)
-
-    weights = np.array(weights)
+    weights = np.array([item.weights for item in continuum_datas])
 
     datas[masks] = 0.0
     weights[masks] = 0.0

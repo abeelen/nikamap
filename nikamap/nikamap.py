@@ -102,8 +102,9 @@ class NikaMap(ContMap):
 
     """
 
-    def __init__(self, data, *args, **kwargs):
+    primary_header = None
 
+    def __init__(self, data, *args, **kwargs):
         self.primary_header = kwargs.pop("primary_header", None)
 
         super().__init__(data, *args, **kwargs)

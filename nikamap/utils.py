@@ -1,11 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
+import os
 import numpy as np
 import warnings
 
 from scipy import signal
 
 import matplotlib.pyplot as plt
+import multiprocessing
 
 from astropy.io import fits
 from astropy import units as u
@@ -26,7 +28,6 @@ __all__ = ["fake_data", "cat_to_sc", "CircularGaussianPSF", "pos_uniform", "pos_
 
 
 def beam_convolve(beam, other):  # pragma: no cover
-
     # blame: https://github.com/pkgw/carma-miriad/blob/CVSHEAD/src/subs/gaupar.for
     # (github checkin of MIRIAD, code by Sault)
 
@@ -448,7 +449,6 @@ def shrink_mask(mask, kernel):
 
 
 def fft_2d_hanning(mask, size=2):
-
     assert np.min(mask.shape) > size * 2 + 1
     assert size > 1
 
@@ -510,7 +510,6 @@ def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
         img_unit = img.unit
         img = img.to(img_unit).value
     elif isinstance(img, np.ma.MaskedArray):
-
         # TODO: apodization will change the absolute level of the powerspectra,
         # check how to correct
         if apod_size is not None:
@@ -612,3 +611,23 @@ def meta_to_header(meta):
                 header[key] = item
 
     return header
+
+
+def cpu_count():
+    """Proper cpu count on a SLURM cluster."""
+    try:
+        ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
+    except KeyError:
+        ncpus = multiprocessing.cpu_count()
+
+    return ncpus
+
+
+def shuffled_average(datas, weights, n_shuffle=1):
+    len_data = datas.shape[0]
+    outputs = []
+    for _ in range(n_shuffle):
+        shuffled_index = np.floor(np.random.uniform(0, len_data, len_data)).astype(int)
+        # np.ma.average is needed as some of the pixels have zero weights (should be masked)
+        outputs.append(np.ma.average(datas[shuffled_index], weights=weights[shuffled_index], axis=0, returned=False))
+    return outputs
