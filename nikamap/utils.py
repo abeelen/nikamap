@@ -20,7 +20,7 @@ from astropy.convolution import CustomKernel, convolve_fft
 
 Jy_beam = u.Jy / u.beam
 
-__all__ = ["fake_data", "cat_to_sc", "CircularGaussianPSF", "pos_uniform", "pos_gridded", "pos_list", "powspec_k"]
+__all__ = ["fake_data", "cat_to_sc", "CircularGaussianPSF", "pos_uniform", "pos_gridded", "pos_list"]
 
 
 # from radio_beam.utils.convolve
@@ -470,95 +470,6 @@ def fft_2d_hanning(mask, size=2):
     return apod
 
 
-def powspec_k(img, res=1, bins=100, range=None, apod_size=None):
-    """Return the bin averaged power spectral density of an image
-
-    Parameters
-    ----------
-    img : array_like or :class:`~astropy.units.quantity.Quantity`
-        the input (2D) image
-    res : float or :class:`~astropy.units.quantity.Quantity`, optional
-        the resolution elements of the image
-    bins : int or sequence of scalars or str, optional
-        If `bins` is an int, it defines the number of equal-width
-        bins in the given range (10, by default). If `bins` is a
-        sequence, it defines the bin edges, including the rightmost
-        edge, allowing for non-uniform bin widths. (see `~numpy.histogram`)
-    range : (float, float), optional
-        The lower and upper range of the bins. (see `~numpy.histogram`).
-
-    Returns
-    -------
-    powspec_k : array or :class:`~astropy.units.quantity.Quantity`
-        The value of the power spectrum, optionnaly with a units
-    bin_edges : array of dtype float or :class:`~astropy.units.quantity.Quantity`
-        Return the bin edges ``(length(hist)+1)``.
-
-    Notes
-    -----
-    If img as a unit of Jy/beam and res is in arcsec, the resulting
-    unit is Jy**2 / beam**2 arcsec**2, by dividing the result per
-    the square of the beam area (in say arcsec**2 / beam), one obtain
-    Jy**2 / arcsec**2
-
-    """
-    img_unit, pix_unit = 1, 1
-
-    # Dropping units here to be backward compatible with astropy<4.0
-    # See #16
-    if isinstance(img, u.Quantity):
-        img_unit = img.unit
-        img = img.to(img_unit).value
-    elif isinstance(img, np.ma.MaskedArray):
-        # TODO: apodization will change the absolute level of the powerspectra,
-        # check how to correct
-        if apod_size is not None:
-            img *= fft_2d_hanning(img.mask, apod_size)
-
-        if isinstance(img.data, u.Quantity):
-            img_unit = img.data.unit
-            img = np.ma.array(img.data.to(img_unit).value, mask=img.mask)
-
-        img = img.filled(0)
-
-    if isinstance(res, u.Quantity):
-        pix_unit = res.unit
-        res = res.to(pix_unit).value
-        if range is not None:
-            assert isinstance(range, u.Quantity), "range must be a Quantity when res has is a Quantity"
-            range = range.to(1 / pix_unit).value
-
-        if isinstance(bins, u.Quantity):
-            bins = bins.to(1 / pix_unit).value
-
-    npix_x, npix_y = img.shape
-
-    # numpy foward fft does not normalize by 1/N see
-    # http://docs.scipy.org/doc/numpy/reference/routines.fft.html#implementation-details
-    # Also see the definition of Power Spectral density
-    # https://en.wikipedia.org/wiki/Spectral_density
-    # Note that the factor 2 is accounted for the fact that we count each
-    # frequency twice...
-    pow_sqr = np.absolute(np.fft.fft2(img) ** 2 * res**2 / (npix_x * npix_y))
-
-    # Define corresponding fourier modes
-    u_freq = np.fft.fftfreq(npix_x, d=res)
-    v_freq = np.fft.fftfreq(npix_y, d=res)
-
-    k_freq = np.sqrt(u_freq[:, np.newaxis] ** 2 + v_freq**2)
-
-    hist, bin_edges = np.histogram(k_freq, bins=bins, range=range, weights=pow_sqr)
-    norm, _ = np.histogram(k_freq, bins=bins, range=range)
-    with np.errstate(invalid="ignore"):
-        hist /= norm
-
-    # we drop units in histogram so put it back here
-    hist = hist * img_unit**2 * pix_unit**2
-    bin_edges = bin_edges * pix_unit**-1
-
-    return hist, bin_edges
-
-
 def setup_ax(ax=None, wcs=None):
     """Setup a axe for plotting.
 
@@ -631,6 +542,7 @@ def shuffled_average(datas, weights, n_shuffle=1):
         # np.ma.average is needed as some of the pixels have zero weights (should be masked)
         outputs.append(np.ma.average(datas[shuffled_index], weights=weights[shuffled_index], axis=0, returned=False))
     return outputs
+
 
 def _shuffled_average(*args, datas=None, weights=None):
     """Worker function to produce shuffled averages

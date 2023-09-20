@@ -4,7 +4,7 @@ from os.path import join as pjoin
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
 _version_major = 0
 _version_minor = 4
-_version_micro = ''  # use '' for first of series, number for 1 and above
+_version_micro = ""  # use '' for first of series, number for 1 and above
 _version_extra = "dev0"
 # _version_extra = ""  # Uncomment this for full releases
 
@@ -70,6 +70,6 @@ MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {"nikamap": [pjoin("data", "*")]}
-INSTALL_REQUIRES = ["numpy", "scipy", "matplotlib", "astropy", "photutils", "scikit_image", 'reproject']
+INSTALL_REQUIRES = ["numpy", "scipy", "matplotlib", "astropy", "photutils", "scikit_image", "powspec", "reproject"]
 SETUP_REQUIRES = ["pytest-runner"]
 TESTS_REQUIRE = ["pytest", "pytest-cov", "pytest-mpl"]

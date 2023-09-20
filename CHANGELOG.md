@@ -11,6 +11,7 @@ Fixed
 -----
 * default n_boostrap increased
 * Bootstrap and Jackknife now applies to ContMap as well
+* Using powspec package instead of internal function
 
 Version 0.4
 ===========

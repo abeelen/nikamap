@@ -45,6 +45,24 @@ run:
     paths:
       - dist/*.whl
 
+
+pypi:
+  stage: deploy
+  before_script:
+    - python3 -m pip install --upgrade twine
+    - python3 -m pip install --upgrade build    
+    - rm -rf dist
+  variables:
+    TWINE_USERNAME: $PYPI_USERNAME
+    TWINE_PASSWORD: $PYPI_PASSWORD
+  script:
+    - python3 -m build
+    - python3 -m twine check dist/*
+    - python3 -m twine upload --repository-url https://upload.pypi.org/legacy/ dist/*    
+  only:
+    - tags
+
+
 #pages:
 #  script:
 #    - pip install sphinx sphinx-rtd-theme

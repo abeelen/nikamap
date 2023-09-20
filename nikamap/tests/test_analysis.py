@@ -167,6 +167,7 @@ def test_contmap_average(generate_nikamaps):
     assert nm.shape == nms[0].shape
     npt.assert_allclose(nm.check_SNR(range=(-6, 1)), 1, atol=1e-2)
 
+
 def test_MultiScans_init(generate_nikamaps):
     filenames = generate_nikamaps
 
@@ -308,7 +309,7 @@ def test_Bootstrap(generate_nikamaps):
     data = bs()
 
     # Most likely weight and median absolute deviation should be the minimal noise
-    full_coverage = data.hits==len(filenames)
+    full_coverage = data.hits == len(filenames)
     med = np.nanmedian(data.uncertainty.array[full_coverage])
     mad = np.nanmedian(np.abs(data.uncertainty.array[full_coverage] - med))
     assert (weighted_noises.min() - med) < mad
@@ -329,12 +330,13 @@ def test_Jackknife(generate_nikamaps):
     data = jk()
 
     # Most likely weight and median absolute deviation should be the minimal noise
-    full_coverage = data.hits==len(filenames)
+    full_coverage = data.hits == len(filenames)
     med = np.nanmedian(data.uncertainty.array[full_coverage])
     mad = np.nanmedian(np.abs(data.uncertainty.array[full_coverage] - med))
     assert (weighted_noises.min() - med) < mad
 
     # Trouble to find a proper test for this
+
 
 # To be run interactively to get a fixture for debugging
 def interactive_fixture():

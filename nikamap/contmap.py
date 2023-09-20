@@ -50,10 +50,11 @@ from astropy.utils.exceptions import AstropyWarning
 from .utils import _shuffled_average, cpu_count
 from .utils import beam_convolve, CircularGaussianPSF
 from .utils import pos_uniform, cat_to_sc
-from .utils import powspec_k
 from .utils import shrink_mask
 from .utils import setup_ax
 from .utils import meta_to_header
+
+from powspec import power_spectral_density
 
 Jy_beam = u.Jy / u.beam
 
@@ -176,7 +177,6 @@ class ContBeam(Kernel2D):
             raise ValueError("You must define pixscale.")
 
         if self._major is not None:
-
             stddev_maj = (self.stddev_maj / self.pixscale).decompose()
             stddev_min = (self.stddev_min / self.pixscale).decompose()
             angle = (90 * u.deg + self.pa).to(u.radian).value
@@ -1327,7 +1327,7 @@ class ContMap(NDDataArray):
             raise ValueError("to_plot {}".format(e))
 
         res = (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale)
-        powspec, bin_edges = powspec_k(data, res=res, bins=bins, range=range, apod_size=apod_size)
+        powspec, bin_edges = power_spectral_density(data, res=res, bins=bins, range=range, apod_size=apod_size)
 
         if to_plot == "snr":
             powspec /= res**2
@@ -1546,12 +1546,15 @@ class ContMap(NDDataArray):
         """
         if type.lower() == "interp":
             from reproject import reproject_interp as _reproject
+
             _reproject = partial(_reproject)
         elif type.lower() == "adaptive":
             from reproject import reproject_adaptive as _reproject
+
             _reproject = partial(_reproject, kernel="gaussian", boundary_mode="strict", conserve_flux=True)
         elif type.lower() == "exact":
             from reproject import reproject_exact as _reproject
+
             _reproject = partial(_reproject)
         else:
             raise ValueError("Reprojection should be (``interp`` | ``adaptive`` | ``exact``)")
@@ -1611,9 +1614,8 @@ class ContMap(NDDataArray):
             weights_cutouts.append(weight_new)
 
         output_wcs.wcs.crval = (0, 0)
-        
-        return np.array(data_cutouts), np.array(weights_cutouts), output_wcs
 
+        return np.array(data_cutouts), np.array(weights_cutouts), output_wcs
 
     def to_hdus(
         self,

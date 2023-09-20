@@ -26,6 +26,7 @@ from ..contmap import ContBeam, ContMap
 from ..utils import pos_gridded
 from ..utils import cat_to_sc
 
+
 def test_contbeam_init():
     # TODO: What if we init with an array ?
     fwhm = 18 * u.arcsec
@@ -914,6 +915,7 @@ def test_nikamap_write(generate_fits):
     outfilename = filename.replace("map.fits", "map2.fits")
     data.write(outfilename)
 
+
 def uniform_no_overlap(nsources, shape, marging=1 / 8, min_dist=None, oversample=5):
     x = np.random.uniform(size=oversample * nsources, low=shape[1] * marging, high=shape[1] * (1 - marging))
     y = np.random.uniform(size=oversample * nsources, low=shape[0] * marging, high=shape[0] * (1 - marging))
@@ -928,6 +930,7 @@ def uniform_no_overlap(nsources, shape, marging=1 / 8, min_dist=None, oversample
     assert x.shape == (nsources,)
 
     return x, y
+
 
 @pytest.fixture()
 def large_map_sources_centered():
@@ -1007,7 +1010,7 @@ def test_contmap_stack(large_map_sources_centered):
 
     npix = int(size.to(u.pixel, equivalencies=cm._pixel_scale).value) + 1
     center_pix = (npix - 1) // 2
-    
+
     datas, weights, wcs = cm._gen_cutout2d(coords, size)
     assert datas.shape == (len(coords), npix, npix)
     assert datas.shape == weights.shape
@@ -1070,4 +1073,3 @@ def test_contmap_stack(large_map_sources_centered):
 
     with pytest.raises(ValueError):
         cm.stack(coords, 1 * u.arcsec, method="reproject", type="toto")
-

@@ -422,6 +422,7 @@ class Jackknife(MultiScans):
 
         return data  # , weighted_parity
 
+
 class Bootstrap(MultiScans):
     """A class to create bootstraped maps from a list of scans.
 

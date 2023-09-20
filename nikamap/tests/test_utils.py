@@ -6,7 +6,7 @@ import numpy.testing as npt
 
 from ..utils import pos_in_mask, cat_to_sc
 from ..utils import pos_uniform, pos_gridded, pos_list
-from ..utils import fft_2d_hanning, powspec_k
+from ..utils import fft_2d_hanning
 from ..utils import fake_data
 from ..utils import shrink_mask
 from ..utils import meta_to_header
@@ -235,68 +235,6 @@ def gen_pkfield(npix=32, alpha=-11.0 / 3, fknee=1, res=1):
 
     fft_img = np.sqrt(psd) * (np.cos(pha) + 1j * np.sin(pha))
     return np.real(np.fft.ifft2(fft_img)) * npix / res**2
-
-
-def test_powspec_k():
-
-    npix = 128
-    res = 50
-    img = gen_pkfield(npix=npix, res=res)
-    powspec, bin_edges = powspec_k(img, res=res, bins=npix)
-    bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2
-
-    def gen_pk(npix, res):
-        img = gen_pkfield(npix=npix, res=res)
-        powspec, _ = powspec_k(img, res=res, bins=npix)
-        return powspec
-
-    realization = list(map(lambda i: gen_pk(npix, res), range(100)))
-    mean_Pk = np.mean(realization, axis=0)
-    std_Pk = np.std(realization, axis=0)
-
-    # plt.close('all')
-    # plt.loglog(bin_centers[1:], mean_Pk[1:])
-    # plt.loglog(bin_centers[1:], mean_Pk[1:]+std_Pk[1:])
-    # plt.loglog(bin_centers[1:], mean_Pk[1:]-std_Pk[1:])
-    # plt.loglog(bin_centers, P(bin_centers) / res**2)
-
-    assert np.all((mean_Pk[1:] - P(bin_centers[1:])) < std_Pk[1:])
-
-
-def test_powspec_k_unit():
-
-    npix = 1024
-    nsub = 128
-    alpha = -1  # For alpha=-3, the P(k) is dominated by the step edges...
-    res = 2 * u.arcsec
-
-    np.random.seed(1)
-
-    img = gen_pkfield(npix=npix, res=res, alpha=alpha, fknee=1 / u.arcsec) * u.Jy
-
-    with pytest.raises(AssertionError):
-        dummy = powspec_k(img, res=res, range=(0, 1))
-
-    bins = np.linspace(2, nsub // 2, nsub // 2 - 2) / (res * nsub)
-    powspec_full, bin_full = powspec_k(img, res=res, bins=bins)
-
-    bin_centers = (bin_full[1:] + bin_full[:-1]) / 2
-
-    powspecs = u.Quantity(
-        [
-            powspec_k(img[i : i + nsub, j : j + nsub], res=res, bins=bins)[0]  # noqa: E203
-            for i, j in np.random.randint(size=(128, 2), low=0, high=npix - nsub)
-        ]
-    ).to(u.Jy**2 / u.sr)
-
-    # plt.close('all')
-    # plt.loglog(bins[1:], powspec_full.to(u.Jy**2/u.sr), c='k')
-    # plt.loglog(bins[1:], np.mean(powspecs, axis=0))
-    # plt.loglog(bins[1:], np.mean(powspecs, axis=0) + np.std(powspecs, axis=0), linestyle='dashed')
-    # plt.loglog(bins[1:], np.mean(powspecs, axis=0) - np.std(powspecs, axis=0), linestyle='dashed')
-    # plt.loglog(bins, (P(bins, alpha=alpha, fknee=1/u.arcsec) / res **2 * u.Jy**2).to(u.Jy**2 / u.sr))
-
-    assert np.all((np.mean(powspecs, axis=0) - powspec_full.to(u.Jy**2 / u.sr)) < np.std(powspecs, axis=0))
 
 
 def test_fake_data():
