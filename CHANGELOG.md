@@ -1,11 +1,14 @@
 master
 ======
 
+
+Version 0.5
+===========
+
 Added
 -----
 * beam option in plot* methods
-* StackMap class for stacking
-
+* Stacking Methods for ContMap
 
 Fixed
 -----
