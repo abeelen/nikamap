@@ -631,3 +631,17 @@ def shuffled_average(datas, weights, n_shuffle=1):
         # np.ma.average is needed as some of the pixels have zero weights (should be masked)
         outputs.append(np.ma.average(datas[shuffled_index], weights=weights[shuffled_index], axis=0, returned=False))
     return outputs
+
+def _shuffled_average(*args, datas=None, weights=None):
+    """Worker function to produce shuffled averages
+
+    To be used with ProgressBar.map and multiprocess=True
+    """
+    if len(args) > 0:
+        n_shuffle = len(args[0])
+    else:
+        n_shuffle = 1
+
+    outputs = shuffled_average(datas, weights, n_shuffle)
+
+    return outputs

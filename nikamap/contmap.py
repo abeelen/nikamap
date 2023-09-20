@@ -5,24 +5,32 @@ from pathlib import Path
 
 import numpy as np
 from copy import deepcopy
+from functools import partial
 
 from astropy.io import fits, registry
 from astropy import units as u
 from astropy.wcs import WCS, InconsistentAxisTypesError
+from astropy.wcs.utils import proj_plane_pixel_scales
 from astropy.coordinates import match_coordinates_sky
-from astropy.nddata import NDDataArray, NDUncertainty
-from astropy.nddata import StdDevUncertainty, InverseVariance, VarianceUncertainty
+
 from astropy.modeling import models
 from astropy.modeling.utils import ellipse_extent
 from astropy.modeling.fitting import LevMarLSQFitter
+
 from astropy.stats.funcs import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
+
 from astropy.convolution import Kernel2D, Box2DKernel, Gaussian2DKernel
 from astropy.convolution.kernels import _round_up_to_odd_integer
 
 from astropy.table import Table, MaskedColumn, Column
+from astropy.utils.console import ProgressBar
 
+from astropy.nddata import NDDataArray, NDUncertainty
+from astropy.nddata import StdDevUncertainty, InverseVariance, VarianceUncertainty
+from astropy.nddata import Cutout2D
 from astropy.nddata.ccddata import _known_uncertainties, _uncertainty_unit_equivalent_to_parent
 from astropy.nddata.ccddata import _unc_cls_to_name, _unc_name_to_cls
+
 
 import photutils
 from photutils.psf import BasicPSFPhotometry
@@ -39,11 +47,10 @@ from scipy.optimize import curve_fit
 import warnings
 from astropy.utils.exceptions import AstropyWarning
 
-from .utils import beam_convolve
-from .utils import CircularGaussianPSF
+from .utils import _shuffled_average, cpu_count
+from .utils import beam_convolve, CircularGaussianPSF
 from .utils import pos_uniform, cat_to_sc
 from .utils import powspec_k
-from .utils import update_header
 from .utils import shrink_mask
 from .utils import setup_ax
 from .utils import meta_to_header
@@ -1393,6 +1400,220 @@ class ContMap(NDDataArray):
         # so we need to add another keyword "flags" and add the processed flags
         kwargs["hits"] = result_hits
         return result, kwargs  # these must be returned
+
+    def stack(self, coords, size, method="cutout2d", n_bootstrap=None, **kwargs):
+        """Return a stacked map from a catalog of coordinates.
+
+        Parameters
+        ----------
+        coords : array of `~astropy.coordinates.SkyCoord`
+            the position of the cutout arrays center
+        size : `~astropy.units.Quantity`
+            the size of the cutout array along each axis.  If ``size``
+            is a scalar `~astropy.units.Quantity`, then a square cutout of
+            ``size`` will be created. If ``size`` has two elements,
+            they should be in ``(ny, nx)`` order.
+        method : str ('cutout2d', 'reproject')
+            the method to generate the cutouts
+        n_bootstrap : int, optional
+            use a bootstrap distribution of the signal instead of a weighted average
+
+        Notes
+        -----
+        Any additionnal keyword arguments are passed to the choosen method
+        """
+
+        if method == "cutout2d":
+            datas, weights, wcs = self._gen_cutout2d(coords, size, **kwargs)
+        elif method == "reproject":
+            datas, weights, wcs = self._gen_reproject(coords, size, **kwargs)
+        else:
+            raise ValueError("method should be cutout2d or reproject")
+
+        header = self.header.copy()
+        header["HISTORY"] = "Stacked on {} coordinates".format(len(coords))
+
+        if n_bootstrap is None:
+            # np.ma.average handle 0 weights in the final map
+            data, weight = np.ma.average(datas, weights=weights, axis=0, returned=True)
+            uncertainty = InverseVariance(weight)
+
+        else:
+            _ = partial(_shuffled_average, datas=datas, weights=weights)
+
+            bs_array = ProgressBar.map(
+                _,
+                np.array_split(np.arange(n_bootstrap), cpu_count()),
+                multiprocess=True,
+            )
+            bs_array = np.concatenate(bs_array)
+
+            data = np.mean(bs_array, axis=0)
+            uncertainty = StdDevUncertainty(np.std(bs_array, axis=0, ddof=1))
+
+        data = self.__class__(
+            data,
+            mask=np.isnan(data),
+            uncertainty=uncertainty,
+            unit=self.unit,
+            wcs=wcs,
+            meta=header,
+        )
+
+        return data
+
+    def _gen_cutout2d(self, coords, size, **kwargs):
+        """Generate simple 2D cutout from a catalog of coordinates
+
+        Parameters
+        ----------
+        coords : array of `~astropy.coordinates.SkyCoord`
+            the position of the cutout arrays center
+        size : `~astropy.units.Quantity`
+            the size of the cutout array along each axis.  If ``size``
+            is a scalar `~astropy.units.Quantity`, then a square cutout of
+            ``size`` will be created. If ``size`` has two elements,
+            they should be in ``(ny, nx)`` order.
+
+        Notes
+        -----
+        The cutouts have odd number of pixels and are centered around the pixel containing the coordinates.
+        """
+        # Convert size into pixel (ny, nx) to insure a even number of pixels
+        size = np.atleast_1d(size)
+        if len(size) == 1:
+            size = np.repeat(size, 2)
+
+        if len(size) > 2:
+            raise ValueError("size must have at most two elements")
+
+        pixel_scales = u.Quantity(
+            [scale * u.Unit(unit) for scale, unit in zip(proj_plane_pixel_scales(self.wcs), self.wcs.wcs.cunit)]
+        )
+
+        shape = np.zeros(2).astype(int)
+
+        # ``size`` can have a mixture of int and Quantity (and even units),
+        # so evaluate each axis separately
+        for axis, side in enumerate(size):
+            if side.unit.physical_type == "angle":
+                shape[axis] = int(_round_up_to_odd_integer((side / pixel_scales[axis]).decompose()))
+            else:
+                raise ValueError("size must contains only Quantities with angular units")
+
+        input_wcs = self.wcs
+        input_array = self.__array__().filled(np.nan)
+        data_cutouts = [
+            Cutout2D(input_array, coord, shape, wcs=input_wcs, mode="partial", fill_value=np.nan).data
+            for coord in coords
+        ]
+        data_cutouts = np.array(data_cutouts)
+
+        weights = self.weights
+        weights[self.mask] = 0
+        weights_cutouts = [
+            Cutout2D(weights, coord, shape, wcs=input_wcs, mode="partial", fill_value=np.nan).data for coord in coords
+        ]
+        weights_cutouts = np.array(weights_cutouts)
+        weights_cutouts[np.isnan(data_cutouts)] = 0
+
+        output_wcs = Cutout2D(self, coords[0], shape, mode="partial").wcs
+        output_wcs.wcs.crval = (0, 0)
+        output_wcs.wcs.crpix = (shape - 1) / 2 + 1
+
+        return data_cutouts, weights_cutouts, output_wcs
+
+    def _gen_reproject(self, coords, size, type="interp", pixel_scales=None, **kwargs):
+        """Generate reprojected 2D cutout from a catalog of coordinates
+
+        Parameters
+        ----------
+        coords : array of `~astropy.coordinates.SkyCoord`
+            the position of the cutout arrays center
+        size : `~astropy.units.Quantity`
+            the size of the cutout array along each axis.  If ``size``
+            is a scalar `~astropy.units.Quantity`, then a square cutout of
+            ``size`` will be created. If ``size`` has two elements,
+            they should be in ``(ny, nx)`` order.
+        type : str (``interp`` | ``adaptive`` | ``exact``)
+            the type of reprojection used, default='interp'
+        pixel_scales : `~astropy.units.Quantity`, optional
+            the pixel scale of the output image, default None (same as image)
+
+        Notes
+        -----
+        The cutouts have odd number of pixels and are reprojected to be centered at the the coordinates.
+        """
+        if type.lower() == "interp":
+            from reproject import reproject_interp as _reproject
+            _reproject = partial(_reproject)
+        elif type.lower() == "adaptive":
+            from reproject import reproject_adaptive as _reproject
+            _reproject = partial(_reproject, kernel="gaussian", boundary_mode="strict", conserve_flux=True)
+        elif type.lower() == "exact":
+            from reproject import reproject_exact as _reproject
+            _reproject = partial(_reproject)
+        else:
+            raise ValueError("Reprojection should be (``interp`` | ``adaptive`` | ``exact``)")
+
+        # Convert size into pixel (ny, nx) to insure a even number of pixels
+        size = np.atleast_1d(size)
+        if len(size) == 1:
+            size = np.repeat(size, 2)
+
+        if len(size) > 2:
+            raise ValueError("size must have at most two elements")
+
+        if pixel_scales is None:
+            pixel_scales = u.Quantity(
+                [scale * u.Unit(unit) for scale, unit in zip(proj_plane_pixel_scales(self.wcs), self.wcs.wcs.cunit)]
+            )
+        else:
+            pixel_scales = np.atleast_1d(pixel_scales)
+            if len(pixel_scales) == 1:
+                pixel_scales = np.repeat(pixel_scales, 2)
+
+            if len(pixel_scales) > 2:
+                raise ValueError("pixel_scale must have at most two elements")
+
+        shape = np.zeros(2).astype(int)
+        cdelt = np.zeros(2)
+
+        # ``size`` can have a mixture of int and Quantity (and even units),
+        # so evaluate each axis separately
+        for axis, side in enumerate(size):
+            if side.unit.physical_type == "angle":
+                cdelt[axis] = pixel_scales[axis].to(u.deg).value * np.sign(self.wcs.wcs.cdelt[axis])
+                shape[axis] = int(_round_up_to_odd_integer((side / pixel_scales[axis]).decompose()))
+            else:
+                raise ValueError("size must contains only Quantities with angular units")
+
+        output_wcs = WCS(naxis=2)
+        output_wcs.wcs.ctype = self.wcs.wcs.ctype
+        output_wcs.wcs.crpix = (shape - 1) / 2 + 1
+        output_wcs.wcs.cdelt = cdelt
+
+        input_array = self.__array__().filled(np.nan)
+        input_weights = self.weights
+        input_wcs = self.wcs
+
+        data_cutouts = []
+        weights_cutouts = []
+        for coord in coords:
+            output_wcs.wcs.crval = (coord.ra.to("deg").value, coord.dec.to("deg").value)
+            array_new, footprint = _reproject((input_array, input_wcs), output_wcs, shape)
+            weight_new = _reproject((input_weights, input_wcs), output_wcs, shape, return_footprint=False)
+
+            array_new[footprint == 0] = np.nan
+            weight_new[np.isnan(array_new)] = 0
+
+            data_cutouts.append(array_new)
+            weights_cutouts.append(weight_new)
+
+        output_wcs.wcs.crval = (0, 0)
+        
+        return np.array(data_cutouts), np.array(weights_cutouts), output_wcs
+
 
     def to_hdus(
         self,

@@ -9,7 +9,6 @@ from astropy.wcs import WCS
 from astropy.table import Table, Column
 
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
-from astropy.coordinates import SkyCoord
 from photutils.datasets import make_gaussian_sources_image
 
 import numpy.testing as npt
@@ -17,7 +16,7 @@ import numpy.testing as npt
 # import nikamap as nm
 # data_path = op.join(nm.__path__[0], 'data')
 
-from ..analysis import HalfDifference, MultiScans, Jackknife, Bootstrap, StackMap
+from ..analysis import HalfDifference, MultiScans, Jackknife, Bootstrap
 from ..contmap import ContMap, contmap_average
 from ..nikamap import NikaMap
 
@@ -336,168 +335,6 @@ def test_Jackknife(generate_nikamaps):
     assert (weighted_noises.min() - med) < mad
 
     # Trouble to find a proper test for this
-
-
-def uniform_no_overlap(nsources, shape, marging=1 / 8, min_dist=None, oversample=5):
-    x = np.random.uniform(size=oversample * nsources, low=shape[1] * marging, high=shape[1] * (1 - marging))
-    y = np.random.uniform(size=oversample * nsources, low=shape[0] * marging, high=shape[0] * (1 - marging))
-
-    for idx in range(0, nsources):
-        remainder_to_keep = np.sqrt((x[idx] - x[idx + 1 :]) ** 2 + (y[idx] - y[idx + 1 :]) ** 2) > min_dist
-        x = np.concatenate([x[: idx + 1], x[idx + 1 :][remainder_to_keep]])
-        y = np.concatenate([y[: idx + 1], y[idx + 1 :][remainder_to_keep]])
-
-    x = x[: idx + 1]
-    y = y[: idx + 1]
-    assert x.shape == (nsources,)
-
-    return x, y
-
-
-@pytest.fixture()
-def large_map_sources_centered():
-    np.random.seed(42)
-
-    shape = (512, 512)
-    pixsize = 1 / 3 * u.arcsec
-    peak_flux = 1 * u.Jy
-    noise_level = 0.1 * u.Jy / u.beam
-    fwhm = 1 * u.arcsec
-    nsources = 10
-
-    wcs = WCS()
-    wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
-    wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize.to("deg").value
-    wcs.wcs.crval = (0, 0)
-    wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
-
-    xx, yy = np.indices(shape)
-    mask = np.zeros(shape, dtype=bool)
-    # mask = np.sqrt((xx - (shape[1] - 1) / 2) ** 2 + (yy - (shape[0] - 1) / 2) ** 2) > shape[0] / 2
-
-    # Sources will fall at the center of each pixel
-    sources = Table(masked=True)
-    sources["amplitude"] = np.ones(nsources) * peak_flux
-    x, y = uniform_no_overlap(nsources, shape, 1 / 8, min_dist=(fwhm / pixsize).decompose().value * 3)
-
-    # Put them at the center of the pixel to ease the tests !
-    sources["x_mean"] = x.astype(int)
-    sources["y_mean"] = y.astype(int)
-
-    ra, dec = wcs.wcs_pix2world(sources["x_mean"], sources["y_mean"], 0)
-    sources["ra"] = ra * u.deg
-    sources["dec"] = dec * u.deg
-
-    sources["_ra"] = sources["ra"]
-    sources["_dec"] = sources["dec"]
-
-    beam_std_pix = (fwhm / pixsize).decompose().value * gaussian_fwhm_to_sigma
-    sources["x_stddev"] = np.ones(nsources) * beam_std_pix
-    sources["y_stddev"] = np.ones(nsources) * beam_std_pix
-    sources["theta"] = np.zeros(nsources)
-
-    data = make_gaussian_sources_image(shape, sources)
-
-    hits = np.ones(shape=shape, dtype=float)
-    uncertainty = np.ones(shape, dtype=float) * noise_level.to(u.Jy / u.beam).value
-    # data += np.random.normal(loc=0, scale=1, size=shape) * uncertainty
-    # data[mask] = np.nan
-    # hits[mask] = 0
-    # uncertainty[mask] = 0
-
-    header = wcs.to_header()
-    header["UNIT"] = "Jy / beam", "Fake Unit"
-    header["BMAJ"] = fwhm.to("deg").value
-    header["BMIN"] = fwhm.to("deg").value
-    header["BPA"] = 0
-
-    cm = ContMap(
-        data,
-        uncertainty=uncertainty,
-        wcs=wcs,
-        meta=header,
-        hits=hits,
-        unit=u.Jy / u.beam,
-        mask=mask,
-        fake_sources=sources,
-    )
-
-    return cm
-
-
-def test_StackMap(large_map_sources_centered):
-    cm = large_map_sources_centered
-    coords = SkyCoord(cm.fake_sources["_ra"], cm.fake_sources["_dec"])
-    size = 10 * u.arcsec
-
-    npix = int(size.to(u.pixel, equivalencies=cm._pixel_scale).value) + 1
-    center_pix = (npix - 1) // 2
-
-    sm = StackMap(cm)
-
-    datas, weights, wcs = sm._gen_cutout2d(coords, size)
-    assert datas.shape == (len(coords), npix, npix)
-    assert datas.shape == weights.shape
-    assert np.all(sm.wcs.wcs.cdelt == wcs.wcs.cdelt)
-    # To avoid overlap in 2 sources
-    npt.assert_allclose(datas[:, center_pix, center_pix], 1)
-
-    with pytest.raises(ValueError):
-        sm._gen_cutout2d(coords, 1 * u.m)
-
-    datas, weights, wcs = sm._gen_reproject(coords, size)
-    assert datas.shape == (len(coords), npix, npix)
-    assert datas.shape == weights.shape
-    assert np.all(sm.wcs.wcs.cdelt == wcs.wcs.cdelt)
-    # To avoid overlap in 2 sources
-    npt.assert_allclose(datas[:, center_pix, center_pix], 1)
-
-    datas, weights, wcs = sm._gen_reproject(coords[0:5], size, type="adaptive")
-    assert datas.shape == (len(coords[0:5]), npix, npix)
-    assert datas.shape == weights.shape
-    assert np.all(sm.wcs.wcs.cdelt == wcs.wcs.cdelt)
-    # To avoid overlap in 2 sources
-    # flux is NOT conserved !!!!
-    # npt.assert_allclose(datas[:, center_pix, center_pix], 1)
-
-    datas, weights, wcs = sm._gen_reproject(coords[0:5], size, type="exact")
-    assert datas.shape == (len(coords[0:5]), npix, npix)
-    assert datas.shape == weights.shape
-    assert np.all(sm.wcs.wcs.cdelt == wcs.wcs.cdelt)
-    npt.assert_allclose(datas[:, center_pix, center_pix], 1)
-
-    stack = sm.stack(coords, size, method="reproject")
-    npt.assert_allclose(stack.data[center_pix, center_pix], 1)
-    npt.assert_allclose(np.sqrt(np.median(sm.weights)) * np.sqrt(len(coords)), np.sqrt(np.median(stack.weights)))
-
-    stack = sm.stack(coords, size, method="reproject", n_bootstrap=100)
-    npt.assert_allclose(1 / np.sqrt(np.median(stack.weights)), 0, atol=1e-25)
-
-    pixel_scale = 1 / 10 * u.arcsec
-    npix = int((size / pixel_scale).decompose().value) + 1
-    center_pix = (npix - 1) // 2
-
-    stack = sm.stack(coords, size, method="reproject", pixel_scales=pixel_scale)
-    npt.assert_allclose(stack.data[center_pix, center_pix], 1)
-
-    with pytest.raises(ValueError):
-        sm.stack(coords, size, method="reproject", pixel_scales=u.Quantity((pixel_scale, pixel_scale, pixel_scale)))
-
-    with pytest.raises(ValueError):
-        sm.stack(coords, u.Quantity([size, size, size]), method="cutout2d")
-
-    with pytest.raises(ValueError):
-        sm.stack(coords, u.Quantity([size, size, size]), method="reproject")
-
-    with pytest.raises(ValueError):
-        sm.stack(coords, 1 * u.m, method="reproject")
-
-    with pytest.raises(ValueError):
-        sm.stack(coords, 1 * u.arcsec, method="toto")
-
-    with pytest.raises(ValueError):
-        sm.stack(coords, 1 * u.arcsec, method="reproject", type="toto")
-
 
 # To be run interactively to get a fixture for debugging
 def interactive_fixture():
