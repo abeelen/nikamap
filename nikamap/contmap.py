@@ -649,17 +649,17 @@ class ContMap(NDDataArray):
         """
 
         if item == "snr":
-            data = self.snr
             label = "SNR"
+            data = self.snr
         elif item == "uncertainty":
-            data = np.ma.array(self.uncertainty.array * self.unit, mask=self.mask)
             label = "Uncertainty"
+            data = np.ma.array(self.uncertainty.array * self.unit, mask=self.mask)
         elif item in ["signal", None]:
-            data = np.ma.array(self.data * self.unit, mask=self.mask)
             label = "Brightness"
+            data = np.ma.array(self.data * self.unit, mask=self.mask)
         elif item == "residual":
-            data = np.ma.array(self._residual * self.unit, mask=self.mask)
             label = "Residual"
+            data = np.ma.array(self._residual * self.unit, mask=self.mask)
         else:
             raise ValueError("must be in (None|signal|uncertainty|snr|residual)")
 
@@ -764,7 +764,7 @@ class ContMap(NDDataArray):
 
         self.fake_sources = sources
 
-    def detect_sources(self, threshold=3, box_size=5):
+    def detect_sources(self, threshold=3, box_size=5, detect_on="snr"):
         """Detect sources with find local peaks above a specified threshold value.
 
         The detection is made on the SNR map, and return an :class`astropy.table.Table` with columns ``ID, ra, dec, SNR``.
@@ -779,12 +779,19 @@ class ContMap(NDDataArray):
             The size of the local region to search for peaks at every point
             in ``data``.  If ``box_size`` is a scalar, then the region shape
             will be ``(box_size, box_size)``.
+        detect_on : str (None|signal|uncertainty|snr|residual)
+            do the detection on given array, default 'snr'
 
         Notes
         -----
         The edge of the map is cropped by the box_size in order to insure proper subpixel fitting.
         """
-        detect_on = self.snr.filled(0)
+
+        detect_on = self._to_ma(item=detect_on)[0].filled(0)
+
+        if isinstance(threshold, u.Quantity):
+            detect_on = detect_on.to(threshold.unit).value
+            threshold = threshold.value
 
         if self.mask is not None:
             # Make sure that there is no detection on the edge of the map
