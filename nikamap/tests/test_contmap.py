@@ -593,6 +593,11 @@ def test_contmap_detect_sources(nms):
     # Relative tolerance is rather low to pass the case of multiple sources...
     npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
 
+    # Without background estimation
+    nm.phot_sources(peak=False, psf=True, background=False)
+    # Relative tolerance is rather low to pass the case of multiple sources...
+    npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
+
     # Tolerance coming from round wcs transformations
     npt.assert_allclose(x_fake, x[ordering], atol=1e-11)
     npt.assert_allclose(y_fake, y[ordering], atol=1e-11)
