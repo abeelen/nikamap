@@ -12,12 +12,12 @@ from astropy import units as u
 from astropy.wcs import WCS, InconsistentAxisTypesError
 from astropy.wcs.utils import proj_plane_pixel_scales
 from astropy.coordinates import match_coordinates_sky
-
 from astropy.modeling import models
 from astropy.modeling.utils import ellipse_extent
 from astropy.modeling.fitting import LevMarLSQFitter
 
 from astropy.stats.funcs import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
+from astropy.stats import SigmaClip
 
 from astropy.convolution import Kernel2D, Box2DKernel, Gaussian2DKernel
 from astropy.convolution.kernels import _round_up_to_odd_integer
@@ -907,7 +907,26 @@ class ContMap(NDDataArray):
             mask = sep2d > dist_threshold
             cat[ref_cat.meta["name"]] = MaskedColumn(idx, mask=mask)
 
-    def phot_sources(self, sources=None, peak=True, psf=True):
+    def phot_sources(
+        self, sources=None, peak=True, psf=True, background=True, background_clipping=3, grouping_threshold=3
+    ):
+        """_summary_
+
+        Parameters
+        ----------
+        sources : :class:`astropy.table.Table`, optional
+            Catalog on which to do the photometry, by default None
+        peak : bool, optional
+            Do peak photometry, by default True
+        psf : bool, optional
+            Do psf photometry, by default True
+        background : bool, optional
+            Estimate and remove a background, by default True
+        background_clipping : int, optional
+            Sigma clipping used for the background, by default 3
+        grouping_threshold : int, optional
+            Grouping distance for psf photometry in unit of psf fwhm, by default 3
+        """
         if sources is None:
             sources = self.sources
 
@@ -937,8 +956,11 @@ class ContMap(NDDataArray):
             psf_model.x_0.fixed = True
             psf_model.y_0.fixed = True
 
-            daogroup = DAOGroup(3 * self.beam.major.to(u.pix, self._pixel_scale).value)
-            mmm_bkg = MedianBackground()
+            daogroup = DAOGroup(grouping_threshold * self.beam.major.to(u.pix, self._pixel_scale).value)
+            if background:
+                mmm_bkg = MedianBackground(sigma_clip=SigmaClip(sigma=background_clipping, stdfunc="mad_std"))
+            else:
+                mmm_bkg = None
 
             photometry = BasicPSFPhotometry(
                 group_maker=daogroup, bkg_estimator=mmm_bkg, psf_model=psf_model, fitter=LevMarLSQFitter(), fitshape=11
