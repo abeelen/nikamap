@@ -1,6 +1,9 @@
 master
 ======
 
+Added
+-----
+* photometric background can now be optionnal
 
 Version 0.5
 ===========
