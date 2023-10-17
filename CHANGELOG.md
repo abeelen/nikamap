@@ -1,9 +1,17 @@
 master
 ======
 
+Version 1.0
+===========
+
+Switch to photutils v1.9, incompatible with previous version
+
 Added
 -----
 * photometric background can now be optionnal
+* photometric background is done locally
+* psf fitting can fit for source position
+
 
 Version 0.5
 ===========
