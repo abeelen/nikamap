@@ -1,8 +1,7 @@
 numpy>=1.11
 scipy>=1.0.0
 matplotlib>=1.5
-astropy>=2.0
-photutils>=0.7
+photutils>=1.9
 scikit-image
 powspec
 reproject

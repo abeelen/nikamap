@@ -32,7 +32,7 @@ Features
 
 Requirements
 ------------
-You need python 3.4 or later to run `nikamap`. You will also need `numpy`, `scipy`, `matplotlib`, `astropy>=2.0` and `photutils>=0.5`.
+You need python 3.4 or later to run `nikamap`. You will also need `numpy`, `scipy`, `matplotlib`, `astropy>=2.0` and `photutils>=1.9`.
 
 Installation
 ------------
