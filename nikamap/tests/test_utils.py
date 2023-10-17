@@ -16,7 +16,6 @@ import astropy.units as u
 
 
 def test_shrink_mask():
-
     kernel_size = 3
     mask_size = 48
 
@@ -38,7 +37,6 @@ def test_shrink_mask():
 
 
 def test_pos_in_mask():
-
     mask = np.asarray([[True, False], [False, False]])
     pos = [[0, 0], [0.5, 0.5], [1, 1]]
 
@@ -50,7 +48,6 @@ def test_pos_in_mask():
 
 
 def test_cat_to_sc():
-
     cat = Table(data=[[0, 1], [0, 1]], names=["ra", "dec"], dtype=[float, float])
     cat["ra"].unit = "deg"
     cat["dec"].unit = "deg"
@@ -95,7 +92,6 @@ def test_pos_uniform():
 
 
 def test_pos_gridded():
-
     shape = (9, 21)
     x, y, f = pos_gridded(nsources=3**2, shape=shape)
     assert np.all(
@@ -129,7 +125,6 @@ def test_pos_gridded():
 
 
 def test_pos_list():
-
     shape = (5, 20)
     nsources = 20
     x_mean = np.linspace(0, 19, nsources)
@@ -167,7 +162,6 @@ def test_pos_list():
 
 
 def test_fft_2d_hanning_assertion():
-
     shape = 5
     mask = np.ones((shape, shape), dtype=bool)
 
@@ -179,7 +173,6 @@ def test_fft_2d_hanning_assertion():
 
 
 def test_fft_2d_hanning():
-
     # Min hann filter is 5 x 5
     shape = 15
     size = 5
@@ -238,7 +231,6 @@ def gen_pkfield(npix=32, alpha=-11.0 / 3, fknee=1, res=1):
 
 
 def test_fake_data():
-
     # Dummy test for now
     nm = fake_data()
 

@@ -25,17 +25,19 @@ from astropy.stats import SigmaClip
 from astropy.stats.funcs import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
 from astropy.table import Column, MaskedColumn, Table
 from astropy.utils.console import ProgressBar
+from astropy.utils.exceptions import AstropyWarning
 from photutils.background import LocalBackground, MedianBackground
 from photutils.centroids import centroid_2dg  # , centroid_sources
 from photutils.datasets import make_gaussian_sources_image
 from photutils.detection import find_peaks
 from photutils.psf import PSFPhotometry, SourceGrouper
+from powspec import power_spectral_density
 from scipy import signal, stats
 from scipy.optimize import curve_fit
 
 from .utils import (CircularGaussianPSF, _shuffled_average, beam_convolve,
                     cat_to_sc, cpu_count, meta_to_header, pos_uniform,
-                    setup_ax, shrink_mask)
+                    setup_ax, shrink_mask, xy_to_world)
 
 Jy_beam = u.Jy / u.beam
 
@@ -816,15 +818,7 @@ class ContMap(NDDataArray):
             sources.rename_column("peak_value", "SNR")
 
             # Transform pixel coordinates column to world coordinates
-            lonlat = self.wcs.pixel_to_world_values(sources["x_centroid"], sources["y_centroid"])
-            for key, item, unit in zip(self.wcs.world_axis_physical_types, lonlat, self.wcs.world_axis_units):
-                sources[key] = item * u.Unit(unit)
-
-            if "pos.eq.ra" in sources.colnames and "pos.eq.dec" in sources.colnames:
-                sources.rename_columns(["pos.eq.ra", "pos.eq.dec"], ["ra", "dec"])
-                # For compatibility issues
-                sources["_ra"] = sources["ra"]
-                sources["_dec"] = sources["dec"]
+            sources = xy_to_world(sources, self.wcs, "x_centroid", "y_centroid")
 
             # Transform to masked Table here to avoid future warnings
             sources = Table(sources, masked=True)
@@ -877,7 +871,14 @@ class ContMap(NDDataArray):
             cat[ref_cat.meta["name"]] = MaskedColumn(idx, mask=mask)
 
     def phot_sources(
-        self, sources=None, peak=True, psf=True, background=True, background_clipping=3, grouping_threshold=3
+        self,
+        sources=None,
+        peak=True,
+        psf=True,
+        fixed_psf=True,
+        background=True,
+        background_clipping=3,
+        grouping_threshold=3,
     ):
         """_summary_
 
@@ -889,6 +890,8 @@ class ContMap(NDDataArray):
             Do peak photometry, by default True
         psf : bool, optional
             Do psf photometry, by default True
+        fixed_psf : bool, optional,
+            Fix sources positions in the psf fit, default True
         background : bool, optional
             Estimate and remove a background, by default True
         background_clipping : int, optional
@@ -922,8 +925,9 @@ class ContMap(NDDataArray):
             # psf_model = IntegratedGaussianPRF(sigma=sigma_psf)
             psf_model = CircularGaussianPSF(sigma=sigma_psf)
 
-            psf_model.x_0.fixed = True
-            psf_model.y_0.fixed = True
+            if fixed_psf:
+                psf_model.x_0.fixed = True
+                psf_model.y_0.fixed = True
 
             source_grouper = None
             if len(xx) > 1:
@@ -946,24 +950,27 @@ class ContMap(NDDataArray):
                 [Column(xx, name="x_0"), Column(yy, name="y_0"), Column(self.data[y_idx, x_idx], name="flux_init")]
             )
 
-            # Fill the mask with nan to perform correct photometry on the edge
-            # of the mask, and catch numpy & astropy warnings
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", AstropyWarning)
-                warnings.simplefilter("ignore", RuntimeWarning)
-                result_tab = photometry(
-                    self.data,
-                    mask=self.mask,
-                    error=1 / np.sqrt(self.weights),
-                    init_params=positions,
-                )
+            result_tab = photometry(
+                self.data,
+                mask=self.mask,
+                error=1 / np.sqrt(self.weights),
+                init_params=positions,
+            )
 
             result_tab.sort("id")
-            for _source, _tab in zip(["flux_psf", "eflux_psf"], ["flux_fit", "flux_unc"]):
+            for _source, _tab in zip(["flux_psf", "eflux_psf"], ["flux_fit", "flux_err"]):
                 # Sometimes the returning fluxes has no uncertainty....
                 if _tab in result_tab.colnames:
                     sources[_source] = Column(result_tab[_tab] * psf_model(0, 0), unit=self.unit * u.beam)
-            sources["group_id"] = result_tab["group_id"]
+            for key in ["local_bkg", "group_id", "qfit", "cfit"]:
+                sources[key] = result_tab[key]
+
+            if not fixed_psf:
+                for key in ["x_fit", "x_err", "y_fit", "y_err"]:
+                    sources[key] = result_tab[key]
+
+                # Transform pixel coordinates column to world coordinates
+                sources = xy_to_world(sources, self.wcs, "x_fit", "y_fit")
 
             self._residual = photometry.make_residual_image(self.data, (10, 10))
 
@@ -1211,7 +1218,7 @@ class ContMap(NDDataArray):
         else:
             return std
 
-    def check_SNR(self, ax=None, bins="auto", range=(-6, 3), return_mean=False):
+    def check_SNR(self, ax=None, bins="auto", range=(-6, 3), return_mean=False, **kwargs):
         """Perform normality test on SNR map.
 
         This perform a gaussian fit on snr pixels histogram clipped between -6 and 3
@@ -1264,7 +1271,7 @@ class ContMap(NDDataArray):
         else:
             return std
 
-    def check_SNR_simple(self):
+    def check_SNR_simple(self, **kwargs):
         """Perform normality test on SNR maps
 
         This perform a simple mad absolute deviation on snr pixels
@@ -1272,7 +1279,7 @@ class ContMap(NDDataArray):
         snr = self.snr.compressed()
         return np.median(np.abs(snr - np.median(snr)))
 
-    def normalize_uncertainty(self, factor=None, method="check_SNR"):
+    def normalize_uncertainty(self, factor=None, method="check_SNR", **kwargs):
         """Normalize the uncertainty.value
 
         Parameters
@@ -1288,9 +1295,9 @@ class ContMap(NDDataArray):
             if method is None:
                 raise ValueError("You must provide either `factor` or `method`.")
             elif method == "check_SNR_simple":
-                factor = self.check_SNR_simple()
+                factor = self.check_SNR_simple(**kwargs)
             elif method == "check_SNR":
-                factor = self.check_SNR()
+                factor = self.check_SNR(**kwargs)
 
         if isinstance(self.uncertainty, StdDevUncertainty):
             self.uncertainty.array *= factor
