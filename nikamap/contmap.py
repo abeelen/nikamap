@@ -25,14 +25,11 @@ from astropy.stats import SigmaClip
 from astropy.stats.funcs import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
 from astropy.table import Column, MaskedColumn, Table
 from astropy.utils.console import ProgressBar
-from astropy.utils.exceptions import AstropyWarning
-from astropy.wcs import WCS, InconsistentAxisTypesError
-from astropy.wcs.utils import proj_plane_pixel_scales
-from photutils.background import MedianBackground
-from photutils.centroids import centroid_2dg, centroid_sources
+from photutils.background import LocalBackground, MedianBackground
+from photutils.centroids import centroid_2dg  # , centroid_sources
 from photutils.datasets import make_gaussian_sources_image
-from photutils.psf import BasicPSFPhotometry, DAOGroup
-from powspec import power_spectral_density
+from photutils.detection import find_peaks
+from photutils.psf import PSFPhotometry, SourceGrouper
 from scipy import signal, stats
 from scipy.optimize import curve_fit
 
@@ -801,16 +798,16 @@ class ContMap(NDDataArray):
         # TODO: Have a look at
         # ~photutils.psf.IterativelySubtractedPSFPhotometry
 
-        # See #667 of photutils
         try:
             # To avoid bad fit warnings...
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", AstropyWarning)
-                sources = photutils.detection.find_peaks(
+                sources = find_peaks(
                     detect_on,
                     threshold=threshold,
                     mask=self.mask,
                     box_size=box_size,
+                    centroid_func=centroid_2dg,
                 )
         except InconsistentAxisTypesError:
             sources = []
@@ -818,21 +815,8 @@ class ContMap(NDDataArray):
         if sources is not None and len(sources) > 0:
             sources.rename_column("peak_value", "SNR")
 
-            # To avoid #1294 photutils issue, compute the centroid outside of find_peak
-            x_centroids, y_centroids = centroid_sources(
-                detect_on,
-                sources["x_peak"],
-                sources["y_peak"],
-                box_size=box_size,
-                mask=self.mask,
-                centroid_func=centroid_2dg,
-            )
-
-            sources["x_centroid"] = x_centroids
-            sources["y_centroid"] = y_centroids
-
-            lonlat = self.wcs.pixel_to_world_values(x_centroids, y_centroids)
-
+            # Transform pixel coordinates column to world coordinates
+            lonlat = self.wcs.pixel_to_world_values(sources["x_centroid"], sources["y_centroid"])
             for key, item, unit in zip(self.wcs.world_axis_physical_types, lonlat, self.wcs.world_axis_units):
                 sources[key] = item * u.Unit(unit)
 
@@ -848,8 +832,9 @@ class ContMap(NDDataArray):
             sources.meta["threshold"] = threshold
 
             # Sort by decreasing SNR
-            sources.sort("SNR")
-            sources.reverse()
+            if "SNR" in sources.colnames:
+                sources.sort("SNR")
+                sources.reverse()
 
             sources.add_column(Column(np.arange(len(sources)), name="ID"), 0)
 
@@ -940,18 +925,25 @@ class ContMap(NDDataArray):
             psf_model.x_0.fixed = True
             psf_model.y_0.fixed = True
 
-            daogroup = DAOGroup(grouping_threshold * self.beam.major.to(u.pix, self._pixel_scale).value)
-            if background:
-                mmm_bkg = MedianBackground(sigma_clip=SigmaClip(sigma=background_clipping, stdfunc="mad_std"))
-            else:
-                mmm_bkg = None
+            source_grouper = None
+            if len(xx) > 1:
+                source_grouper = SourceGrouper(grouping_threshold * self.beam.major.to(u.pix, self._pixel_scale).value)
 
-            photometry = BasicPSFPhotometry(
-                group_maker=daogroup, bkg_estimator=mmm_bkg, psf_model=psf_model, fitter=LevMarLSQFitter(), fitshape=11
+            local_bkg = None
+            if background:
+                bkgstat = MedianBackground(sigma_clip=SigmaClip(sigma=background_clipping, stdfunc="mad_std"))
+                local_bkg = LocalBackground(5, 10, bkgstat)
+
+            photometry = PSFPhotometry(
+                grouper=source_grouper,
+                localbkg_estimator=local_bkg,
+                psf_model=psf_model,
+                fitter=LevMarLSQFitter(),
+                fit_shape=11,
             )
 
             positions = Table(
-                [Column(xx, name="x_0"), Column(yy, name="y_0"), Column(self.data[y_idx, x_idx], name="flux_0")]
+                [Column(xx, name="x_0"), Column(yy, name="y_0"), Column(self.data[y_idx, x_idx], name="flux_init")]
             )
 
             # Fill the mask with nan to perform correct photometry on the edge
@@ -960,7 +952,10 @@ class ContMap(NDDataArray):
                 warnings.simplefilter("ignore", AstropyWarning)
                 warnings.simplefilter("ignore", RuntimeWarning)
                 result_tab = photometry(
-                    image=np.ma.array(self.data, mask=self.mask).filled(np.nan), init_guesses=positions
+                    self.data,
+                    mask=self.mask,
+                    error=1 / np.sqrt(self.weights),
+                    init_params=positions,
                 )
 
             result_tab.sort("id")
@@ -970,7 +965,7 @@ class ContMap(NDDataArray):
                     sources[_source] = Column(result_tab[_tab] * psf_model(0, 0), unit=self.unit * u.beam)
             sources["group_id"] = result_tab["group_id"]
 
-            self._residual = photometry.get_residual_image()
+            self._residual = photometry.make_residual_image(self.data, (10, 10))
 
         self.sources = sources
 
