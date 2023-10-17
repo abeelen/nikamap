@@ -581,22 +581,6 @@ def test_contmap_detect_sources(nms):
 
     x_fake, y_fake = nm.wcs.wcs_world2pix(nm.fake_sources["ra"], nm.fake_sources["dec"], 0)
     x, y = nm.wcs.wcs_world2pix(nm.sources["ra"], nm.sources["dec"], 0)
-    nm = nms
-    nm.detect_sources()
-    nm.phot_sources(peak=True, psf=False)
-    # Relative and absolute tolerance are really bad here for the case where
-    # the sources are not centered on pixels... Otherwise it give perfect
-    # answer when there is no noise
-    npt.assert_allclose(nm.sources["flux_peak"].to(u.Jy).value, [1] * len(nm.sources), atol=1e-1, rtol=1e-1)
-
-    nm.phot_sources(peak=False, psf=True)
-    # Relative tolerance is rather low to pass the case of multiple sources...
-    npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
-
-    # Without background estimation
-    nm.phot_sources(peak=False, psf=True, background=False)
-    # Relative tolerance is rather low to pass the case of multiple sources...
-    npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
 
     # Tolerance coming from round wcs transformations
     npt.assert_allclose(x_fake, x[ordering], atol=1e-11)
@@ -620,6 +604,25 @@ def test_contmap_phot_sources(nms):
 
     nm.phot_sources(peak=False, psf=True)
     # Relative tolerance is rather low to pass the case of multiple sources...
+    npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
+
+    # Without background estimation
+    nm.phot_sources(peak=False, psf=True, background=False)
+    # Relative tolerance is rather low to pass the case of multiple sources...
+    npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
+
+    # Without background estimation
+    nm.phot_sources(peak=False, psf=True, fixed_psf=False)
+    assert "x_fit" in nm.sources.colnames
+    assert "y_fit" in nm.sources.colnames
+    npt.assert_allclose(nm.sources["x_fit"], nm.sources["x_centroid"], atol=1e-10)
+    npt.assert_allclose(nm.sources["y_fit"], nm.sources["y_centroid"], atol=1e-10)
+
+    ordering = nm.fake_sources["find_peak"]
+
+    # Relative tolerance is rather low to pass the case of multiple sources...
+    npt.assert_allclose(nm.fake_sources["ra"], nm.sources["ra"][ordering], rtol=1e-6)
+    npt.assert_allclose(nm.fake_sources["dec"], nm.sources["dec"][ordering], rtol=1e-6)
     npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
 
 

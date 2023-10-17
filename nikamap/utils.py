@@ -557,3 +557,21 @@ def _shuffled_average(*args, datas=None, weights=None):
     outputs = shuffled_average(datas, weights, n_shuffle)
 
     return outputs
+
+
+def xy_to_world(sources, wcs, x_key, y_key):
+    # Transform pixel coordinates column to world coordinates
+    lonlat = wcs.pixel_to_world_values(sources[x_key], sources[y_key])
+    for key, item, unit in zip(wcs.world_axis_physical_types, lonlat, wcs.world_axis_units):
+        sources[key] = item * u.Unit(unit)
+
+    if "pos.eq.ra" in sources.colnames and "pos.eq.dec" in sources.colnames:
+        for key in ["ra", "dec"]:
+            if key in sources.colnames:
+                del sources[key]
+        sources.rename_columns(["pos.eq.ra", "pos.eq.dec"], ["ra", "dec"])
+        # For compatibility issues
+        sources["_ra"] = sources["ra"]
+        sources["_dec"] = sources["dec"]
+
+    return sources
