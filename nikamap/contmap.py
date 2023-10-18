@@ -7,11 +7,11 @@ from itertools import product
 from pathlib import Path
 
 import numpy as np
-import photutils
 from astropy import units as u
 from astropy.convolution import Box2DKernel, Gaussian2DKernel, Kernel2D
 from astropy.convolution.kernels import _round_up_to_odd_integer
 from astropy.coordinates import match_coordinates_sky
+from astropy.io import fits, registry
 from astropy.modeling import models
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.modeling.utils import ellipse_extent
@@ -26,6 +26,8 @@ from astropy.stats.funcs import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
 from astropy.table import Column, MaskedColumn, Table
 from astropy.utils.console import ProgressBar
 from astropy.utils.exceptions import AstropyWarning
+from astropy.wcs import WCS, InconsistentAxisTypesError
+from astropy.wcs.utils import proj_plane_pixel_scales
 from photutils.background import LocalBackground, MedianBackground
 from photutils.centroids import centroid_2dg  # , centroid_sources
 from photutils.datasets import make_gaussian_sources_image
@@ -877,6 +879,7 @@ class ContMap(NDDataArray):
         psf=True,
         fixed_psf=True,
         background=True,
+        local_background=False,
         background_clipping=3,
         grouping_threshold=3,
     ):
@@ -893,7 +896,9 @@ class ContMap(NDDataArray):
         fixed_psf : bool, optional,
             Fix sources positions in the psf fit, default True
         background : bool, optional
-            Estimate and remove a background, by default True
+            Estimate and remove a global median background, by default True
+        local_background : bool, optional
+            Estimate and remove a local background, by default True
         background_clipping : int, optional
             Sigma clipping used for the background, by default 3
         grouping_threshold : int, optional
@@ -915,6 +920,7 @@ class ContMap(NDDataArray):
             sources["eflux_peak"] = Column(self.uncertainty.array[y_idx, x_idx], unit=self.unit * u.beam)
 
         if psf:
+            data = self.data
             # BasicPSFPhotometry with fixed positions
 
             sigma_psf = self.beam.stddev_maj.to(u.pix, self._pixel_scale).value
@@ -933,9 +939,13 @@ class ContMap(NDDataArray):
             if len(xx) > 1:
                 source_grouper = SourceGrouper(grouping_threshold * self.beam.major.to(u.pix, self._pixel_scale).value)
 
-            local_bkg = None
+            bkgstat = MedianBackground(sigma_clip=SigmaClip(sigma=background_clipping, stdfunc="mad_std"))
+
             if background:
-                bkgstat = MedianBackground(sigma_clip=SigmaClip(sigma=background_clipping, stdfunc="mad_std"))
+                data = data - bkgstat(data)
+
+            local_bkg = None
+            if local_background:
                 local_bkg = LocalBackground(5, 10, bkgstat)
 
             photometry = PSFPhotometry(
@@ -951,7 +961,7 @@ class ContMap(NDDataArray):
             )
 
             result_tab = photometry(
-                self.data,
+                data,
                 mask=self.mask,
                 error=1 / np.sqrt(self.weights),
                 init_params=positions,
@@ -972,7 +982,7 @@ class ContMap(NDDataArray):
                 # Transform pixel coordinates column to world coordinates
                 sources = xy_to_world(sources, self.wcs, "x_fit", "y_fit")
 
-            self._residual = photometry.make_residual_image(self.data, (10, 10))
+            self._residual = photometry.make_residual_image(data, (10, 10))
 
         self.sources = sources
 
