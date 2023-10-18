@@ -1,6 +1,11 @@
 master
 ======
 
+* Added
+-------
+* Photometry can use global or local background
+
+
 Version 1.0
 ===========
 
