@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from ..nikamap import NikaMap, NikaFits, retrieve_primary_keys
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def generate_fits(tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp("nm_map")
     filename = str(tmpdir.join("map.fits"))
