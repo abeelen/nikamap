@@ -1,61 +1,45 @@
 from __future__ import absolute_import, division, print_function
 
+import warnings
+from copy import deepcopy
+from functools import partial
 from itertools import product
 from pathlib import Path
 
 import numpy as np
-from copy import deepcopy
-from functools import partial
-
-from astropy.io import fits, registry
 from astropy import units as u
+from astropy.convolution import Box2DKernel, Gaussian2DKernel, Kernel2D
+from astropy.convolution.kernels import _round_up_to_odd_integer
+from astropy.coordinates import match_coordinates_sky
+from astropy.io import fits, registry
+from astropy.modeling import models
+from astropy.modeling.fitting import LevMarLSQFitter
+from astropy.modeling.utils import ellipse_extent
+from astropy.nddata import (Cutout2D, InverseVariance, NDDataArray,
+                            NDUncertainty, StdDevUncertainty,
+                            VarianceUncertainty)
+from astropy.nddata.ccddata import (_known_uncertainties, _unc_cls_to_name,
+                                    _unc_name_to_cls,
+                                    _uncertainty_unit_equivalent_to_parent)
+from astropy.stats import SigmaClip
+from astropy.stats.funcs import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
+from astropy.table import Column, MaskedColumn, Table
+from astropy.utils.console import ProgressBar
+from astropy.utils.exceptions import AstropyWarning
 from astropy.wcs import WCS, InconsistentAxisTypesError
 from astropy.wcs.utils import proj_plane_pixel_scales
-from astropy.coordinates import match_coordinates_sky
-from astropy.modeling import models
-from astropy.modeling.utils import ellipse_extent
-from astropy.modeling.fitting import LevMarLSQFitter
-
-from astropy.stats.funcs import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
-from astropy.stats import SigmaClip
-
-from astropy.convolution import Kernel2D, Box2DKernel, Gaussian2DKernel
-from astropy.convolution.kernels import _round_up_to_odd_integer
-
-from astropy.table import Table, MaskedColumn, Column
-from astropy.utils.console import ProgressBar
-
-from astropy.nddata import NDDataArray, NDUncertainty
-from astropy.nddata import StdDevUncertainty, InverseVariance, VarianceUncertainty
-from astropy.nddata import Cutout2D
-from astropy.nddata.ccddata import _known_uncertainties, _uncertainty_unit_equivalent_to_parent
-from astropy.nddata.ccddata import _unc_cls_to_name, _unc_name_to_cls
-
-
-from photutils.detection import find_peaks
-from photutils.psf import PSFPhotometry
-from photutils.psf import SourceGrouper
-from photutils.background import MedianBackground, LocalBackground
-from photutils.datasets import make_gaussian_sources_image
+from photutils.background import LocalBackground, MedianBackground
 from photutils.centroids import centroid_2dg  # , centroid_sources
-
-
-from scipy import signal
-from scipy import stats
+from photutils.datasets import make_gaussian_sources_image
+from photutils.detection import find_peaks
+from photutils.psf import PSFPhotometry, SourceGrouper
+from powspec import power_spectral_density
+from scipy import signal, stats
 from scipy.optimize import curve_fit
 
-import warnings
-from astropy.utils.exceptions import AstropyWarning
-
-from .utils import _shuffled_average, cpu_count
-from .utils import beam_convolve, CircularGaussianPSF
-from .utils import pos_uniform, cat_to_sc
-from .utils import shrink_mask
-from .utils import setup_ax
-from .utils import meta_to_header
-from .utils import xy_to_world
-
-from powspec import power_spectral_density
+from .utils import (CircularGaussianPSF, _shuffled_average, beam_convolve,
+                    cat_to_sc, cpu_count, meta_to_header, pos_uniform,
+                    setup_ax, shrink_mask, xy_to_world)
 
 Jy_beam = u.Jy / u.beam
 
@@ -1783,7 +1767,7 @@ class ContMap(NDDataArray):
                 raise ValueError("only a numpy.ndarray hits can be saved.")
 
             # Convert boolean mask to uint since io.fits cannot handle bool.
-            hduHits = fits.ImageHDU(self.hits.astype(np.uint8), header, name=hdu_hits)
+            hduHits = fits.ImageHDU(self.hits.astype(np.uint32), header, name=hdu_hits)
             hdus.append(hduHits)
 
         hdulist = fits.HDUList(hdus)

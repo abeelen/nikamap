@@ -3,5 +3,5 @@ scipy>=1.0.0
 matplotlib>=1.5
 photutils>=1.9
 scikit-image
-powspec
+powspec>=0.3
 # reproject
