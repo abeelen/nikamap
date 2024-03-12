@@ -78,7 +78,7 @@ INSTALL_REQUIRES = [
     "astropy>5.3",
     "photutils<=1.8",
     "scikit_image",
-    "powspec",
+    "powspec>=0.3",
 ]
 SETUP_REQUIRES = ["pytest-runner"]
 EXTRA_REQUIRE = {"stacking": ['reproject']}
