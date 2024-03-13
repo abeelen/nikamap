@@ -75,11 +75,11 @@ INSTALL_REQUIRES = [
     "numpy",
     "scipy",
     "matplotlib",
-    "astropy>5.3",
+    "astropy>5.2",
     "photutils<=1.8",
     "scikit_image",
-    "powspec>=0.3",
+    "powspec>=0.2",
 ]
 SETUP_REQUIRES = ["pytest-runner"]
 EXTRA_REQUIRE = {"stacking": ['reproject']}
-TESTS_REQUIRE = ["pytest", "pytest-cov", "pytest-mpl"]
+TESTS_REQUIRE = ["pytest", "pytest-cov", "pytest-mpl", "reproject"]
