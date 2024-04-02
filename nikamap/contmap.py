@@ -15,12 +15,13 @@ from astropy.io import fits, registry
 from astropy.modeling import models
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.modeling.utils import ellipse_extent
-from astropy.nddata import (Cutout2D, InverseVariance, NDDataArray,
-                            NDUncertainty, StdDevUncertainty,
-                            VarianceUncertainty)
-from astropy.nddata.ccddata import (_known_uncertainties, _unc_cls_to_name,
-                                    _unc_name_to_cls,
-                                    _uncertainty_unit_equivalent_to_parent)
+from astropy.nddata import Cutout2D, InverseVariance, NDDataArray, NDUncertainty, StdDevUncertainty, VarianceUncertainty
+from astropy.nddata.ccddata import (
+    _known_uncertainties,
+    _unc_cls_to_name,
+    _unc_name_to_cls,
+    _uncertainty_unit_equivalent_to_parent,
+)
 from astropy.stats import SigmaClip
 from astropy.stats.funcs import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
 from astropy.table import Column, MaskedColumn, Table
@@ -37,9 +38,18 @@ from powspec import power_spectral_density
 from scipy import signal, stats
 from scipy.optimize import curve_fit
 
-from .utils import (CircularGaussianPSF, _shuffled_average, beam_convolve,
-                    cat_to_sc, cpu_count, meta_to_header, pos_uniform,
-                    setup_ax, shrink_mask, xy_to_world)
+from .utils import (
+    CircularGaussianPSF,
+    _shuffled_average,
+    beam_convolve,
+    cat_to_sc,
+    cpu_count,
+    meta_to_header,
+    pos_uniform,
+    setup_ax,
+    shrink_mask,
+    xy_to_world,
+)
 
 Jy_beam = u.Jy / u.beam
 
@@ -877,7 +887,8 @@ class ContMap(NDDataArray):
         sources=None,
         peak=True,
         psf=True,
-        fixed_psf=True,
+        fixed_positions=True,
+        fixed_sigma=True,
         background=True,
         local_background=False,
         background_clipping=3,
@@ -893,8 +904,10 @@ class ContMap(NDDataArray):
             Do peak photometry, by default True
         psf : bool, optional
             Do psf photometry, by default True
-        fixed_psf : bool, optional,
-            Fix sources positions in the psf fit, default True
+        fixed_positions : bool, optional,
+            Fix sources positions in the fit, default True
+        fixed_sigma: bool, optional
+            Fix the sigma of the psf in the fit, default True
         background : bool, optional
             Estimate and remove a global median background, by default True
         local_background : bool, optional
@@ -931,9 +944,14 @@ class ContMap(NDDataArray):
             # psf_model = IntegratedGaussianPRF(sigma=sigma_psf)
             psf_model = CircularGaussianPSF(sigma=sigma_psf)
 
-            if fixed_psf:
+            if fixed_positions:
                 psf_model.x_0.fixed = True
                 psf_model.y_0.fixed = True
+
+            if fixed_sigma:
+                psf_model.sigma.fixed = True
+            else:
+                psf_model.sigma.fixed = False
 
             source_grouper = None
             if len(xx) > 1:
@@ -975,12 +993,18 @@ class ContMap(NDDataArray):
             for key in ["local_bkg", "group_id", "qfit", "cfit"]:
                 sources[key] = result_tab[key]
 
-            if not fixed_psf:
+            if not fixed_positions:
                 for key in ["x_fit", "x_err", "y_fit", "y_err"]:
                     sources[key] = result_tab[key]
 
                 # Transform pixel coordinates column to world coordinates
                 sources = xy_to_world(sources, self.wcs, "x_fit", "y_fit")
+
+            if not fixed_sigma:
+                assert np.abs(self.wcs.wcs.cdelt[0]) == np.abs(self.wcs.wcs.cdelt[1]), "Non square pixel not supported"
+                unit = np.abs(self.wcs.wcs.cdelt[0]) * u.Unit(self.wcs.world_axis_units[0])
+                for key in ["sigma_fit", "sigma_err"]:
+                    sources[key.replace("sigma", "fwhm")] = gaussian_sigma_to_fwhm * result_tab[key] * unit
 
             self._residual = photometry.make_residual_image(data, (10, 10))
 

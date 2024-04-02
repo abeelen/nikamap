@@ -611,19 +611,26 @@ def test_contmap_phot_sources(nms):
     # Relative tolerance is rather low to pass the case of multiple sources...
     npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
 
-    # Without background estimation
-    nm.phot_sources(peak=False, psf=True, fixed_psf=False)
+    # Without fixed positions
+    nm.phot_sources(peak=False, psf=True, fixed_positions=False)
     assert "x_fit" in nm.sources.colnames
     assert "y_fit" in nm.sources.colnames
     npt.assert_allclose(nm.sources["x_fit"], nm.sources["x_centroid"], atol=1e-10)
     npt.assert_allclose(nm.sources["y_fit"], nm.sources["y_centroid"], atol=1e-10)
+
+    # Without fixed sigma
+    nm.phot_sources(peak=False, psf=True, fixed_sigma=False)
+    assert "fwhm_fit" in nm.sources.colnames
+    # High tolerance for the grid sources...
+    npt.assert_allclose(nm.sources["fwhm_fit"].to("deg").value, nm.beam._major.to("deg").value, atol=1e-5)
+    npt.assert_allclose(nm.sources["fwhm_fit"].to("deg").value, nm.beam._minor.to("deg").value, atol=1e-5)
 
     ordering = nm.fake_sources["find_peak"]
 
     # Relative tolerance is rather low to pass the case of multiple sources...
     npt.assert_allclose(nm.fake_sources["ra"], nm.sources["ra"][ordering], rtol=1e-6)
     npt.assert_allclose(nm.fake_sources["dec"], nm.sources["dec"][ordering], rtol=1e-6)
-    npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
+    npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-5)
 
 
 def test_contmap_match_filter(nms):

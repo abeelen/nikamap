@@ -4,7 +4,8 @@ master
 * Added
 -------
 * Photometry can use global or local background
-
+* `phot_source` option `fixed_psf` renamed `fixed_positions`
+* `phot_source` option `fixed_sigma` to allow for varying sigma in psf fiting
 
 Version 1.0
 ===========
@@ -17,6 +18,16 @@ Added
 * photometric background is done locally
 * psf fitting can fit for source position
 
+Version 0.6
+===========
+
+Added
+-----
+* Last version compatible with photutils < 0.9
+
+Fixed
+-----
+* hits are save as uint32 to avoid overflow
 
 Version 0.5
 ===========
