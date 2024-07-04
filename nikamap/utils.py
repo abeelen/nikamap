@@ -1,22 +1,21 @@
 from __future__ import absolute_import, division, print_function
 
+import json
+import multiprocessing
 import os
-import numpy as np
 import warnings
 
-from scipy import signal
-
 import matplotlib.pyplot as plt
-import multiprocessing
-
-from astropy.io import fits
+import numpy as np
 from astropy import units as u
-from astropy.wcs import WCS
-from astropy.coordinates import SkyCoord
-from astropy.modeling import Parameter, Fittable2DModel
-from astropy.stats.funcs import gaussian_fwhm_to_sigma
-from astropy.nddata import StdDevUncertainty
 from astropy.convolution import CustomKernel, convolve_fft
+from astropy.coordinates import SkyCoord
+from astropy.io import fits
+from astropy.modeling import Fittable2DModel, Parameter
+from astropy.nddata import StdDevUncertainty
+from astropy.stats.funcs import gaussian_fwhm_to_sigma
+from astropy.wcs import WCS
+from scipy import signal
 
 Jy_beam = u.Jy / u.beam
 
@@ -281,9 +280,7 @@ def pos_uniform(shape=None, within=(0, 1), mask=None, nsources=1, peak_flux=1 * 
     return pos[:, 1], pos[:, 0], np.repeat(peak_flux, len(pos))
 
 
-def pos_gridded(
-    shape=None, within=(0, 1), mask=None, nsources=2**2, peak_flux=1 * u.mJy, wobble=False, wobble_frac=1
-):
+def pos_gridded(shape=None, within=(0, 1), mask=None, nsources=2**2, peak_flux=1 * u.mJy, wobble=False, wobble_frac=1):
     """Generate x, y gridded position within a mask
 
     Parameters
@@ -364,7 +361,7 @@ def fake_data(
     nsources=32,
     peak_flux=None,
     pos_gen=pos_uniform,
-    **kwargs
+    **kwargs,
 ):
     """Build fake dataset"""
 
@@ -509,12 +506,20 @@ def meta_to_header(meta):
     header : :class:`~astropy.io.fits.Header`
         the corresponding header
     """
+    header = fits.Header()
+    for key, value in meta.items():
+        if key in ["history", "comment", "HISTORY", "COMMENT"]:
+            continue
+        if not isinstance(value, (int, float, str, complex, np.floating, np.integer, np.complexfloating, np.bool_)):
+            value = json.dumps(value)
 
-    header = {key: value for key, value in meta.items() if key not in ["history", "comment", "HISTORY", "COMMENT"]}
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=fits.verify.VerifyWarning)
-        header = fits.Header(header)
+        # from from CCDData._insert_in_metadata_fits_safe
+        if len(key) > 9 and len(str(value)) > 72:
+            short_name = key[:8]
+            header[f"HIERARCH {key.upper()}"] = (short_name, f"Shortened name for {key}")
+            header[short_name] = value
+        else:
+            header[key] = value
 
     for key in ["history", "comment"]:
         if key in meta:
