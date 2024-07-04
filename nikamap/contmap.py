@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import warnings
+from collections import defaultdict
 from copy import deepcopy
 from functools import partial
 from itertools import product
@@ -620,14 +621,16 @@ class ContMap(NDDataArray):
     @property
     def weights(self):
         """Return the weights as inverse variance regardless of the uncertainty type"""
-        if isinstance(self.uncertainty, InverseVariance):
-            weights = self.uncertainty.array
-        elif isinstance(self.uncertainty, StdDevUncertainty):
-            weights = 1 / self.uncertainty.array**2
-        elif isinstance(self.uncertainty, VarianceUncertainty):
-            weights = 1 / self.uncertainty.array
-        else:
-            raise ValueError("Unknown uncertainty type")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            if isinstance(self.uncertainty, InverseVariance):
+                weights = self.uncertainty.array
+            elif isinstance(self.uncertainty, StdDevUncertainty):
+                weights = 1 / self.uncertainty.array**2
+            elif isinstance(self.uncertainty, VarianceUncertainty):
+                weights = 1 / self.uncertainty.array
+            else:
+                raise ValueError("Unknown uncertainty type")
 
         return weights
 
@@ -957,22 +960,25 @@ class ContMap(NDDataArray):
             if len(xx) > 1:
                 source_grouper = SourceGrouper(grouping_threshold * self.beam.major.to(u.pix, self._pixel_scale).value)
 
-            bkgstat = MedianBackground(sigma_clip=SigmaClip(sigma=background_clipping, stdfunc="mad_std"))
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", AstropyWarning)
 
-            if background:
-                data = data - bkgstat(data)
+                bkgstat = MedianBackground(sigma_clip=SigmaClip(sigma=background_clipping, stdfunc="mad_std"))
 
-            local_bkg = None
-            if local_background:
-                local_bkg = LocalBackground(5, 10, bkgstat)
+                if background:
+                    data = data - bkgstat(data)
 
-            photometry = PSFPhotometry(
-                grouper=source_grouper,
-                localbkg_estimator=local_bkg,
-                psf_model=psf_model,
-                fitter=LevMarLSQFitter(),
-                fit_shape=11,
-            )
+                local_bkg = None
+                if local_background:
+                    local_bkg = LocalBackground(5, 10, bkgstat)
+
+                photometry = PSFPhotometry(
+                    grouper=source_grouper,
+                    localbkg_estimator=local_bkg,
+                    psf_model=psf_model,
+                    fitter=LevMarLSQFitter(),
+                    fit_shape=11,
+                )
 
             positions = Table(
                 [Column(xx, name="x_0"), Column(yy, name="y_0"), Column(self.data[y_idx, x_idx], name="flux_init")]
@@ -1062,20 +1068,20 @@ class ContMap(NDDataArray):
         else:
             mf_mask = None
 
+        # Convolve the data (peak for unit conservation)
+        kernel.normalize("peak")
+        kernel_sqr = kernel.array**2
+
         # Convolve the time (integral for time)
         # with warnings.catch_warnings():
         #     warnings.simplefilter('ignore', AstropyWarning)
         #     mf_time = convolve(self.time, kernel, normalize_kernel=False)*self.time.unit
         if self.hits is not None:
-            mf_hits = signal.fftconvolve(np.asarray(self.hits), kernel, mode="same")
+            mf_hits = signal.fftconvolve(np.asarray(self.hits), kernel_sqr, mode="same")
             if mf_mask is not None:
                 mf_hits[mf_mask] = 0
         else:
             mf_hits = None
-
-        # Convolve the data (peak for unit conservation)
-        kernel.normalize("peak")
-        kernel_sqr = kernel.array**2
 
         # ma.filled(0) required for the fft convolution
         weights = self.weights
@@ -1328,10 +1334,8 @@ class ContMap(NDDataArray):
         if factor is None:
             if method is None:
                 raise ValueError("You must provide either `factor` or `method`.")
-            elif method == "check_SNR_simple":
-                factor = self.check_SNR_simple(**kwargs)
-            elif method == "check_SNR":
-                factor = self.check_SNR(**kwargs)
+            else:
+                factor = getattr(self, method)(**kwargs)
 
         if isinstance(self.uncertainty, StdDevUncertainty):
             self.uncertainty.array *= factor
@@ -1926,16 +1930,31 @@ def contmap_average(continuum_datas, normalize=False):
     data : class:`kidsdata.continuum_data.ContMap`
         the resulting combined filtered ContMap object
     """
+    wcs = [item.wcs for item in continuum_datas]
+    assert all([wcs[0].wcs == item.wcs for item in wcs[1:]]), "All wcs must be equal"
 
     datas = np.array([item.data for item in continuum_datas])
     masks = np.array([item.mask for item in continuum_datas])
     hits = np.array([item.hits for item in continuum_datas])
-
-    wcs = [item.wcs for item in continuum_datas]
-
-    assert all([wcs[0].wcs == item.wcs for item in wcs[1:]]), "All wcs must be equal"
-
     weights = np.array([item.weights for item in continuum_datas])
+
+    meta = defaultdict(list)
+    history = defaultdict(list)
+    comment = defaultdict(list)
+    for data in continuum_datas:
+        for key, value in data.meta.items():
+            if key not in ["HISTORY", "COMMENT", "SIMPLE", "BITPIX", "NAXIS", "EXTEND"]:
+                meta[key].append(value)
+            elif key == "HISTORY":
+                history[key].append(value)
+            elif key == "COMMENT":
+                comment[key].append(value)
+
+    for key in meta:
+        if len(set(meta[key])) == 1:
+            meta[key] = meta[key][0]
+        else:
+            meta[key] = list(set(meta[key]))
 
     datas[masks] = 0.0
     weights[masks] = 0.0

@@ -1,30 +1,24 @@
 from __future__ import absolute_import, division, print_function
 
-import pytest
 import warnings
-import numpy as np
-import numpy.testing as npt
 
 import astropy.units as u
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy.testing as npt
+import pytest
+from astropy.convolution import Gaussian2DKernel, Kernel2D, RickerWavelet2DKernel
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
-from astropy.wcs import WCS
-from astropy.table import Table
-
-from astropy.nddata import StdDevUncertainty, InverseVariance, VarianceUncertainty
 from astropy.modeling import models
+from astropy.nddata import InverseVariance, StdDevUncertainty, VarianceUncertainty
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
-from astropy.convolution import RickerWavelet2DKernel
-
+from astropy.table import Table
+from astropy.wcs import WCS
 from photutils.datasets import make_gaussian_sources_image
 
-from astropy.convolution import Kernel2D, Gaussian2DKernel
-from astropy.coordinates import SkyCoord
-
-import matplotlib.pyplot as plt
-
 from ..contmap import ContBeam, ContMap
-from ..utils import pos_gridded
-from ..utils import cat_to_sc
+from ..utils import cat_to_sc, pos_gridded
 
 
 def test_contbeam_init():
@@ -231,7 +225,7 @@ def single_source():
     wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
     wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
 
-    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam)
+    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, hits=np.ones_like(data, int))
 
     # Additionnal attribute just for the tests...
     nm.x = np.asarray([shape[1] / 2 - 0.5])
@@ -270,7 +264,14 @@ def single_source_side():
 
     data += g(xx, yy)
 
-    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, fake_sources=fake_sources)
+    nm = ContMap(
+        data,
+        uncertainty=np.ones_like(data) / 4,
+        wcs=wcs,
+        unit=u.Jy / u.beam,
+        fake_sources=fake_sources,
+        hits=np.ones_like(data, int),
+    )
 
     nm.x = fake_sources["x_mean"]
     nm.y = fake_sources["y_mean"]
@@ -307,7 +308,14 @@ def blended_sources():
 
     data += g(xx, yy)
 
-    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, fake_sources=fake_sources)
+    nm = ContMap(
+        data,
+        uncertainty=np.ones_like(data) / 4,
+        wcs=wcs,
+        unit=u.Jy / u.beam,
+        fake_sources=fake_sources,
+        hits=np.ones_like(data, int),
+    )
 
     nm.x = fake_sources["x_mean"]
     nm.y = fake_sources["y_mean"]
@@ -332,7 +340,9 @@ def single_source_mask():
 
     data[mask] = np.nan
 
-    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, mask=mask, wcs=wcs, unit=u.Jy / u.beam)
+    nm = ContMap(
+        data, uncertainty=np.ones_like(data) / 4, mask=mask, wcs=wcs, unit=u.Jy / u.beam, hits=np.ones_like(data, int)
+    )
 
     # Additionnal attribute just for the tests...
     nm.x = np.asarray([shape[1] / 2 - 0.5])
@@ -377,7 +387,13 @@ def single_source_mask_edge():
     data += g(xx, yy)
 
     nm = ContMap(
-        data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, mask=mask, fake_sources=fake_sources
+        data,
+        uncertainty=np.ones_like(data) / 4,
+        wcs=wcs,
+        unit=u.Jy / u.beam,
+        mask=mask,
+        fake_sources=fake_sources,
+        hits=np.ones_like(data, int),
     )
 
     nm.x = fake_sources["x_mean"]
@@ -400,7 +416,7 @@ def grid_sources():
     wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
     wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
 
-    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam)
+    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, hits=np.ones_like(data, int))
 
     # Additionnal attribute just for the tests...
     nm.add_gaussian_sources(nsources=2**2, peak_flux=1 * u.Jy, cat_gen=pos_gridded, within=(1 / 4, 3 / 4))
@@ -425,7 +441,7 @@ def wobble_grid_sources():
     wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
     wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
 
-    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam)
+    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, hits=np.ones_like(data, int))
 
     np.random.seed(0)
     # Additionnal attribute just for the tests...
@@ -642,6 +658,11 @@ def test_contmap_match_filter(nms):
 
     npt.assert_allclose(mf_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
     npt.assert_allclose((nm.beam.major * np.sqrt(2)).to(u.arcsec), mf_nm.beam.major.to(u.arcsec))
+
+    hit_factor = (nm.beam.major / nm.beam.pixscale * gaussian_fwhm_to_sigma) ** 2 * np.pi
+    npt.assert_allclose(
+        np.median(mf_nm.hits[mf_nm.hits != 0]), np.median(nm.hits[nm.hits != 0]) * hit_factor, atol=1e-2, rtol=1e-1
+    )
 
     mh_nm = nm.match_filter(
         RickerWavelet2DKernel(nm.beam.major.to(u.pix, nm._pixel_scale).value * gaussian_fwhm_to_sigma)

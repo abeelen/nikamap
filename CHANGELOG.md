@@ -7,6 +7,10 @@ master
 * `phot_source` option `fixed_psf` renamed `fixed_positions`
 * `phot_source` option `fixed_sigma` to allow for varying sigma in psf fiting
 
+Fixed
+-----
+* matched filter hits must be smooth by the kernerl squared !
+
 Version 1.0
 ===========
 
