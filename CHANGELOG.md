@@ -10,6 +10,7 @@ master
 Fixed
 -----
 * matched filter hits must be smooth by the kernerl squared !
+* fix non standard fits header value as json dump
 
 Version 1.0
 ===========

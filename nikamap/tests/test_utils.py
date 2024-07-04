@@ -1,18 +1,22 @@
 from __future__ import absolute_import, division, print_function
 
-import pytest
+import astropy.units as u
 import numpy as np
 import numpy.testing as npt
-
-from ..utils import pos_in_mask, cat_to_sc
-from ..utils import pos_uniform, pos_gridded, pos_list
-from ..utils import fft_2d_hanning
-from ..utils import fake_data
-from ..utils import shrink_mask
-from ..utils import meta_to_header
-
+import pytest
 from astropy.table import Table
-import astropy.units as u
+
+from ..utils import (
+    cat_to_sc,
+    fake_data,
+    fft_2d_hanning,
+    meta_to_header,
+    pos_gridded,
+    pos_in_mask,
+    pos_list,
+    pos_uniform,
+    shrink_mask,
+)
 
 
 def test_shrink_mask():
@@ -248,3 +252,11 @@ def test_meta_to_header():
     meta["comment"] = ["first", "second"]
     hdr = meta_to_header(meta)
     assert list(hdr["comment"]) == meta["comment"]
+
+    meta["array"] = [1, 2, 3]
+    hdr = meta_to_header(meta)
+    assert hdr["array"] == "[1, 2, 3]"
+
+    meta["way to long key"] = "toto"
+    hdr = meta_to_header(meta)
+    assert hdr["way to long key"] == "toto"
