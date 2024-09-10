@@ -28,7 +28,7 @@ dependencies = [
     "scipy",
     "matplotlib",
     "astropy>5.3",
-    "photutils>=1.9",
+    "photutils>=1.13",
     "scikit_image",
     "powspec>=0.3",
 ]
@@ -129,3 +129,9 @@ disable = "line-too-long,fixme,no-member"
 
 [tool.distutils.bdist_wheel]
 universal = 1
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
