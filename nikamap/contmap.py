@@ -54,7 +54,7 @@ from .utils import (
 
 Jy_beam = u.Jy / u.beam
 
-__all__ = ["ContMap"]
+__all__ = ["ContMap", "ContBeam"]
 
 
 class ContBeam(Kernel2D):
@@ -1045,17 +1045,16 @@ class ContMap(NDDataArray):
 
         Resultings maps have a different mask
 
-        >>> npix, std = 500, 4
-        >>> kernel = Gaussian2DKernel(std)
+        >>> npix, std = 501, 4
+        >>> kernel = ContBeam(std, pixscale=1*u.deg)
         >>> mask = np.zeros((npix,npix))
         >>> data = np.random.normal(0, 1, size=mask.shape)
-        >>> data[(npix-std*8)//2:(npix+std*8)//2+1,(npix-std*8)//2:(npix+std*8)//2+1] += kernel.array/kernel.array.max()
-        >>> data = ContMap(data, uncertainty=StdDevUncertainty(np.ones_like(data)), time=np.ones_like(data)*u.s, mask=mask)
+        >>> data[(npix-std*7-1)//2:(npix+std*7-1)//2+1,(npix-std*7-1)//2:(npix+std*7-1)//2+1] += kernel.array/kernel.array.max()
+        >>> data = ContMap(data, uncertainty=np.ones_like(data), hits=np.ones_like(data)*u.s, mask=mask)
         >>> mf_data = data.match_filter(kernel)
-        >>> import matplotlib.pypot as plt
-        >>> plt.ion()
+        >>> import matplotlib.pyplot as plt
         >>> fig, axes = plt.subplots(ncols=2)
-        >>> axes[0].imshow(data) ; axes[1].imshow(mf_data)
+        >>> _ = axes[0].imshow(data) ; _ = axes[1].imshow(mf_data)
         """
 
         mf_beam = self.beam.convolve(kernel)
@@ -1233,6 +1232,7 @@ class ContMap(NDDataArray):
         To recover the normality you must multiply the uncertainty array by the returned stddev value,
         if uncertainty is StdDevUncertainty.
 
+        >>> data = ContMap(np.random.normal(0, 1, size=(100, 100)), uncertainty=np.ones((100, 100)), mask=None)
         >>> std = data.check_SNR_pdf()
         >>> data.uncertainty.array *= std
         """
@@ -1286,6 +1286,7 @@ class ContMap(NDDataArray):
         To recover the normality you must multiply the uncertainty array by the returned stddev value,
         if uncertainty is StdDevUncertainty.
 
+        >>> data = ContMap(np.random.normal(0, 1, size=(100, 100)), uncertainty=np.ones((100, 100)), mask=None)
         >>> std = data.check_SNR()
         >>> data.uncertainty.array *= std
         """

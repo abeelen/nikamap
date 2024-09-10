@@ -1,0 +1,131 @@
+[build-system]
+requires = [
+  "setuptools>=62.1",
+  "setuptools_scm[toml]>=6.2",
+  "wheel",]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nikamap"
+description = "nikamap: a package to manipulate data produced by the IDL NIKA2 pipeline"
+requires-python = ">=3.9"
+readme = { file = "README.rst", content-type = "text/x-rst" }
+license = { file = "LICENSE" }
+authors = [
+  { name = "Alexandre Beelen", email = "alexandre.beelen@lam.fr" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "astropy>5.3",
+    "photutils>=1.9",
+    "scikit_image",
+    "powspec>=0.3",
+]
+
+dynamic = ["version"]
+
+[project.scripts]
+open_astronomy_package_template_example = "nikamap.example_mod:main"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-doctestplus",
+    "pytest-cov",
+    "pytest-mpl",
+    "reproject",
+]
+docs = [
+    "sphinx",
+    "sphinx-automodapi",
+]
+stacking = [
+    "reproject",
+]
+
+[project.urls]
+repository = "http://github.com/abeelen/nikamap"
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = ["nikamap._dev*"]
+
+[tool.setuptools_scm]
+write_to = "nikamap/_version.py"
+
+[tool.pytest.ini_options]
+testpaths = [
+  "nikamap",
+  "docs",
+]
+doctest_plus = "enabled"
+text_file_format = "rst"
+minversion = "2.3.3"
+addopts = "--verbose --doctest-rst --cov=nikamap --cov-report=term --cov-report=xml:reports/coverage.xml --junit-xml=reports/tests.xml"
+
+[tool.coverage.run]
+omit = [
+ "nikamap/__init*",
+ "nikamap/conftest.py",
+ "nikamap/*setup_package*",
+ "nikamap/tests/*",
+ "nikamap/*/tests/*",
+ "nikamap/extern/*",
+ "nikamap/version*",
+ "*/nikamap/__init*",
+ "*/nikamap/conftest.py",
+ "*/nikamap/*setup_package*",
+ "*/nikamap/tests/*",
+ "*/nikamap/*/tests/*",
+ "*/nikamap/extern/*",
+ "*/nikamap/version*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  # Have to re-enable the standard pragma
+  "pragma: no cover",
+  # Don't complain about packages we have installed
+  "except ImportError",
+  # Don't complain if tests don't hit assertions
+  "raise AssertionError",
+  "raise NotImplementedError",
+  # Don't complain about script hooks
+  "def main(.*):",
+  # Ignore branches that don't pertain to this version of Python
+  "pragma: py{ignore_python_version}",
+  # Don't complain about IPython completion helper
+  "def _ipython_key_completions_",
+  # typing.TYPE_CHECKING is False at runtime
+  "if TYPE_CHECKING:",
+  # Ignore typing overloads
+  "@overload",
+]
+
+[tool.flake8]
+ignore = "E501,W504"
+exclude = "build,dist,docs,tests"
+
+[tool.tox]
+requires = "tox>=4"
+env_list = "lint, type, py{38,39,310,311}"
+
+[tool.pylint]
+disable = "line-too-long,fixme,no-member"
+
+[tool.distutils.bdist_wheel]
+universal = 1
