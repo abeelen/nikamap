@@ -1,22 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
-from itertools import product
 from collections.abc import MutableMapping
 from pathlib import Path
 
 import numpy as np
-from copy import deepcopy
 
 from astropy.io import fits, registry
 from astropy import units as u
 from astropy.wcs import WCS
 from astropy.nddata import StdDevUncertainty
 
-from scipy import signal
-from scipy.optimize import curve_fit
-
 import warnings
-from astropy.utils.exceptions import AstropyWarning
 
 from .contmap import ContMap, ContBeam
 from .utils import update_header

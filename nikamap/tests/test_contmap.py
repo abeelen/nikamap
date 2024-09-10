@@ -8,7 +8,6 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 from astropy.convolution import Gaussian2DKernel, Kernel2D, RickerWavelet2DKernel
-from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.modeling import models
 from astropy.nddata import InverseVariance, StdDevUncertainty, VarianceUncertainty
@@ -24,7 +23,7 @@ from ..utils import cat_to_sc, pos_gridded
 def test_contbeam_init():
     # TODO: What if we init with an array ?
     fwhm = 18 * u.arcsec
-    array = np.ones((10, 10))
+    # array = np.ones((10, 10))
     pixscale = 2 * u.arcsec
 
     ref_kernel = Gaussian2DKernel(fwhm * gaussian_fwhm_to_sigma / pixscale, x_size=63, y_size=63)
@@ -795,7 +794,7 @@ def test_contmap_check_SNR_ax(large_map_source):
     nm = large_map_source
 
     fig, ax = plt.subplots()
-    std = nm.check_SNR(ax=ax)
+    _ = nm.check_SNR(ax=ax)
 
     return fig
 

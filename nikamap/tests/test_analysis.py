@@ -18,7 +18,7 @@ import numpy.testing as npt
 # data_path = op.join(nm.__path__[0], 'data')
 
 from ..analysis import HalfDifference, MultiScans, Jackknife, Bootstrap
-from ..contmap import ContMap, contmap_average
+from ..contmap import contmap_average
 from ..nikamap import NikaMap
 
 Jybeam = u.Jy / u.beam
@@ -317,7 +317,7 @@ def test_Bootstrap(generate_nikamaps):
     full_coverage = data.hits == len(filenames)
     med = np.nanmedian(data.uncertainty.array[full_coverage])
     mad = np.nanmedian(np.abs(data.uncertainty.array[full_coverage] - med))
-    assert (weighted_noises.min() - med) < 2*mad
+    assert (weighted_noises.min() - med) < 2 * mad
 
     # Trouble to find a proper test for this
     bs = Bootstrap(filenames, n=10)

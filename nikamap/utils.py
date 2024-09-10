@@ -358,6 +358,7 @@ def fake_data(
     time_fwhm=1.0 / 5,
     jk_data=None,
     e_data=None,
+    primary_header=None,
     nsources=32,
     peak_flux=None,
     pos_gen=pos_uniform,
@@ -414,7 +415,14 @@ def fake_data(
         peak_flux = 3 * (nefd / np.sqrt(np.nanmax(time)) * u.beam).to(u.mJy)
 
     data = NikaMap(
-        data, mask=mask, unit=Jy_beam, uncertainty=StdDevUncertainty(e_data), wcs=WCS(header), meta=header, hits=hits
+        data,
+        mask=mask,
+        unit=Jy_beam,
+        uncertainty=StdDevUncertainty(e_data),
+        wcs=WCS(header),
+        meta=header,
+        hits=hits,
+        primary_header=primary_header,
     )
 
     if nsources:

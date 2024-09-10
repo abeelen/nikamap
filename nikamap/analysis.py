@@ -5,8 +5,7 @@ import warnings
 import numpy as np
 from functools import partial
 
-from astropy import units as u
-from astropy.nddata import StdDevUncertainty, InverseVariance, VarianceUncertainty
+from astropy.nddata import StdDevUncertainty
 from astropy.utils.console import ProgressBar
 from astropy.wcs import WCS
 

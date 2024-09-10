@@ -5,7 +5,6 @@ from collections import defaultdict
 from copy import deepcopy
 from functools import partial
 from itertools import product
-from pathlib import Path
 
 import numpy as np
 from astropy import units as u
@@ -1243,7 +1242,7 @@ class ContMap(NDDataArray):
         snr_sorted = np.sort(snr)
         # p = np.linspace(0, 1, len(snr))
         p = np.linspace(stats.norm.cdf(np.min(range)), stats.norm.cdf(np.max(range)), len(snr))
-        func = lambda x, loc, scale: stats.norm.cdf(x, loc=loc, scale=scale)
+        func = lambda x, loc, scale: stats.norm.cdf(x, loc=loc, scale=scale)  # noqa: E731
 
         popt, pcov = curve_fit(func, snr_sorted, p)
 

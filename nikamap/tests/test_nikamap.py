@@ -8,14 +8,10 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.table import Table
 
-from astropy.nddata import StdDevUncertainty
 from astropy.modeling import models
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
-from astropy.convolution import RickerWavelet2DKernel
 
 from photutils.datasets import make_model_image
-
-import matplotlib.pyplot as plt
 
 from ..nikamap import NikaMap, NikaFits, retrieve_primary_keys
 

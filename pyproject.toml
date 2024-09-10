@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "nikamap"
 description = "nikamap: a package to manipulate data produced by the IDL NIKA2 pipeline"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 license = { file = "LICENSE" }
 authors = [
@@ -132,6 +132,10 @@ universal = 1
 
 [tool.ruff]
 line-length = 120
+exclude = ["doc"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.black]
+line-length = 120

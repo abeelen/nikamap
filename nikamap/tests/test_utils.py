@@ -236,7 +236,7 @@ def gen_pkfield(npix=32, alpha=-11.0 / 3, fknee=1, res=1):
 
 def test_fake_data():
     # Dummy test for now
-    nm = fake_data()
+    _ = fake_data()
 
 
 def test_meta_to_header():

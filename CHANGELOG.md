@@ -11,6 +11,7 @@ Fixed
 -----
 * matched filter hits must be smooth by the kernerl squared !
 * fix non standard fits header value as json dump
+* switch to photutils >= 1.13, which implies python > 3.10
 * switch from deprecated `photutils.datasets.make_model_sources_image` to `photutils.datasets.make_model_image`
 
 Version 1.0
