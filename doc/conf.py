@@ -83,7 +83,12 @@ default_role = "py:obj"
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {"python": ("https://docs.python.org/", None)}
+intersphinx_mapping = {"python": ("https://docs.python.org/", None),
+    "numpy": ("http://docs.scipy.org/doc/numpy/", None),
+    "scipy": ("http://docs.scipy.org/doc/scipy/reference/", None),
+    "matplotlib": ("http://matplotlib.org/", None),
+    "astropy": ("http://docs.astropy.org/en/stable/", None),
+}
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -337,12 +342,3 @@ texinfo_domain_indices = False
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 # texinfo_no_detailmenu = False
-
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {
-    "http://docs.python.org/": None,
-    "numpy": ("http://docs.scipy.org/doc/numpy/", None),
-    "scipy": ("http://docs.scipy.org/doc/scipy/reference/", None),
-    "matplotlib": ("http://matplotlib.org/", None),
-    "astropy": ("http://docs.astropy.org/en/stable/", None),
-}

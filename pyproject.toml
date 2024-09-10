@@ -49,6 +49,7 @@ test = [
 docs = [
     "sphinx",
     "sphinx-automodapi",
+    "sphinx_gallery",
 ]
 stacking = [
     "reproject",
