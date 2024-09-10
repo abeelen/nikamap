@@ -7,14 +7,15 @@ Create a fully fake fits file for test purposes, note that this is basically
 a copy of the function :func:`nikamap.fake_data`
 
 """
+
 import numpy as np
 import astropy.units as u
+from astropy.modeling import models
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.table import Table
 from astropy.stats import gaussian_fwhm_to_sigma
-
-from photutils.datasets import make_gaussian_sources_image
+from photutils.datasets import make_model_image
 
 Jypb = u.Jy / u.beam
 mJypb = u.mJy / u.beam
@@ -47,7 +48,10 @@ def create_dataset(
     beam_std_pix = (fwhm / pixsize).decompose().value * gaussian_fwhm_to_sigma
     sources = create_fake_source(shape, wcs, beam_std_pix, flux_min=flux_min, flux_max=flux_max, n_sources=n_sources)
 
-    sources_map = make_gaussian_sources_image(shape, sources) * sources["amplitude"].unit
+    sources_map = (
+        make_model_image(shape, models.Gaussian2D(), sources, model_shape=shape, x_name="x_mean", y_name="y_mean")
+        * sources["amplitude"].unit
+    )
 
     data = add_noise(sources_map, uncertainty)
     hdus = create_hdulist(data, hits, uncertainty, mask, wcs, sources, fwhm, noise_level)

@@ -9,7 +9,8 @@ from astropy.wcs import WCS
 from astropy.table import Table, Column
 
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
-from photutils.datasets import make_gaussian_sources_image
+from photutils.datasets import make_model_image
+from astropy.modeling import models
 
 import numpy.testing as npt
 
@@ -55,7 +56,11 @@ def generate_nikamaps(
     sources["y_stddev"] = np.ones(nsources) * beam_std_pix
     sources["theta"] = np.zeros(nsources)
 
-    data_sources = make_gaussian_sources_image(shape, sources) * u.Jy / u.beam
+    data_sources = (
+        make_model_image(shape, models.Gaussian2D(), sources, model_shape=shape, x_name="x_mean", y_name="y_mean")
+        * u.Jy
+        / u.beam
+    )
 
     a, d = wcs.wcs_pix2world(sources["x_mean"], sources["y_mean"], 0)
     sources.add_columns([Column(a * u.deg, name="ra"), Column(d * u.deg, name="dec")])

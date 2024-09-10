@@ -15,7 +15,7 @@ from astropy.nddata import InverseVariance, StdDevUncertainty, VarianceUncertain
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
 from astropy.table import Table
 from astropy.wcs import WCS
-from photutils.datasets import make_gaussian_sources_image
+from photutils.datasets import make_model_image
 
 from ..contmap import ContBeam, ContMap
 from ..utils import cat_to_sc, pos_gridded
@@ -484,10 +484,14 @@ def large_map_source():
     sources["y_stddev"] = np.ones(nsources) * beam_std_pix
     sources["theta"] = np.zeros(nsources)
 
-    data = make_gaussian_sources_image(shape, sources)
+    data = (
+        make_model_image(shape, models.Gaussian2D(), sources, model_shape=shape, x_name="x_mean", y_name="y_mean")
+        * u.Jy
+        / u.beam
+    )
 
     hits = np.ones(shape=shape, dtype=float)
-    uncertainty = np.ones(shape, dtype=float) * noise_level.to(u.Jy / u.beam).value
+    uncertainty = np.ones(shape, dtype=float) * noise_level.to(u.Jy / u.beam)
     data += np.random.normal(loc=0, scale=1, size=shape) * uncertainty
     data[mask] = np.nan
     hits[mask] = 0
@@ -565,12 +569,13 @@ def test_contmap_add_gaussian_sources(nms):
     pixsize = np.abs(nm.wcs.wcs.cdelt[0])
 
     xx, yy = np.indices(shape)
-    stddev = 1 / pixsize * gaussian_fwhm_to_sigma
+    stddev = gaussian_fwhm_to_sigma / pixsize
     g = models.Gaussian2D(1, nm.y[0], nm.x[0], stddev, stddev)
     for item_x, item_y in zip(nm.y[1:], nm.x[1:]):
         g += models.Gaussian2D(1, item_x, item_y, stddev, stddev)
 
     if nm.mask is None:
+        # atol for other sources
         npt.assert_allclose(nm.data, g(xx, yy))
     else:
         npt.assert_allclose(nm.data[~nm.mask], g(xx, yy)[~nm.mask])
@@ -895,10 +900,9 @@ def generate_fits(tmpdir_factory):
     sources["y_stddev"] = np.ones(nsources) * beam_std_pix
     sources["theta"] = np.zeros(nsources)
 
-    data = make_gaussian_sources_image(shape, sources)
-
+    data = make_model_image(shape, models.Gaussian2D(), sources, model_shape=shape, x_name="x_mean", y_name="y_mean")
     hits = np.ones(shape=shape, dtype=float)
-    uncertainty = np.ones(shape, dtype=float) * noise_level.to(u.Jy / u.beam).value
+    uncertainty = np.ones(shape, dtype=float) * noise_level.to_value(u.Jy / u.beam)
     data += np.random.normal(loc=0, scale=1, size=shape) * uncertainty
     data[mask] = np.nan
     hits[mask] = 0
@@ -1010,7 +1014,11 @@ def large_map_sources_centered():
     sources["y_stddev"] = np.ones(nsources) * beam_std_pix
     sources["theta"] = np.zeros(nsources)
 
-    data = make_gaussian_sources_image(shape, sources)
+    data = (
+        make_model_image(shape, models.Gaussian2D(), sources, model_shape=shape, x_name="x_mean", y_name="y_mean")
+        * u.Jy
+        / u.beam
+    )
 
     hits = np.ones(shape=shape, dtype=float)
     uncertainty = np.ones(shape, dtype=float) * noise_level.to(u.Jy / u.beam).value

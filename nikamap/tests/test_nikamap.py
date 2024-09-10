@@ -13,7 +13,7 @@ from astropy.modeling import models
 from astropy.stats.funcs import gaussian_fwhm_to_sigma
 from astropy.convolution import RickerWavelet2DKernel
 
-from photutils.datasets import make_gaussian_sources_image
+from photutils.datasets import make_model_image
 
 import matplotlib.pyplot as plt
 
@@ -53,7 +53,7 @@ def generate_fits(tmpdir_factory):
     sources["y_stddev"] = np.ones(nsources) * beam_std_pix
     sources["theta"] = np.zeros(nsources)
 
-    data = make_gaussian_sources_image(shape, sources)
+    data = make_model_image(shape, models.Gaussian2D(), sources, model_shape=shape, x_name="x_mean", y_name="y_mean")
 
     hits = np.ones(shape=shape, dtype=float)
     uncertainty = np.ones(shape, dtype=float) * noise_level.to(u.Jy / u.beam).value

@@ -32,7 +32,7 @@ from astropy.wcs import WCS, InconsistentAxisTypesError
 from astropy.wcs.utils import proj_plane_pixel_scales
 from photutils.background import LocalBackground, MedianBackground
 from photutils.centroids import centroid_2dg  # , centroid_sources
-from photutils.datasets import make_gaussian_sources_image
+from photutils.datasets import make_model_image
 from photutils.detection import find_peaks
 from photutils.psf import PSFPhotometry, SourceGrouper
 from powspec import power_spectral_density
@@ -760,7 +760,9 @@ class ContMap(NDDataArray):
             sources = sources[within_coverage]
 
         # Gaussian sources...
-        self._data += make_gaussian_sources_image(shape, sources)
+        self._data += make_model_image(
+            shape, models.Gaussian2D(), sources, model_shape=shape, x_name="x_mean", y_name="y_mean"
+        )
 
         # Add an ID column
         sources.add_column(Column(np.arange(len(sources)), name="fake_id"), 0)
