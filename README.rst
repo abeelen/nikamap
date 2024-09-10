@@ -32,7 +32,7 @@ Features
 
 Requirements
 ------------
-You need python 3.4 or later to run `nikamap`. You will also need `numpy`, `scipy`, `matplotlib`, `astropy>=2.0` and `photutils>=0.5`. The master branch is based on old photutils API<=1.8, while the `photutils_1.9` branch follow the new API
+You need python 3.10 or later to run `nikamap`. You will also need `numpy`, `scipy`, `matplotlib`, `astropy>=2.0` and `photutils>=1.13`. The master branch is based on newert photutils API>=1.8, while the `tag:0.6` branch follow the old API and python up to 3.8
 
 Installation
 ------------
