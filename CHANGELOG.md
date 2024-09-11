@@ -1,7 +1,18 @@
 master
 ======
 
-* Added
+Added
+-----
+
+Fixed
+-----
+
+Version 1.2
+===========
+
+Switch to photutils v1.13, incompatible with previous version, implies python > 3.10
+
+Added
 -------
 * Photometry can use global or local background
 * `phot_source` option `fixed_psf` renamed `fixed_positions`
