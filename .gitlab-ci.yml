@@ -38,8 +38,8 @@ test:
 
 run:
   script:
-    - pip install --editable .
-    - python setup.py bdist_wheel
+    - pip install --upgrade build
+    - python -m build
     # an alternative approach is to install and run:
     # - pip install dist/*
     # run the command here
