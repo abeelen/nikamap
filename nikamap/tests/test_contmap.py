@@ -663,7 +663,7 @@ def test_contmap_match_filter(nms):
     npt.assert_allclose(mf_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
     npt.assert_allclose((nm.beam.major * np.sqrt(2)).to(u.arcsec), mf_nm.beam.major.to(u.arcsec))
 
-    hit_factor = (nm.beam.major / nm.beam.pixscale * gaussian_fwhm_to_sigma) ** 2 * np.pi
+    hit_factor = (nm.beam.major / nm.beam.pixscale * gaussian_fwhm_to_sigma) ** 2 * np.pi # as it scale as the kernel_sqr (/2 wrt to gaussian size)
     npt.assert_allclose(
         np.median(mf_nm.hits[mf_nm.hits != 0]), np.median(nm.hits[nm.hits != 0]) * hit_factor, atol=1e-2, rtol=1e-1
     )

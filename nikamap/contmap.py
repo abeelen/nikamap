@@ -138,7 +138,7 @@ class ContBeam(Kernel2D):
                 warnings.warn("Assuming minor axis has been specified in degrees")
                 minor = minor * u.deg
         if pa is not None:
-            if u.deg.is_equivalent(pa):
+            if u.deg.is_equivalent(pa.unit):
                 pa = pa
             else:
                 warnings.warn("Assuming position angle has been specified in degrees")
