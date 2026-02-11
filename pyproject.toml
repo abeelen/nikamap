@@ -68,6 +68,7 @@ exclude = ["nikamap._dev*"]
 
 [tool.setuptools_scm]
 write_to = "nikamap/_version.py"
+local_scheme = "no-local-version"
 
 [tool.pytest.ini_options]
 testpaths = [

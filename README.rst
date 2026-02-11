@@ -2,7 +2,7 @@ NikaMap
 =======
 |pypi| |license| |wheels| |format| |pyversions| |rtd|
 
-`nikamap` is a python package to manipulate data produced by the IDL NIKA2 pipeline.
+`nikamap` is a python package to manipulate data produced by the IDL or PIIC NIKA2 pipeline.
 
 .. code:: python
 

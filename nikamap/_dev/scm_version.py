@@ -8,6 +8,6 @@ try:
     version = get_version(root=os.path.join("..", ".."), relative_to=__file__)
 except ImportError:
     # Fallback for environments where setuptools_scm is not installed.
-    version = "0+local"
+    version = "0"
 except Exception as e:
     raise ValueError("setuptools_scm can not determine version.") from e

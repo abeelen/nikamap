@@ -7,6 +7,15 @@ Added
 Fixed
 -----
 
+Version 1.2.1
+=============
+
+
+Fixed
+-----
+* Update `PSFPhotometry.make_residual_image` usage to the new photutils API (result table only), fixing PSF photometry tests on photutils >= 1.13.
+* Update unit problem on pa, when using non nika data.
+
 Version 1.2
 ===========
 
