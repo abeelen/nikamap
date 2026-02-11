@@ -45,6 +45,7 @@ test = [
     "pytest-cov",
     "pytest-mpl",
     "reproject",
+  "setuptools_scm>=6.2",
 ]
 docs = [
     "sphinx",

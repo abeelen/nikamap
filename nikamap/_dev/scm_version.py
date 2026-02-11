@@ -5,8 +5,9 @@ import os.path
 try:
     from setuptools_scm import get_version
 
-    version = get_version(root=os.path.join('..', '..'), relative_to=__file__)
+    version = get_version(root=os.path.join("..", ".."), relative_to=__file__)
 except ImportError:
-    raise
+    # Fallback for environments where setuptools_scm is not installed.
+    version = "0+local"
 except Exception as e:
-    raise ValueError('setuptools_scm can not determine version.') from e
+    raise ValueError("setuptools_scm can not determine version.") from e

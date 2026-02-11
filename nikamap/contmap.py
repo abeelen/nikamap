@@ -1013,7 +1013,7 @@ class ContMap(NDDataArray):
                 for key in ["sigma_fit", "sigma_err"]:
                     sources[key.replace("sigma", "fwhm")] = gaussian_sigma_to_fwhm * result_tab[key] * unit
 
-            self._residual = photometry.make_residual_image(data, (10, 10))
+            self._residual = photometry.make_residual_image(data)
 
         self.sources = sources
 
