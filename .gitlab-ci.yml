@@ -12,6 +12,8 @@ image: python:3.11
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  DOCKER_DRIVER: overlay2
+  IMAGE_TAG: $CI_REGISTRY_IMAGE/multi-python-ci:latest
 
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/reference/pip_install/#caching
@@ -22,19 +24,48 @@ cache:
   paths:
     - .cache/pip
 
-before_script:
-  - python --version ; pip --version  # For debugging
-  - rm -rf venv
-  - python -m venv venv
-  - source venv/bin/activate
-
-
 test:tox:
   stage: test
   script:
-    - pip install ruff tox
-    - pip install --editable ".[test]"
-    - tox run-parallel
+    - pip install tox
+    - tox
+  when: manual
+
+# Job de build de l'image Docker multi-python
+build_image:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/multi-python-ci:latest
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+  rules:
+    - changes:
+        - Dockerfile
+      when: on_success
+    - when: manual
+      allow_failure: true
+
+# Template pour les jobs tox
+.tox_template: &tox_job
+  stage: test
+  image: $IMAGE_TAG
+  script:
+    - tox
+
+# Job principal pour tout tox
+test_all:
+  <<: *tox_job
+
+# Pour lancer un environnement précis, duplique et adapte :
+#test_py310_photutils190:
+#  <<: *tox_job
+#  script:
+#    - tox -e py310-photutils190
 
 # Job de tests legacy, déclenché manuellement. On utilise désormais pytest
 # (la commande setup.py test est supprimée de setuptools récents).

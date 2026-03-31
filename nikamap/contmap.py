@@ -34,7 +34,6 @@ from photutils.centroids import centroid_2dg  # , centroid_sources
 from photutils.datasets import make_model_image
 from photutils.detection import find_peaks
 from photutils.psf import PSFPhotometry, SourceGrouper
-from powspec import power_spectral_density
 from scipy import signal, stats
 from scipy.optimize import curve_fit
 
@@ -897,6 +896,7 @@ class ContMap(NDDataArray):
         local_background=False,
         background_clipping=3,
         grouping_threshold=3,
+        fit_shape=11,
     ):
         """_summary_
 
@@ -920,6 +920,8 @@ class ContMap(NDDataArray):
             Sigma clipping used for the background, by default 3
         grouping_threshold : int, optional
             Grouping distance for psf photometry in unit of psf fwhm, by default 3
+        fit_shape: int, optional
+            The size of the box used for the fit in unit of pixel, by default 11
         """
         if sources is None:
             sources = self.sources
@@ -978,7 +980,7 @@ class ContMap(NDDataArray):
                     localbkg_estimator=local_bkg,
                     psf_model=psf_model,
                     fitter=LevMarLSQFitter(),
-                    fit_shape=11,
+                    fit_shape=fit_shape,
                 )
 
             positions = Table(
@@ -1013,7 +1015,13 @@ class ContMap(NDDataArray):
                 for key in ["sigma_fit", "sigma_err"]:
                     sources[key.replace("sigma", "fwhm")] = gaussian_sigma_to_fwhm * result_tab[key] * unit
 
-            self._residual = photometry.make_residual_image(data)
+            try:
+                # photutils > 2.0
+                self._residual = photometry.make_residual_image(data, psf_shape=(fit_shape, fit_shape))
+            except TypeError:
+                # photutils >1.9 < 1.13
+                self._residual = photometry.make_residual_image(data, (fit_shape, fit_shape))
+
 
         self.sources = sources
 
@@ -1381,6 +1389,8 @@ class ContMap(NDDataArray):
         except ValueError as e:
             raise ValueError("to_plot {}".format(e))
 
+        from powspec import power_spectral_density
+
         res = (1 * u.pixel).to(u.arcsec, equivalencies=self._pixel_scale)
         powspec, bin_edges = power_spectral_density(data, res=res, bins=bins, range=range, apod_size=apod_size)
 
@@ -1484,6 +1494,11 @@ class ContMap(NDDataArray):
             datas, weights, wcs = self._gen_reproject(coords, size, **kwargs)
         else:
             raise ValueError("method should be cutout2d or reproject")
+
+        if np.any(np.isnan(datas)):
+            nan_mask = np.isnan(datas)
+            datas[nan_mask] = 0
+            weights[nan_mask] = 0
 
         header = self.header.copy()
         header["HISTORY"] = "Stacked on {} coordinates".format(len(coords))
