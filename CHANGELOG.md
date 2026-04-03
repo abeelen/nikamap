@@ -7,9 +7,16 @@ Added
 Fixed
 -----
 
-Version 1.2.1
+Version 1.2.2
 =============
 
+Fixed
+-----
+* Add compatibility with photutils from 1.9 to 2.3, test on python 3.10 to 3.13
+
+
+Version 1.2.1
+=============
 
 Fixed
 -----
