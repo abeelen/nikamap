@@ -770,7 +770,7 @@ def wip_test_contmap_correlated_noise(nms):
     corr_data *= 0
 
     nm_corr = nm.match_filter(Kernel2D(array=kernel))
-
+    del nm_corr
 
 def test_contmap_match_sources(nms):
     nm = nms

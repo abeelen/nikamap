@@ -1,7 +1,7 @@
 [build-system]
 requires = [
   "setuptools>=62.1",
-  "setuptools_scm[toml]>=6.2",
+  "setuptools_scm[toml]>=8.0.0",
   "wheel",]
 build-backend = "setuptools.build_meta"
 
@@ -45,7 +45,6 @@ test = [
     "pytest-cov",
     "pytest-mpl",
     "reproject",
-  "setuptools_scm>=6.2",
 ]
 docs = [
     "sphinx",
@@ -64,10 +63,11 @@ zip-safe = false
 include-package-data = true
 
 [tool.setuptools.packages.find]
+include = ["nikamap*"]
 exclude = ["nikamap._dev*"]
 
 [tool.setuptools_scm]
-write_to = "nikamap/_version.py"
+version_file = "nikamap/_version.py"
 local_scheme = "no-local-version"
 
 [tool.pytest.ini_options]
@@ -79,6 +79,7 @@ doctest_plus = "enabled"
 text_file_format = "rst"
 minversion = "2.3.3"
 addopts = "--verbose --doctest-rst --cov=nikamap --cov-report=term --cov-report=xml:reports/coverage.xml --junit-xml=reports/tests.xml"
+norecursedirs = ["nikamap[\\/]_dev"]
 
 [tool.coverage.run]
 omit = [
