@@ -319,9 +319,9 @@ class ContBeam(Kernel2D):
             )
         elif self.major is not None and isinstance(other, Gaussian2DKernel):
             warnings.warn("Assuming same pixelscale")
-            major = other.model.x_fwhm.value * self.pixscale
-            minor = other.model.y_fwhm.value * self.pixscale
-            pa = other.model.theta.value * u.radian - 90 * u.deg
+            major = other.model.x_fwhm * self.pixscale
+            minor = other.model.y_fwhm * self.pixscale
+            pa = other.model.theta * u.radian - 90 * u.deg
             new_major, new_minor, new_pa = beam_convolve(
                 self, ContBeam(major=major, minor=minor, pa=pa, pixscale=self.pixscale)
             )
@@ -926,7 +926,7 @@ class ContMap(NDDataArray):
         if sources is None:
             sources = self.sources
 
-        xx, yy = self.wcs.world_to_pixel_values(sources["ra"], sources["dec"])
+        xx, yy = self.wcs.low_level_wcs.world_to_pixel_values(sources["ra"], sources["dec"])
 
         x_idx = np.floor(xx + 0.5).astype(int)
         y_idx = np.floor(yy + 0.5).astype(int)
@@ -1190,7 +1190,7 @@ class ContMap(NDDataArray):
             for _cat, _kwargs in list(cat):
                 label = _cat.meta.get("method") or _cat.meta.get("name") or _cat.meta.get("NAME") or "Unknown"
                 cat_sc = cat_to_sc(_cat)
-                x, y = self.wcs.world_to_pixel_values(cat_sc.ra, cat_sc.dec)
+                x, y = self.wcs.low_level_wcs.world_to_pixel_values(cat_sc.ra, cat_sc.dec)
                 if _kwargs is None:
                     _kwargs = {"alpha": 0.8}
                 ax.scatter(x, y, **_kwargs, label=label)

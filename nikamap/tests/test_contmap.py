@@ -219,12 +219,16 @@ def single_source():
     shape = (27, 27)
     pixsize = 1 / 3
     data = np.zeros(shape)
+    uncertainty = np.ones_like(data) / 4
+
     wcs = WCS()
     wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
     wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
     wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
 
-    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, hits=np.ones_like(data, int))
+    nm = ContMap(
+        data, uncertainty=StdDevUncertainty(uncertainty), wcs=wcs, unit=u.Jy / u.beam, hits=np.ones_like(data, int)
+    )
 
     # Additionnal attribute just for the tests...
     nm.x = np.asarray([shape[1] / 2 - 0.5])
@@ -240,6 +244,7 @@ def single_source_side():
     shape = (27, 27)
     pixsize = 1 / 3
     data = np.zeros(shape)
+    uncertainty = np.ones_like(data) / 4
     wcs = WCS()
     wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
     wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
@@ -247,6 +252,7 @@ def single_source_side():
 
     fake_sources = Table(masked=True)
     fake_sources["fake_id"] = [1]
+    fake_sources["amplitude"] = [1]
     fake_sources["x_mean"] = [0]
     fake_sources["y_mean"] = [13]
 
@@ -259,13 +265,13 @@ def single_source_side():
 
     xx, yy = np.indices(shape)
     stddev = 1 / pixsize * gaussian_fwhm_to_sigma
-    g = models.Gaussian2D(1, fake_sources["y_mean"], fake_sources["x_mean"], stddev, stddev)
+    g = models.Gaussian2D(fake_sources["amplitude"], fake_sources["y_mean"], fake_sources["x_mean"], stddev, stddev)
 
     data += g(xx, yy)
 
     nm = ContMap(
         data,
-        uncertainty=np.ones_like(data) / 4,
+        uncertainty=StdDevUncertainty(uncertainty),
         wcs=wcs,
         unit=u.Jy / u.beam,
         fake_sources=fake_sources,
@@ -285,6 +291,7 @@ def blended_sources():
     shape = (27, 27)
     pixsize = 1 / 3
     data = np.zeros(shape)
+    uncertainty = np.ones_like(data) / 4
     wcs = WCS()
     wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
     wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
@@ -292,6 +299,7 @@ def blended_sources():
 
     fake_sources = Table(masked=True)
     fake_sources["fake_id"] = [1, 2]
+    fake_sources["amplitude"] = [1, 1]
     fake_sources["x_mean"] = [13.6, 15.1]
     fake_sources["y_mean"] = [13.6, 15.1]
 
@@ -301,15 +309,17 @@ def blended_sources():
 
     xx, yy = np.indices(shape)
     stddev = 1 / pixsize * gaussian_fwhm_to_sigma
-    g = models.Gaussian2D(1, fake_sources["y_mean"][0], fake_sources["x_mean"][0], stddev, stddev)
+    g = models.Gaussian2D(
+        fake_sources["amplitude"][0], fake_sources["y_mean"][0], fake_sources["x_mean"][0], stddev, stddev
+    )
     for source in fake_sources[1:]:
-        g += models.Gaussian2D(1, source["y_mean"], source["x_mean"], stddev, stddev)
+        g += models.Gaussian2D(source["amplitude"], source["y_mean"], source["x_mean"], stddev, stddev)
 
     data += g(xx, yy)
 
     nm = ContMap(
         data,
-        uncertainty=np.ones_like(data) / 4,
+        uncertainty=StdDevUncertainty(uncertainty),
         wcs=wcs,
         unit=u.Jy / u.beam,
         fake_sources=fake_sources,
@@ -329,6 +339,7 @@ def single_source_mask():
     shape = (27, 27)
     pixsize = 1 / 3
     data = np.zeros(shape)
+    uncertainty = np.ones_like(data) / 4
     wcs = WCS()
     wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
     wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
@@ -340,7 +351,12 @@ def single_source_mask():
     data[mask] = np.nan
 
     nm = ContMap(
-        data, uncertainty=np.ones_like(data) / 4, mask=mask, wcs=wcs, unit=u.Jy / u.beam, hits=np.ones_like(data, int)
+        data,
+        uncertainty=StdDevUncertainty(uncertainty),
+        mask=mask,
+        wcs=wcs,
+        unit=u.Jy / u.beam,
+        hits=np.ones_like(data, int),
     )
 
     # Additionnal attribute just for the tests...
@@ -357,6 +373,7 @@ def single_source_mask_edge():
     shape = (27, 27)
     pixsize = 1 / 3
     data = np.zeros(shape)
+    uncertainty = np.ones_like(data) / 4
     wcs = WCS()
     wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
     wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
@@ -387,7 +404,7 @@ def single_source_mask_edge():
 
     nm = ContMap(
         data,
-        uncertainty=np.ones_like(data) / 4,
+        uncertainty=StdDevUncertainty(uncertainty),
         wcs=wcs,
         unit=u.Jy / u.beam,
         mask=mask,
@@ -410,12 +427,19 @@ def grid_sources():
     shape = (60, 60)
     pixsize = 1 / 3
     data = np.zeros(shape)
+    uncertainty = np.ones_like(data) / 4
     wcs = WCS()
     wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
     wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
     wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
 
-    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, hits=np.ones_like(data, int))
+    nm = ContMap(
+        data,
+        uncertainty=StdDevUncertainty(uncertainty),
+        wcs=wcs,
+        unit=u.Jy / u.beam,
+        hits=np.ones_like(data, int),
+    )
 
     # Additionnal attribute just for the tests...
     nm.add_gaussian_sources(nsources=2**2, peak_flux=1 * u.Jy, cat_gen=pos_gridded, within=(1 / 4, 3 / 4))
@@ -435,12 +459,15 @@ def wobble_grid_sources():
     shape = (60, 60)
     pixsize = 1 / 3
     data = np.zeros(shape)
+    uncertainty = np.ones_like(data) / 4
     wcs = WCS()
     wcs.wcs.crpix = np.asarray(shape) / 2 - 0.5  # Center of pixel
     wcs.wcs.cdelt = np.asarray([-1, 1]) * pixsize
     wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
 
-    nm = ContMap(data, uncertainty=np.ones_like(data) / 4, wcs=wcs, unit=u.Jy / u.beam, hits=np.ones_like(data, int))
+    nm = ContMap(
+        data, uncertainty=StdDevUncertainty(uncertainty), wcs=wcs, unit=u.Jy / u.beam, hits=np.ones_like(data, int)
+    )
 
     np.random.seed(0)
     # Additionnal attribute just for the tests...
@@ -473,18 +500,26 @@ def large_map_source():
     xx, yy = np.indices(shape)
     mask = np.sqrt((xx - (shape[1] - 1) / 2) ** 2 + (yy - (shape[0] - 1) / 2) ** 2) > shape[0] / 2
 
-    sources = Table(masked=True)
-    sources["amplitude"] = np.ones(nsources) * peak_flux
-    sources["x_mean"] = [shape[1] / 2]
-    sources["y_mean"] = [shape[0] / 2]
+    fake_sources = Table(masked=True)
+    fake_sources["fake_id"] = np.arange(nsources) + 1
+    fake_sources["amplitude"] = np.ones(nsources) * peak_flux
+    fake_sources["x_mean"] = [shape[1] / 2]
+    fake_sources["y_mean"] = [shape[0] / 2]
+
+    ra, dec = wcs.wcs_pix2world(fake_sources["x_mean"], fake_sources["y_mean"], 0)
+    fake_sources["ra"] = ra * u.deg
+    fake_sources["dec"] = dec * u.deg
+
+    fake_sources["_ra"] = fake_sources["ra"]
+    fake_sources["_dec"] = fake_sources["dec"]
 
     beam_std_pix = (fwhm / pixsize).decompose().value * gaussian_fwhm_to_sigma
-    sources["x_stddev"] = np.ones(nsources) * beam_std_pix
-    sources["y_stddev"] = np.ones(nsources) * beam_std_pix
-    sources["theta"] = np.zeros(nsources)
+    fake_sources["x_stddev"] = np.ones(nsources) * beam_std_pix
+    fake_sources["y_stddev"] = np.ones(nsources) * beam_std_pix
+    fake_sources["theta"] = np.zeros(nsources)
 
     data = (
-        make_model_image(shape, models.Gaussian2D(), sources, model_shape=shape, x_name="x_mean", y_name="y_mean")
+        make_model_image(shape, models.Gaussian2D(), fake_sources, model_shape=shape, x_name="x_mean", y_name="y_mean")
         * u.Jy
         / u.beam
     )
@@ -498,8 +533,21 @@ def large_map_source():
 
     header = wcs.to_header()
     header["UNIT"] = "Jy / beam", "Fake Unit"
+    header["NOISE"] = noise_level.to_value(u.Jy / u.beam)
 
-    nm = ContMap(data, uncertainty=StdDevUncertainty(uncertainty), hits=hits, mask=mask, wcs=wcs, unit=u.Jy / u.beam)
+    nm = ContMap(
+        data,
+        uncertainty=StdDevUncertainty(uncertainty),
+        hits=hits,
+        mask=mask,
+        wcs=wcs,
+        unit=u.Jy / u.beam,
+        fake_sources=fake_sources,
+        meta=header,
+    )
+
+    nm.x = fake_sources["x_mean"]
+    nm.y = fake_sources["y_mean"]
 
     return nm
 
@@ -518,11 +566,12 @@ def large_map_nosource():
     wcs.wcs.ctype = ("RA---TAN", "DEC--TAN")
 
     hits = np.ones(shape=shape, dtype=float)
-    uncertainty = np.ones(shape, dtype=float) * noise_level.to(u.Jy / u.beam).value
+    uncertainty = np.ones(shape, dtype=float) * noise_level.to(u.Jy / u.beam)
     data = np.random.normal(loc=0, scale=1, size=shape) * uncertainty
 
     header = wcs.to_header()
     header["UNIT"] = "Jy / beam", "Fake Unit"
+    header["NOISE"] = noise_level.to_value(u.Jy / u.beam)
 
     nm = ContMap(data, uncertainty=StdDevUncertainty(uncertainty), hits=hits, wcs=wcs, unit=u.Jy / u.beam)
 
@@ -615,21 +664,40 @@ def test_contmap_detect_sources(nms):
 
 def test_contmap_phot_sources(nms):
     nm = nms
+
+    # Beam area
+    beam_stddev_pix = nm.beam.major.to("pix", nm._pixel_scale).decompose().value * gaussian_fwhm_to_sigma
+    beam_sqr_area_pix = np.pi * beam_stddev_pix**2
+
     nm.detect_sources()
+
     nm.phot_sources(peak=True, psf=False)
     # Relative and absolute tolerance are really bad here for the case where
     # the sources are not centered on pixels... Otherwise it give perfect
     # answer when there is no noise
     npt.assert_allclose(nm.sources["flux_peak"].to(u.Jy).value, [1] * len(nm.sources), atol=1e-1, rtol=1e-1)
+    npt.assert_allclose(nm.sources["eflux_peak"].to(u.Jy).value, [1 / 4] * len(nm.sources), atol=1e-1, rtol=1e-1)
 
     nm.phot_sources(peak=False, psf=True)
     # Relative tolerance is rather low to pass the case of multiple sources...
     npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
+    npt.assert_allclose(
+        nm.sources["eflux_psf"].to(u.Jy).value,
+        [1 / 4 / np.sqrt(beam_sqr_area_pix)] * len(nm.sources),
+        atol=1e-1,
+        rtol=1e-1,
+    )
 
     # Without background estimation
     nm.phot_sources(peak=False, psf=True, background=False)
     # Relative tolerance is rather low to pass the case of multiple sources...
     npt.assert_allclose(nm.sources["flux_psf"].to(u.Jy).value, [1] * len(nm.sources), rtol=1e-6)
+    npt.assert_allclose(
+        nm.sources["eflux_psf"].to(u.Jy).value,
+        [1 / 4 / np.sqrt(beam_sqr_area_pix) * np.sqrt(2)] * len(nm.sources),
+        atol=1e-1,
+        rtol=1e-1,
+    )
 
     # Without fixed positions
     nm.phot_sources(peak=False, psf=True, fixed_positions=False)
@@ -657,22 +725,51 @@ def test_contmap_match_filter(nms):
     nm = nms
     mf_nm = nm.match_filter(nm.beam)
 
+    # Beam area
+    beam_stddev_pix = nm.beam.major.to("pix", nm._pixel_scale).decompose().value * gaussian_fwhm_to_sigma
+    beam_sqr_area_pix = np.pi * beam_stddev_pix**2
+
     x_idx = np.floor(nm.x + 0.5).astype(int)
     y_idx = np.floor(nm.y + 0.5).astype(int)
 
     npt.assert_allclose(mf_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
+    npt.assert_allclose(
+        mf_nm.uncertainty.array[y_idx, x_idx],
+        nm.uncertainty.array[y_idx, x_idx] / np.sqrt(beam_sqr_area_pix),
+        atol=1e-2,
+        rtol=1e-1,
+    )
     npt.assert_allclose((nm.beam.major * np.sqrt(2)).to(u.arcsec), mf_nm.beam.major.to(u.arcsec))
 
     hit_factor = (nm.beam.major / nm.beam.pixscale * gaussian_fwhm_to_sigma) ** 2 * np.pi # as it scale as the kernel_sqr (/2 wrt to gaussian size)
     npt.assert_allclose(
         np.median(mf_nm.hits[mf_nm.hits != 0]), np.median(nm.hits[nm.hits != 0]) * hit_factor, atol=1e-2, rtol=1e-1
     )
-
-    mh_nm = nm.match_filter(
-        RickerWavelet2DKernel(nm.beam.major.to(u.pix, nm._pixel_scale).value * gaussian_fwhm_to_sigma)
-    )
+    with pytest.warns(UserWarning):
+        mh_nm = nm.match_filter(
+            RickerWavelet2DKernel(nm.beam.major.to(u.pix, nm._pixel_scale).value * gaussian_fwhm_to_sigma)
+        )
     npt.assert_allclose(mh_nm.data[y_idx, x_idx], nm.data[y_idx, x_idx], atol=1e-2, rtol=1e-1)
     assert mh_nm.beam.major is None
+
+
+def wip_test_contmap_correlated_noise(nms):
+    nm = nms
+    r = np.linspace(-25, 25, 51)
+    yy, xx = np.meshgrid(r, r)
+    rr = np.sqrt(xx * xx + yy * yy)
+    kernel = np.sinc(rr / np.pi)
+
+    kernel = np.exp(-(rr**2) / 2)
+
+    from astropy.convolution import convolve
+
+    test_data = np.asanyarray(nm).filled(0)
+    corr_data = convolve(test_data, kernel, boundary="wrap")
+    # WIP....
+    corr_data *= 0
+
+    nm_corr = nm.match_filter(Kernel2D(array=kernel))
 
 
 def test_contmap_match_sources(nms):
@@ -909,6 +1006,7 @@ def generate_fits(tmpdir_factory):
 
     header = wcs.to_header()
     header["BUNIT"] = "Jy / beam", "Fake Unit"
+    header["NOISE"] = noise_level.to_value(u.Jy / u.beam)
 
     primary_header = fits.Header()
     primary_header["HISTORY"] = "this"
@@ -972,7 +1070,7 @@ def uniform_no_overlap(nsources, shape, marging=1 / 8, min_dist=None, oversample
 
 
 @pytest.fixture()
-def large_map_sources_centered():
+def large_map_sources():
     np.random.seed(42)
 
     shape = (512, 512)
@@ -993,34 +1091,34 @@ def large_map_sources_centered():
     # mask = np.sqrt((xx - (shape[1] - 1) / 2) ** 2 + (yy - (shape[0] - 1) / 2) ** 2) > shape[0] / 2
 
     # Sources will fall at the center of each pixel
-    sources = Table(masked=True)
-    sources["amplitude"] = np.ones(nsources) * peak_flux
+    fake_sources = Table(masked=True)
+    fake_sources["amplitude"] = np.ones(nsources) * peak_flux
     x, y = uniform_no_overlap(nsources, shape, 1 / 8, min_dist=(fwhm / pixsize).decompose().value * 3)
 
     # Put them at the center of the pixel to ease the tests !
-    sources["x_mean"] = x.astype(int)
-    sources["y_mean"] = y.astype(int)
+    fake_sources["x_mean"] = x.astype(int)
+    fake_sources["y_mean"] = y.astype(int)
 
-    ra, dec = wcs.wcs_pix2world(sources["x_mean"], sources["y_mean"], 0)
-    sources["ra"] = ra * u.deg
-    sources["dec"] = dec * u.deg
+    ra, dec = wcs.wcs_pix2world(fake_sources["x_mean"], fake_sources["y_mean"], 0)
+    fake_sources["ra"] = ra * u.deg
+    fake_sources["dec"] = dec * u.deg
 
-    sources["_ra"] = sources["ra"]
-    sources["_dec"] = sources["dec"]
+    fake_sources["_ra"] = fake_sources["ra"]
+    fake_sources["_dec"] = fake_sources["dec"]
 
     beam_std_pix = (fwhm / pixsize).decompose().value * gaussian_fwhm_to_sigma
-    sources["x_stddev"] = np.ones(nsources) * beam_std_pix
-    sources["y_stddev"] = np.ones(nsources) * beam_std_pix
-    sources["theta"] = np.zeros(nsources)
+    fake_sources["x_stddev"] = np.ones(nsources) * beam_std_pix
+    fake_sources["y_stddev"] = np.ones(nsources) * beam_std_pix
+    fake_sources["theta"] = np.zeros(nsources)
 
     data = (
-        make_model_image(shape, models.Gaussian2D(), sources, model_shape=shape, x_name="x_mean", y_name="y_mean")
+        make_model_image(shape, models.Gaussian2D(), fake_sources, model_shape=shape, x_name="x_mean", y_name="y_mean")
         * u.Jy
         / u.beam
     )
 
     hits = np.ones(shape=shape, dtype=float)
-    uncertainty = np.ones(shape, dtype=float) * noise_level.to(u.Jy / u.beam).value
+    uncertainty = np.ones(shape, dtype=float) * noise_level
     # data += np.random.normal(loc=0, scale=1, size=shape) * uncertainty
     # data[mask] = np.nan
     # hits[mask] = 0
@@ -1028,26 +1126,35 @@ def large_map_sources_centered():
 
     header = wcs.to_header()
     header["UNIT"] = "Jy / beam", "Fake Unit"
+    header["NOISE"] = noise_level.to_value(u.Jy / u.beam)
     header["BMAJ"] = fwhm.to("deg").value
     header["BMIN"] = fwhm.to("deg").value
     header["BPA"] = 0
 
-    cm = ContMap(
+    nm = ContMap(
         data,
-        uncertainty=uncertainty,
+        uncertainty=StdDevUncertainty(uncertainty),
         wcs=wcs,
         meta=header,
         hits=hits,
         unit=u.Jy / u.beam,
         mask=mask,
-        fake_sources=sources,
+        fake_sources=fake_sources,
     )
 
-    return cm
+    return nm
 
 
-def test_contmap_stack(large_map_sources_centered):
-    cm = large_map_sources_centered
+@pytest.fixture()
+def large_map_sources_with_noise(large_map_sources):
+    nm = large_map_sources
+    np.random.seed(0)
+    nm._data += np.random.normal(loc=0, scale=1, size=nm.shape) * nm.uncertainty.array
+
+    return nm
+
+def test_contmap_stack(large_map_sources):
+    cm = large_map_sources
     coords = cat_to_sc(cm.fake_sources)
     size = 10 * u.arcsec
 

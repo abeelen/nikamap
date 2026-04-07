@@ -574,7 +574,7 @@ def _shuffled_average(*args, datas=None, weights=None):
 
 def xy_to_world(sources, wcs, x_key, y_key):
     # Transform pixel coordinates column to world coordinates
-    lonlat = wcs.pixel_to_world_values(sources[x_key], sources[y_key])
+    lonlat = wcs.low_level_wcs.pixel_to_world_values(sources[x_key], sources[y_key])
     for key, item, unit in zip(wcs.world_axis_physical_types, lonlat, wcs.world_axis_units):
         sources[key] = item * u.Unit(unit)
 
