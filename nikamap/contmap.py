@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import warnings
 from collections import defaultdict
 from copy import deepcopy
-from functools import partial
 from itertools import product
 
 import numpy as np
@@ -15,7 +14,7 @@ from astropy.io import fits, registry
 from astropy.modeling import models
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy.modeling.utils import ellipse_extent
-from astropy.nddata import Cutout2D, InverseVariance, NDDataArray, NDUncertainty, StdDevUncertainty, VarianceUncertainty
+from astropy.nddata import InverseVariance, NDDataArray, NDUncertainty, StdDevUncertainty, VarianceUncertainty
 from astropy.nddata.ccddata import (
     _known_uncertainties,
     _unc_cls_to_name,
@@ -25,10 +24,8 @@ from astropy.nddata.ccddata import (
 from astropy.stats import SigmaClip
 from astropy.stats.funcs import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
 from astropy.table import Column, MaskedColumn, Table
-from astropy.utils.console import ProgressBar
 from astropy.utils.exceptions import AstropyWarning
 from astropy.wcs import WCS, InconsistentAxisTypesError
-from astropy.wcs.utils import proj_plane_pixel_scales
 from photutils.background import LocalBackground, MedianBackground
 from photutils.centroids import centroid_2dg  # , centroid_sources
 from photutils.datasets import make_model_image
@@ -37,12 +34,11 @@ from photutils.psf import PSFPhotometry, SourceGrouper
 from scipy import signal, stats
 from scipy.optimize import curve_fit
 
+from .stack import StackMixin
 from .utils import (
     CircularGaussianPSF,
-    _shuffled_average,
     beam_convolve,
     cat_to_sc,
-    cpu_count,
     meta_to_header,
     pos_uniform,
     setup_ax,
@@ -171,15 +167,20 @@ class ContBeam(Kernel2D):
             raise ValueError("You must define pixscale.")
 
         if self._major is not None:
-            stddev_maj = (self.stddev_maj / self.pixscale).decompose()
-            stddev_min = (self.stddev_min / self.pixscale).decompose()
-            angle = (90 * u.deg + self.pa).to(u.radian).value
+            stddev_maj_pix = (self.stddev_maj / self.pixscale).to_value(u.dimensionless_unscaled)
+            stddev_min_pix = (self.stddev_min / self.pixscale).to_value(u.dimensionless_unscaled)
+            angle = (90 * u.deg + self.pa).to_value(u.radian)
 
             self._model = models.Gaussian2D(
-                1 / (2 * np.pi * stddev_maj * stddev_min), 0, 0, x_stddev=stddev_maj, y_stddev=stddev_min, theta=angle
+                1 / (2 * np.pi * stddev_maj_pix * stddev_min_pix),
+                0,
+                0,
+                x_stddev=stddev_maj_pix,
+                y_stddev=stddev_min_pix,
+                theta=angle,
             )
 
-            max_extent = np.max(ellipse_extent(stddev_maj, stddev_min, angle))
+            max_extent = np.max(ellipse_extent(stddev_maj_pix, stddev_min_pix, angle))
             self._default_size = _round_up_to_odd_integer(self.support_scaling * 2 * max_extent)
             super(ContBeam, self).__init__(**kwargs)
             self.normalize()
@@ -200,9 +201,9 @@ class ContBeam(Kernel2D):
 
     def to_header_keywords(self):  # pragma: no cover
         return {
-            "BMAJ": self.major.to(u.deg).value,
-            "BMIN": self.minor.to(u.deg).value,
-            "BPA": self.pa.to(u.deg).value,
+            "BMAJ": self.major.to_value(u.deg),
+            "BMIN": self.minor.to_value(u.deg),
+            "BPA": self.pa.to_value(u.deg),
         }
 
     def ellipse_to_plot(self, xcen, ycen, pixscale):  # pragma: no cover
@@ -225,11 +226,11 @@ class ContBeam(Kernel2D):
 
         return Ellipse(
             (xcen, ycen),
-            width=(self.major.to(u.deg) / pixscale).to(u.dimensionless_unscaled).value,
-            height=(self.minor.to(u.deg) / pixscale).to(u.dimensionless_unscaled).value,
+            width=(self.major.to(u.deg) / pixscale).to_value(u.dimensionless_unscaled),
+            height=(self.minor.to(u.deg) / pixscale).to_value(u.dimensionless_unscaled),
             # PA is 90 deg offset from x-y axes by convention
             # (it is angle from NCP)
-            angle=(self.pa + 90 * u.deg).to(u.deg).value,
+            angle=(self.pa + 90 * u.deg).to_value(u.deg),
         )
 
     @property
@@ -432,7 +433,7 @@ class ContBeam(Kernel2D):
             return None
 
 
-class ContMap(NDDataArray):
+class ContMap(StackMixin, NDDataArray):
     """A ContMap object represent a continuum map with additionnal capabilities.
 
     It contains the metadata, wcs, and all attribute (data/stddev/time/unit/mask) as well as potential source list detected in these maps.
@@ -564,7 +565,8 @@ class ContMap(NDDataArray):
         return np.ma.array(self.time, mask=self.mask, fill_value=0)
 
     def surface(self, box_size=None):
-        """Retrieve surface covered by unmasked pixels
+        """Retrieve surface covered by unmasked pixels.
+
         Parameters
         ----------
         box_size : scalar or tuple, optional
@@ -718,14 +720,14 @@ class ContMap(NDDataArray):
         output = self[axis_slice[0], axis_slice[1]]
         return output
 
-    def add_gaussian_sources(self, within=(0, 1), cat_gen=pos_uniform, **kwargs):
+    def add_gaussian_sources(self, within=(0, 1), peak_flux=1 * u.mJy, cat_gen=pos_uniform, **kwargs):
         """Add gaussian sources into the map.
 
         Parameters
         ----------
         within : tuple of 2 int
             force the sources within this relative range in the map
-        cat_gen : function (`pos_uniform`|`pos_gridded`|`pos_list`|...)
+        cat_gen : callable (``pos_uniform`` | ``pos_gridded`` | ``pos_list`` | ...)
             the function used to generate the pixel positions and flux of the sources (see Notes below)
         **kwargs
             any keyword arguments to be passed to the `cat_gen` function
@@ -737,20 +739,20 @@ class ContMap(NDDataArray):
         """
         shape = self.shape
 
-        x_mean, y_mean, peak_flux = cat_gen(shape=shape, within=within, mask=self.mask, **kwargs)
-
+        x_mean, y_mean = cat_gen(shape=shape, within=within, mask=self.mask, **kwargs)
         nsources = x_mean.shape[0]
 
-        sources = Table(masked=True)
+        amplitude = np.repeat(peak_flux.to(self.unit * u.beam), nsources)
 
-        sources["amplitude"] = peak_flux.to(self.unit * u.beam)
+        x_stddev = np.full(nsources, self.beam.stddev_maj.to_value(u.pix, self._pixel_scale))
+        y_stddev = np.full(nsources, self.beam.stddev_min.to_value(u.pix, self._pixel_scale))
+        theta = np.zeros(nsources)
 
-        sources["x_mean"] = x_mean
-        sources["y_mean"] = y_mean
-
-        sources["x_stddev"] = np.ones(nsources) * self.beam.stddev_maj.to(u.pix, self._pixel_scale).value
-        sources["y_stddev"] = np.ones(nsources) * self.beam.stddev_min.to(u.pix, self._pixel_scale).value
-        sources["theta"] = np.zeros(nsources)
+        sources = Table(
+            [amplitude, x_mean, y_mean, x_stddev, y_stddev, theta],
+            names=["amplitude", "x_mean", "y_mean", "x_stddev", "y_stddev", "theta"],
+            masked=True,
+        )
 
         # Crude check to be within the finite part of the map
         if self.mask is not None:
@@ -803,7 +805,7 @@ class ContMap(NDDataArray):
         detect_on = self._to_ma(item=detect_on)[0].filled(0)
 
         if isinstance(threshold, u.Quantity):
-            detect_on = detect_on.to(threshold.unit).value
+            detect_on = detect_on.to_value(threshold.unit)
             threshold = threshold.value
 
         if self.mask is not None:
@@ -942,7 +944,7 @@ class ContMap(NDDataArray):
             data = self.data
             # BasicPSFPhotometry with fixed positions
 
-            sigma_psf = self.beam.stddev_maj.to(u.pix, self._pixel_scale).value
+            sigma_psf = self.beam.stddev_maj.to_value(u.pix, self._pixel_scale)
 
             # Using an IntegratedGaussianPRF can cause biais in the photometry
             # TODO: Check the NIKA2 calibration scheme
@@ -961,7 +963,7 @@ class ContMap(NDDataArray):
 
             source_grouper = None
             if len(xx) > 1:
-                source_grouper = SourceGrouper(grouping_threshold * self.beam.major.to(u.pix, self._pixel_scale).value)
+                source_grouper = SourceGrouper(grouping_threshold * self.beam.major.to_value(u.pix, self._pixel_scale))
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", AstropyWarning)
@@ -1021,7 +1023,6 @@ class ContMap(NDDataArray):
             except TypeError:
                 # photutils >1.9 < 1.13
                 self._residual = photometry.make_residual_image(data, (fit_shape, fit_shape))
-
 
         self.sources = sources
 
@@ -1141,7 +1142,7 @@ class ContMap(NDDataArray):
             Draw a beam in the lower left corner, default False
 
         **kwargs
-            Arbitrary keyword arguments for :func:`matplotib.pyplot.imshow `
+            Arbitrary keyword arguments for :func:`matplotlib.pyplot.imshow`
 
         Returns
         -------
@@ -1160,7 +1161,7 @@ class ContMap(NDDataArray):
 
         if isinstance(data.data, u.Quantity):
             # Remove unit to avoid matplotlib problems
-            data = np.ma.array(data.data.to(self.unit).value, mask=data.mask)
+            data = np.ma.array(data.data.to_value(self.unit), mask=data.mask)
             cbar_label = "{} [{}]".format(cbar_label, self.unit)
 
         ax = setup_ax(ax, self.wcs)
@@ -1211,7 +1212,7 @@ class ContMap(NDDataArray):
 
         Notes
         -----
-        See :func:`nikamap.ContMap.plot`for additionnal keywords
+        See :func:`nikamap.ContMap.plot` for additional keywords
         """
         return self.plot(to_plot="snr", vmin=vmin, vmax=vmax, **kwargs)
 
@@ -1330,7 +1331,7 @@ class ContMap(NDDataArray):
         return np.median(np.abs(snr - np.median(snr)))
 
     def normalize_uncertainty(self, factor=None, method="check_SNR", **kwargs):
-        """Normalize the uncertainty.value
+        """Normalize the uncertainty
 
         Parameters
         ----------
@@ -1466,227 +1467,6 @@ class ContMap(NDDataArray):
         kwargs["hits"] = result_hits
         return result, kwargs  # these must be returned
 
-    def stack(self, coords, size, method="cutout2d", n_bootstrap=None, **kwargs):
-        """Return a stacked map from a catalog of coordinates.
-
-        Parameters
-        ----------
-        coords : array of `~astropy.coordinates.SkyCoord`
-            the position of the cutout arrays center
-        size : `~astropy.units.Quantity`
-            the size of the cutout array along each axis.  If ``size``
-            is a scalar `~astropy.units.Quantity`, then a square cutout of
-            ``size`` will be created. If ``size`` has two elements,
-            they should be in ``(ny, nx)`` order.
-        method : str ('cutout2d', 'reproject')
-            the method to generate the cutouts
-        n_bootstrap : int, optional
-            use a bootstrap distribution of the signal instead of a weighted average
-
-        Notes
-        -----
-        Any additionnal keyword arguments are passed to the choosen method
-        """
-
-        if method == "cutout2d":
-            datas, weights, wcs = self._gen_cutout2d(coords, size, **kwargs)
-        elif method == "reproject":
-            datas, weights, wcs = self._gen_reproject(coords, size, **kwargs)
-        else:
-            raise ValueError("method should be cutout2d or reproject")
-
-        if np.any(np.isnan(datas)):
-            nan_mask = np.isnan(datas)
-            datas[nan_mask] = 0
-            weights[nan_mask] = 0
-
-        header = self.header.copy()
-        header["HISTORY"] = "Stacked on {} coordinates".format(len(coords))
-
-        if n_bootstrap is None:
-            # np.ma.average handle 0 weights in the final map
-            data, weight = np.ma.average(datas, weights=weights, axis=0, returned=True)
-            uncertainty = InverseVariance(weight)
-
-        else:
-            _ = partial(_shuffled_average, datas=datas, weights=weights)
-
-            bs_array = ProgressBar.map(
-                _,
-                np.array_split(np.arange(n_bootstrap), cpu_count()),
-                multiprocess=True,
-            )
-            bs_array = np.concatenate(bs_array)
-
-            data = np.mean(bs_array, axis=0)
-            uncertainty = StdDevUncertainty(np.std(bs_array, axis=0, ddof=1))
-
-        data = self.__class__(
-            data,
-            mask=np.isnan(data),
-            uncertainty=uncertainty,
-            unit=self.unit,
-            wcs=wcs,
-            meta=header,
-        )
-
-        return data
-
-    def _gen_cutout2d(self, coords, size, **kwargs):
-        """Generate simple 2D cutout from a catalog of coordinates
-
-        Parameters
-        ----------
-        coords : array of `~astropy.coordinates.SkyCoord`
-            the position of the cutout arrays center
-        size : `~astropy.units.Quantity`
-            the size of the cutout array along each axis.  If ``size``
-            is a scalar `~astropy.units.Quantity`, then a square cutout of
-            ``size`` will be created. If ``size`` has two elements,
-            they should be in ``(ny, nx)`` order.
-
-        Notes
-        -----
-        The cutouts have odd number of pixels and are centered around the pixel containing the coordinates.
-        """
-        # Convert size into pixel (ny, nx) to insure a even number of pixels
-        size = np.atleast_1d(size)
-        if len(size) == 1:
-            size = np.repeat(size, 2)
-
-        if len(size) > 2:
-            raise ValueError("size must have at most two elements")
-
-        pixel_scales = u.Quantity(
-            [scale * u.Unit(unit) for scale, unit in zip(proj_plane_pixel_scales(self.wcs), self.wcs.wcs.cunit)]
-        )
-
-        shape = np.zeros(2).astype(int)
-
-        # ``size`` can have a mixture of int and Quantity (and even units),
-        # so evaluate each axis separately
-        for axis, side in enumerate(size):
-            if side.unit.physical_type == "angle":
-                shape[axis] = int(_round_up_to_odd_integer((side / pixel_scales[axis]).decompose()))
-            else:
-                raise ValueError("size must contains only Quantities with angular units")
-
-        input_wcs = self.wcs
-        input_array = self.__array__().filled(np.nan)
-        data_cutouts = [
-            Cutout2D(input_array, coord, shape, wcs=input_wcs, mode="partial", fill_value=np.nan).data
-            for coord in coords
-        ]
-        data_cutouts = np.array(data_cutouts)
-
-        weights = self.weights
-        weights[self.mask] = 0
-        weights_cutouts = [
-            Cutout2D(weights, coord, shape, wcs=input_wcs, mode="partial", fill_value=np.nan).data for coord in coords
-        ]
-        weights_cutouts = np.array(weights_cutouts)
-        weights_cutouts[np.isnan(data_cutouts)] = 0
-
-        output_wcs = Cutout2D(self, coords[0], shape, mode="partial").wcs
-        output_wcs.wcs.crval = (0, 0)
-        output_wcs.wcs.crpix = (shape - 1) / 2 + 1
-
-        return data_cutouts, weights_cutouts, output_wcs
-
-    def _gen_reproject(self, coords, size, type="interp", pixel_scales=None, **kwargs):
-        """Generate reprojected 2D cutout from a catalog of coordinates
-
-        Parameters
-        ----------
-        coords : array of `~astropy.coordinates.SkyCoord`
-            the position of the cutout arrays center
-        size : `~astropy.units.Quantity`
-            the size of the cutout array along each axis.  If ``size``
-            is a scalar `~astropy.units.Quantity`, then a square cutout of
-            ``size`` will be created. If ``size`` has two elements,
-            they should be in ``(ny, nx)`` order.
-        type : str (``interp`` | ``adaptive`` | ``exact``)
-            the type of reprojection used, default='interp'
-        pixel_scales : `~astropy.units.Quantity`, optional
-            the pixel scale of the output image, default None (same as image)
-
-        Notes
-        -----
-        The cutouts have odd number of pixels and are reprojected to be centered at the the coordinates.
-        """
-        if type.lower() == "interp":
-            from reproject import reproject_interp as _reproject
-
-            _reproject = partial(_reproject)
-        elif type.lower() == "adaptive":
-            from reproject import reproject_adaptive as _reproject
-
-            _reproject = partial(_reproject, kernel="gaussian", boundary_mode="strict", conserve_flux=True)
-        elif type.lower() == "exact":
-            from reproject import reproject_exact as _reproject
-
-            _reproject = partial(_reproject)
-        else:
-            raise ValueError("Reprojection should be (``interp`` | ``adaptive`` | ``exact``)")
-
-        # Convert size into pixel (ny, nx) to insure a even number of pixels
-        size = np.atleast_1d(size)
-        if len(size) == 1:
-            size = np.repeat(size, 2)
-
-        if len(size) > 2:
-            raise ValueError("size must have at most two elements")
-
-        if pixel_scales is None:
-            pixel_scales = u.Quantity(
-                [scale * u.Unit(unit) for scale, unit in zip(proj_plane_pixel_scales(self.wcs), self.wcs.wcs.cunit)]
-            )
-        else:
-            pixel_scales = np.atleast_1d(pixel_scales)
-            if len(pixel_scales) == 1:
-                pixel_scales = np.repeat(pixel_scales, 2)
-
-            if len(pixel_scales) > 2:
-                raise ValueError("pixel_scale must have at most two elements")
-
-        shape = np.zeros(2).astype(int)
-        cdelt = np.zeros(2)
-
-        # ``size`` can have a mixture of int and Quantity (and even units),
-        # so evaluate each axis separately
-        for axis, side in enumerate(size):
-            if side.unit.physical_type == "angle":
-                cdelt[axis] = pixel_scales[axis].to(u.deg).value * np.sign(self.wcs.wcs.cdelt[axis])
-                shape[axis] = int(_round_up_to_odd_integer((side / pixel_scales[axis]).decompose()))
-            else:
-                raise ValueError("size must contains only Quantities with angular units")
-
-        output_wcs = WCS(naxis=2)
-        output_wcs.wcs.ctype = self.wcs.wcs.ctype
-        output_wcs.wcs.crpix = (shape - 1) / 2 + 1
-        output_wcs.wcs.cdelt = cdelt
-
-        input_array = self.__array__().filled(np.nan)
-        input_weights = self.weights
-        input_wcs = self.wcs
-
-        data_cutouts = []
-        weights_cutouts = []
-        for coord in coords:
-            output_wcs.wcs.crval = (coord.ra.to("deg").value, coord.dec.to("deg").value)
-            array_new, footprint = _reproject((input_array, input_wcs), output_wcs, shape)
-            weight_new = _reproject((input_weights, input_wcs), output_wcs, shape, return_footprint=False)
-
-            array_new[footprint == 0] = np.nan
-            weight_new[np.isnan(array_new)] = 0
-
-            data_cutouts.append(array_new)
-            weights_cutouts.append(weight_new)
-
-        output_wcs.wcs.crval = (0, 0)
-
-        return np.array(data_cutouts), np.array(weights_cutouts), output_wcs
-
     def to_hdus(
         self,
         hdu_data="DATA",
@@ -1698,6 +1478,7 @@ class ContMap(NDDataArray):
         fits_header_comment=None,
     ):
         """Creates an HDUList object from a ContMap object.
+
         Parameters
         ----------
         hdu_data, hdu_mask, hdu_uncertainty, hdu_hits : str or None, optional
@@ -1912,7 +1693,7 @@ def fits_contmap_writer(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=fits.verify.VerifyWarning)
         if c_data.sampling_freq is not None:
-            header["sampling_freq"] = c_data.sampling_freq.to(u.Hz).value
+            header["sampling_freq"] = c_data.sampling_freq.to_value(u.Hz)
 
     hdu = [fits.PrimaryHDU(None, header=header)]
     hdu += c_data.to_hdus(

@@ -3,9 +3,14 @@ master
 
 Added
 -----
+* New `ContMap.simstack` method: supports linear regression-based stacking (SimStack) for multiple source groups, with error estimation. [Viero et al. 2013]
+* New `stack.py` module: all stacking logic (including cutout, reproject, and simstack) is now modularized in StackMixin.
+* Dedicated and parameterized tests for stacking and simstack in `tests/test_stack.py`.
 
 Fixed
 -----
+* Refactored and cleaned up stacking code: removed legacy stacking routines from `contmap.py`, improved maintainability and testability.
+* Harmonized position generation utilities (`pos_uniform`, `pos_uniform_no_overlap`, etc.).
 
 Version 1.2.2
 =============
