@@ -1,0 +1,38 @@
+{
+ ":class:": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": ":class:"
+  }
+ ],
+ "Bootstrap": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "Bootstrap"
+  }
+ ],
+ "Path": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "Path"
+  }
+ ],
+ "nikamap.analysis.Bootstrap": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap",
+   "name": "Bootstrap"
+  }
+ ]
+}

@@ -7,6 +7,8 @@
 import datetime
 import os
 import sys
+import matplotlib
+matplotlib.use('Agg')  # non-interactive backend — prevents windows from opening during the build
 from sphinx_gallery.sorting import ExplicitOrder
 
 # -- Project information -----------------------------------------------------
@@ -16,8 +18,8 @@ from nikamap import __version__
 
 release = __version__
 
-project = "cruft_openastro"
-author = "me"
+project = "NikaMap"
+author = "Alexandre Beelen"
 copyright = f"{datetime.datetime.now().year}, {author}"  # noqa: A001
 
 # -- General configuration ---------------------------------------------------

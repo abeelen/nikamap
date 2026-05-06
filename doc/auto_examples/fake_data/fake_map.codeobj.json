@@ -1,0 +1,315 @@
+{
+ "Table": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.table",
+   "module_short": "astropy.table",
+   "name": "Table"
+  }
+ ],
+ "WCS": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCS"
+  }
+ ],
+ "__name__": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "str"
+  }
+ ],
+ "astropy.io.fits.HDUList": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList"
+  }
+ ],
+ "astropy.table.Table": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "astropy.table",
+   "module_short": "astropy.table",
+   "name": "Table"
+  }
+ ],
+ "astropy.wcs.WCS": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCS"
+  }
+ ],
+ "create_dataset": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "create_dataset"
+  }
+ ],
+ "fits.hdu.BinTableHDU": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits",
+   "name": "BinTableHDU"
+  }
+ ],
+ "fits.hdu.HDUList": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList"
+  }
+ ],
+ "fits.hdu.ImageHDU": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits",
+   "name": "ImageHDU"
+  }
+ ],
+ "fits.hdu.PrimaryHDU": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits",
+   "name": "PrimaryHDU"
+  }
+ ],
+ "fits.header.Header": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.header",
+   "module_short": "astropy.io.fits",
+   "name": "Header"
+  }
+ ],
+ "gaussian_fwhm_to_sigma": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.stats",
+   "module_short": "astropy.stats",
+   "name": "gaussian_fwhm_to_sigma"
+  }
+ ],
+ "make_model_image": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "photutils.datasets",
+   "module_short": "photutils.datasets",
+   "name": "make_model_image"
+  }
+ ],
+ "models.Gaussian2D": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.modeling.models",
+   "module_short": "astropy.modeling.models",
+   "name": "Gaussian2D"
+  }
+ ],
+ "nikamap.fake_data": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "fake_data"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "fake_data"
+  }
+ ],
+ "np.asarray": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "asarray"
+  }
+ ],
+ "np.cos": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "cos"
+  }
+ ],
+ "np.exp": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "exp"
+  }
+ ],
+ "np.indices": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "indices"
+  }
+ ],
+ "np.nan": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "nan"
+  }
+ ],
+ "np.ones": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ones"
+  }
+ ],
+ "np.pi": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "pi"
+  }
+ ],
+ "np.random.normal": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random",
+   "module_short": "numpy.random",
+   "name": "normal"
+  }
+ ],
+ "np.random.seed": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random",
+   "module_short": "numpy.random",
+   "name": "seed"
+  }
+ ],
+ "np.random.uniform": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random",
+   "module_short": "numpy.random",
+   "name": "uniform"
+  }
+ ],
+ "np.sin": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "sin"
+  }
+ ],
+ "np.sqrt": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "sqrt"
+  }
+ ],
+ "np.zeros": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "zeros"
+  }
+ ],
+ "u.Jy": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "Jy"
+  }
+ ],
+ "u.arcsec": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "arcsec"
+  }
+ ],
+ "u.beam": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "beam"
+  }
+ ],
+ "u.deg": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "deg"
+  }
+ ],
+ "u.mJy": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "mJy"
+  }
+ ]
+}

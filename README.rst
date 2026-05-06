@@ -2,7 +2,28 @@ NikaMap
 =======
 |pypi| |license| |wheels| |format| |pyversions| |rtd|
 
-`nikamap` is a python package to manipulate data produced by the IDL or PIIC NIKA2 pipeline.
+`nikamap` is a Python package built around `ContMap`, a general-purpose class
+for processing and analysing continuum maps from radio/millimetre
+observatories.  It provides beam handling, match-filtering, point-source
+detection and photometry, and cutout / simultaneous stacking.
+
+For NIKA2 users, `nikamap` offers first-class support for the FITS data
+products of both the **IDL** and **PIIC** NIKA2 reduction pipelines through
+`NikaMap` and `NikaFits`, thin subclasses of `ContMap` that handle
+multi-band files and scan-level jackknife realisations.
+
+Quick start with generic continuum data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+    from nikamap import ContMap
+
+    cm = ContMap.read('mymap.fits')
+    cm.plot()
+
+Quick start with NIKA2 data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
@@ -11,11 +32,11 @@ NikaMap
     nm = NikaMap.read('map.fits', band='1mm')
     nm.plot()
 
-or alternatively
+or using the multi-band container:
 
 .. code:: python
 
-   from nikamap import NikaFits
+    from nikamap import NikaFits
 
     data = NikaFits.read('map.fits')
     data['1mm'].plot()

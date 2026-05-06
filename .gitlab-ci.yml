@@ -123,11 +123,22 @@ ruff:
       - ".cache/pip"
       - ".ruff_cache"
 
-#pages:
-#  script:
-#    - pip install sphinx sphinx-rtd-theme
-#    - cd doc ; make html
-#    - mv build/html/ ../public/
+# ---------------------------------------------------------------------------
+# GitLab Pages — build and publish the Sphinx documentation automatically.
+# The HTML output is available at https://<namespace>.gitlab.io/<project>/
+# Triggered on every push to the default branch and on tags.
+# ---------------------------------------------------------------------------
+pages:
+  stage: deploy
+  script:
+    - pip install --quiet ".[docs]"
+    - sphinx-build -b html doc public --keep-going
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
 #  artifacts:
 #    paths:
 #      - public

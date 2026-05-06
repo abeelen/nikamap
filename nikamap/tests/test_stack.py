@@ -435,7 +435,7 @@ def check_side():
 
     stack = data.stack(coords, 40 * u.arcsec)
     stack.phot_sources(Table({"ra": [0] * u.deg, "dec": [0] * u.deg}), peak=False, psf=True, background=True)
-    result = data.simstack(coords, add_offset=True, fast=True)
+    result = data.simstack(coords, add_offset=True, fast=True)  # noqa: F841
 
     sim_stack = sim_data.stack(coords, 40 * u.arcsec)
     sim_stack.phot_sources(Table({"ra": [0] * u.deg, "dec": [0] * u.deg}), peak=False, psf=True, background=True)

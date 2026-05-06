@@ -160,7 +160,8 @@ cython_debug/
 #.idea/
 
 _build/
-auto_examples/
+# auto_examples/ is committed (pre-built) so that RTD can serve it without re-executing
+# auto_examples/
 gen_api/
 reports/
 .vscode/
