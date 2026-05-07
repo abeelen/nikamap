@@ -1325,10 +1325,13 @@ class ContMap(StackMixin, NDDataArray):
     def check_SNR_simple(self, **kwargs):
         """Perform normality test on SNR maps
 
-        This perform a simple mad absolute deviation on snr pixels
+        This perform a simple mad_std (median absolute deviation normalized
+        to the standard deviation of a normal distribution) on snr pixels.
+        The MAD is divided by ``scipy.stats.norm.ppf(0.75)`` (~0.6745) so
+        the returned value is a consistent estimator of σ for N(0,σ).
         """
         snr = self.snr.compressed()
-        return np.median(np.abs(snr - np.median(snr)))
+        return np.median(np.abs(snr - np.median(snr))) / stats.norm.ppf(0.75)
 
     def normalize_uncertainty(self, factor=None, method="check_SNR", **kwargs):
         """Normalize the uncertainty
