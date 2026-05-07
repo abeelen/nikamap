@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:27.990** total execution time for 4 files **from auto_examples/fake_data**:
+**00:22.278** total execution time for 5 files **from auto_examples/fake_data**:
 
 .. container::
 
@@ -32,8 +32,8 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_examples_fake_data_plot_stacking.py` (``plot_stacking.py``)
-     - 00:27.990
+   * - :ref:`sphx_glr_auto_examples_fake_data_plot_noise_realisations.py` (``plot_noise_realisations.py``)
+     - 00:22.278
      - 0.0
    * - :ref:`sphx_glr_auto_examples_fake_data_fake_map.py` (``fake_map.py``)
      - 00:00.000
@@ -42,5 +42,8 @@ Computation times
      - 00:00.000
      - 0.0
    * - :ref:`sphx_glr_auto_examples_fake_data_plot_simstack.py` (``plot_simstack.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_fake_data_plot_stacking.py` (``plot_stacking.py``)
      - 00:00.000
      - 0.0

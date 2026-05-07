@@ -1,0 +1,4449 @@
+{
+ ":class:": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": ":class:"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": ":class:"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": ":class:"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": ":class:"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": ":class:"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": ":class:"
+  },
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": ":class:"
+  }
+ ],
+ "Bootstrap": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap",
+   "name": "Bootstrap"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "Bootstrap"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap.analysis",
+   "name": "MultiScans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "MultiScans"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "Bootstrap"
+  }
+ ],
+ "ContMap": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap.contmap",
+   "module_short": "nikamap",
+   "name": "ContMap"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap.stack",
+   "module_short": "nikamap.stack",
+   "name": "StackMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "StackMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.compat",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataArray"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndarithmetic",
+   "module_short": "astropy.nddata.mixins.ndarithmetic",
+   "name": "NDArithmeticMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDArithmeticMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDArithmeticMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDArithmeticMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndslicing",
+   "module_short": "astropy.nddata.mixins.ndslicing",
+   "name": "NDSlicingMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDSlicingMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDSlicingMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDSlicingMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndio",
+   "module_short": "astropy.nddata.mixins.ndio",
+   "name": "NDIOMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDIOMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDIOMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDIOMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDData"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata_base",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataBase"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap"
+  }
+ ],
+ "HalfDifference": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap",
+   "name": "HalfDifference"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "HalfDifference"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap.analysis",
+   "name": "MultiScans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "MultiScans"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "HalfDifference"
+  }
+ ],
+ "Jackknife": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap",
+   "name": "Jackknife"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "Jackknife"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap.analysis",
+   "name": "MultiScans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "MultiScans"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "Jackknife"
+  }
+ ],
+ "NikaMap.read": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndio",
+   "module_short": "astropy.nddata.mixins.ndio",
+   "name": "NDDataRead"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDDataRead"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataRead"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataRead"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.NikaMap",
+   "module_short": "nikamap.NikaMap",
+   "name": "read"
+  }
+ ],
+ "Path": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "Path"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PurePath"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "Path"
+  }
+ ],
+ "StdDevUncertainty": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.nduncertainty",
+   "module_short": "astropy.nddata",
+   "name": "StdDevUncertainty"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "StdDevUncertainty"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "StdDevUncertainty"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.nduncertainty",
+   "module_short": "astropy.nddata.nduncertainty",
+   "name": "_VariancePropagationMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "_VariancePropagationMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_VariancePropagationMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata.nduncertainty",
+   "module_short": "astropy.nddata",
+   "name": "NDUncertainty"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDUncertainty"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDUncertainty"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "StdDevUncertainty"
+  }
+ ],
+ "Table": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.table.table",
+   "module_short": "astropy.table",
+   "name": "Table"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.table",
+   "module_short": "astropy.table",
+   "name": "Table"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Table"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.table",
+   "module_short": "astropy.table",
+   "name": "Table"
+  }
+ ],
+ "WCS": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCS"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCS"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "WCS"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi.fitswcs",
+   "module_short": "astropy.wcs.wcsapi.fitswcs",
+   "name": "FITSWCSAPIMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "FITSWCSAPIMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "FITSWCSAPIMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "FITSWCSAPIMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCSBase"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "WCSBase"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi.low_level_api",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "BaseLowLevelWCS"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "BaseLowLevelWCS"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "BaseLowLevelWCS"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "BaseLowLevelWCS"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi.high_level_api",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "HighLevelWCSMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "HighLevelWCSMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "HighLevelWCSMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "HighLevelWCSMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi.high_level_api",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "BaseHighLevelWCS"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "BaseHighLevelWCS"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "BaseHighLevelWCS"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "BaseHighLevelWCS"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCS"
+  }
+ ],
+ "ax": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Axes"
+  }
+ ],
+ "ax.hist": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes.hist"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes.hist"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Axes.hist"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._base",
+   "module_short": "matplotlib.axes._base",
+   "name": "_AxesBase.hist"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "_AxesBase.hist"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "_AxesBase.hist"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.artist",
+   "module_short": "matplotlib.artist",
+   "name": "Artist.hist"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Artist.hist"
+  }
+ ],
+ "ax.legend": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes.legend"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes.legend"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Axes.legend"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._base",
+   "module_short": "matplotlib.axes._base",
+   "name": "_AxesBase.legend"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "_AxesBase.legend"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "_AxesBase.legend"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.artist",
+   "module_short": "matplotlib.artist",
+   "name": "Artist.legend"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Artist.legend"
+  }
+ ],
+ "ax.plot": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Axes.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._base",
+   "module_short": "matplotlib.axes._base",
+   "name": "_AxesBase.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "_AxesBase.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "_AxesBase.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.artist",
+   "module_short": "matplotlib.artist",
+   "name": "Artist.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Artist.plot"
+  }
+ ],
+ "ax.set_title": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes.set_title"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes.set_title"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Axes.set_title"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._base",
+   "module_short": "matplotlib.axes._base",
+   "name": "_AxesBase.set_title"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "_AxesBase.set_title"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "_AxesBase.set_title"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.artist",
+   "module_short": "matplotlib.artist",
+   "name": "Artist.set_title"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Artist.set_title"
+  }
+ ],
+ "ax.set_xlabel": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes.set_xlabel"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "Axes.set_xlabel"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Axes.set_xlabel"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes._base",
+   "module_short": "matplotlib.axes._base",
+   "name": "_AxesBase.set_xlabel"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.axes",
+   "module_short": "matplotlib.axes",
+   "name": "_AxesBase.set_xlabel"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "_AxesBase.set_xlabel"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.artist",
+   "module_short": "matplotlib.artist",
+   "name": "Artist.set_xlabel"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Artist.set_xlabel"
+  }
+ ],
+ "axes": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "beam_std_pix": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "float64"
+  }
+ ],
+ "bins": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "bs": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap",
+   "name": "Bootstrap"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "Bootstrap"
+  }
+ ],
+ "bs_map": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  }
+ ],
+ "bs_map.check_SNR_simple": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.contmap",
+   "module_short": "nikamap",
+   "name": "ContMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.stack",
+   "module_short": "nikamap.stack",
+   "name": "StackMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "StackMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.compat",
+   "module_short": "astropy.nddata.compat",
+   "name": "NDDataArray.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataArray.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndarithmetic",
+   "module_short": "astropy.nddata.mixins.ndarithmetic",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndslicing",
+   "module_short": "astropy.nddata.mixins.ndslicing",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndio",
+   "module_short": "astropy.nddata.mixins.ndio",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata",
+   "module_short": "astropy.nddata.nddata",
+   "name": "NDData.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDData.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata_base",
+   "module_short": "astropy.nddata.nddata_base",
+   "name": "NDDataBase.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataBase.check_SNR_simple"
+  }
+ ],
+ "coadd": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  }
+ ],
+ "coadd.check_SNR_simple": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.contmap",
+   "module_short": "nikamap",
+   "name": "ContMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.stack",
+   "module_short": "nikamap.stack",
+   "name": "StackMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "StackMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.compat",
+   "module_short": "astropy.nddata.compat",
+   "name": "NDDataArray.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataArray.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndarithmetic",
+   "module_short": "astropy.nddata.mixins.ndarithmetic",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndslicing",
+   "module_short": "astropy.nddata.mixins.ndslicing",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndio",
+   "module_short": "astropy.nddata.mixins.ndio",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata",
+   "module_short": "astropy.nddata.nddata",
+   "name": "NDData.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDData.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata_base",
+   "module_short": "astropy.nddata.nddata_base",
+   "name": "NDDataBase.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataBase.check_SNR_simple"
+  }
+ ],
+ "coadd.wcs": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.contmap",
+   "module_short": "nikamap",
+   "name": "ContMap.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.stack",
+   "module_short": "nikamap.stack",
+   "name": "StackMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "StackMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.compat",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataArray.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndarithmetic",
+   "module_short": "astropy.nddata.mixins.ndarithmetic",
+   "name": "NDArithmeticMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDArithmeticMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDArithmeticMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDArithmeticMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndslicing",
+   "module_short": "astropy.nddata.mixins.ndslicing",
+   "name": "NDSlicingMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDSlicingMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDSlicingMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDSlicingMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndio",
+   "module_short": "astropy.nddata.mixins.ndio",
+   "name": "NDIOMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDIOMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDIOMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDIOMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDData.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata_base",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataBase.wcs"
+  }
+ ],
+ "color": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "str"
+  }
+ ],
+ "fig": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.figure",
+   "module_short": "matplotlib.figure",
+   "name": "Figure"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Figure"
+  }
+ ],
+ "fig.tight_layout": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.figure",
+   "module_short": "matplotlib.figure",
+   "name": "Figure.tight_layout"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Figure.tight_layout"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.figure",
+   "module_short": "matplotlib.figure",
+   "name": "FigureBase.tight_layout"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "FigureBase.tight_layout"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.artist",
+   "module_short": "matplotlib.artist",
+   "name": "Artist.tight_layout"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib",
+   "module_short": "matplotlib",
+   "name": "Artist.tight_layout"
+  }
+ ],
+ "filenames": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "list"
+  }
+ ],
+ "filenames.append": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "fits.HDUList": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.hdulist",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "HDUList"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "HDUList"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "list"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.verify",
+   "module_short": "astropy.io.fits.verify",
+   "name": "_Verify"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "_Verify"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "_Verify"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_Verify"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList"
+  }
+ ],
+ "fits.Header": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.header",
+   "module_short": "astropy.io.fits",
+   "name": "Header"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "Header"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "Header"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "Header"
+  }
+ ],
+ "fits.ImageHDU": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.image",
+   "module_short": "astropy.io.fits",
+   "name": "ImageHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits",
+   "name": "ImageHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "ImageHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "ImageHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "ImageHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.image",
+   "module_short": "astropy.io.fits.hdu.image",
+   "name": "_ImageBaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits.hdu",
+   "name": "_ImageBaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "_ImageBaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "_ImageBaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_ImageBaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.base",
+   "module_short": "astropy.io.fits.hdu.base",
+   "name": "ExtensionHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits.hdu",
+   "name": "ExtensionHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "ExtensionHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "ExtensionHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "ExtensionHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.base",
+   "module_short": "astropy.io.fits.hdu.base",
+   "name": "_ValidHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits.hdu",
+   "name": "_ValidHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "_ValidHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "_ValidHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_ValidHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.base",
+   "module_short": "astropy.io.fits.hdu.base",
+   "name": "_BaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits.hdu",
+   "name": "_BaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "_BaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "_BaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_BaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.verify",
+   "module_short": "astropy.io.fits.verify",
+   "name": "_Verify"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "_Verify"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "_Verify"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_Verify"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "ImageHDU"
+  }
+ ],
+ "fits.PrimaryHDU": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.image",
+   "module_short": "astropy.io.fits",
+   "name": "PrimaryHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits",
+   "name": "PrimaryHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "PrimaryHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "PrimaryHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "PrimaryHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.image",
+   "module_short": "astropy.io.fits.hdu.image",
+   "name": "_ImageBaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits.hdu",
+   "name": "_ImageBaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "_ImageBaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "_ImageBaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_ImageBaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.base",
+   "module_short": "astropy.io.fits.hdu.base",
+   "name": "_ValidHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits.hdu",
+   "name": "_ValidHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "_ValidHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "_ValidHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_ValidHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.base",
+   "module_short": "astropy.io.fits.hdu.base",
+   "name": "_BaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits.hdu",
+   "name": "_BaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "_BaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "_BaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_BaseHDU"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits.verify",
+   "module_short": "astropy.io.fits.verify",
+   "name": "_Verify"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "_Verify"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "_Verify"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_Verify"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "PrimaryHDU"
+  }
+ ],
+ "fname": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PosixPath"
+  }
+ ],
+ "fwhm": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units.quantity",
+   "module_short": "astropy.units",
+   "name": "Quantity"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "Quantity"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Quantity"
+  }
+ ],
+ "fwhm.to": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units.quantity",
+   "module_short": "astropy.units",
+   "name": "Quantity.to"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "Quantity.to"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Quantity.to"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray.to"
+  }
+ ],
+ "gaussian_fwhm_to_sigma": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "float"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.stats.funcs",
+   "module_short": "astropy.stats",
+   "name": "gaussian_fwhm_to_sigma"
+  }
+ ],
+ "hd": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap",
+   "name": "HalfDifference"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "HalfDifference"
+  }
+ ],
+ "hd_map": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  }
+ ],
+ "hd_map.wcs": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.contmap",
+   "module_short": "nikamap",
+   "name": "ContMap.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.stack",
+   "module_short": "nikamap.stack",
+   "name": "StackMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "StackMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.compat",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataArray.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndarithmetic",
+   "module_short": "astropy.nddata.mixins.ndarithmetic",
+   "name": "NDArithmeticMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDArithmeticMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDArithmeticMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDArithmeticMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndslicing",
+   "module_short": "astropy.nddata.mixins.ndslicing",
+   "name": "NDSlicingMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDSlicingMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDSlicingMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDSlicingMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndio",
+   "module_short": "astropy.nddata.mixins.ndio",
+   "name": "NDIOMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDIOMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDIOMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDIOMixin.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDData.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata_base",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase.wcs"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataBase.wcs"
+  }
+ ],
+ "hd_snr_stds": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "list"
+  }
+ ],
+ "hdus": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.hdulist",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "HDUList"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "HDUList"
+  }
+ ],
+ "hdus.writeto": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu.hdulist",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList.writeto"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.hdu",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList.writeto"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "HDUList.writeto"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "HDUList.writeto"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "HDUList.writeto"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "list.writeto"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.verify",
+   "module_short": "astropy.io.fits.verify",
+   "name": "_Verify.writeto"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "_Verify.writeto"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "_Verify.writeto"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "_Verify.writeto"
+  }
+ ],
+ "hits": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "i": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "img_header": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.header",
+   "module_short": "astropy.io.fits",
+   "name": "Header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "Header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "Header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Header"
+  }
+ ],
+ "jk": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap",
+   "name": "Jackknife"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "Jackknife"
+  }
+ ],
+ "jk_map": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  }
+ ],
+ "jk_snr_stds": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "list"
+  }
+ ],
+ "label": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "str"
+  }
+ ],
+ "make_model_image": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "photutils.datasets",
+   "module_short": "photutils.datasets",
+   "name": "make_model_image"
+  }
+ ],
+ "models.Gaussian2D": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.modeling.functional_models",
+   "module_short": "astropy.modeling.functional_models",
+   "name": "Gaussian2D"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.modeling",
+   "module_short": "astropy.modeling",
+   "name": "Gaussian2D"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Gaussian2D"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.modeling.core",
+   "module_short": "astropy.modeling",
+   "name": "Fittable2DModel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.modeling",
+   "module_short": "astropy.modeling",
+   "name": "Fittable2DModel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Fittable2DModel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.modeling.core",
+   "module_short": "astropy.modeling",
+   "name": "FittableModel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.modeling",
+   "module_short": "astropy.modeling",
+   "name": "FittableModel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "FittableModel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.modeling.core",
+   "module_short": "astropy.modeling",
+   "name": "Model"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy.modeling",
+   "module_short": "astropy.modeling",
+   "name": "Model"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Model"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.modeling.models",
+   "module_short": "astropy.modeling.models",
+   "name": "Gaussian2D"
+  }
+ ],
+ "n_scans": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "nikamap.Bootstrap": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "Bootstrap"
+  }
+ ],
+ "nikamap.HalfDifference": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "HalfDifference"
+  }
+ ],
+ "nikamap.Jackknife": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "Jackknife"
+  }
+ ],
+ "nikamap.NikaMap": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  }
+ ],
+ "nikamap.analysis.MultiScans": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "nikamap.analysis",
+   "module_short": "nikamap.analysis",
+   "name": "MultiScans"
+  }
+ ],
+ "nm": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  }
+ ],
+ "nm.check_SNR_simple": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.contmap",
+   "module_short": "nikamap",
+   "name": "ContMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.stack",
+   "module_short": "nikamap.stack",
+   "name": "StackMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "StackMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.compat",
+   "module_short": "astropy.nddata.compat",
+   "name": "NDDataArray.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataArray.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndarithmetic",
+   "module_short": "astropy.nddata.mixins.ndarithmetic",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDArithmeticMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndslicing",
+   "module_short": "astropy.nddata.mixins.ndslicing",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDSlicingMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndio",
+   "module_short": "astropy.nddata.mixins.ndio",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDIOMixin.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata",
+   "module_short": "astropy.nddata.nddata",
+   "name": "NDData.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDData.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata_base",
+   "module_short": "astropy.nddata.nddata_base",
+   "name": "NDDataBase.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase.check_SNR_simple"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataBase.check_SNR_simple"
+  }
+ ],
+ "nm.plot": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.contmap",
+   "module_short": "nikamap",
+   "name": "ContMap.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.stack",
+   "module_short": "nikamap.stack",
+   "name": "StackMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "StackMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.compat",
+   "module_short": "astropy.nddata.compat",
+   "name": "NDDataArray.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataArray.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndarithmetic",
+   "module_short": "astropy.nddata.mixins.ndarithmetic",
+   "name": "NDArithmeticMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDArithmeticMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDArithmeticMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDArithmeticMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndslicing",
+   "module_short": "astropy.nddata.mixins.ndslicing",
+   "name": "NDSlicingMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDSlicingMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDSlicingMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDSlicingMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndio",
+   "module_short": "astropy.nddata.mixins.ndio",
+   "name": "NDIOMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDIOMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDIOMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDIOMixin.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata",
+   "module_short": "astropy.nddata.nddata",
+   "name": "NDData.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDData.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata_base",
+   "module_short": "astropy.nddata.nddata_base",
+   "name": "NDDataBase.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase.plot"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataBase.plot"
+  }
+ ],
+ "nm.plot_SNR": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.contmap",
+   "module_short": "nikamap",
+   "name": "ContMap.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.stack",
+   "module_short": "nikamap.stack",
+   "name": "StackMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "StackMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.compat",
+   "module_short": "astropy.nddata.compat",
+   "name": "NDDataArray.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataArray.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndarithmetic",
+   "module_short": "astropy.nddata.mixins.ndarithmetic",
+   "name": "NDArithmeticMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDArithmeticMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDArithmeticMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDArithmeticMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndslicing",
+   "module_short": "astropy.nddata.mixins.ndslicing",
+   "name": "NDSlicingMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDSlicingMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDSlicingMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDSlicingMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndio",
+   "module_short": "astropy.nddata.mixins.ndio",
+   "name": "NDIOMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDIOMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDIOMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDIOMixin.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata",
+   "module_short": "astropy.nddata.nddata",
+   "name": "NDData.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDData.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata_base",
+   "module_short": "astropy.nddata.nddata_base",
+   "name": "NDDataBase.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase.plot_SNR"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataBase.plot_SNR"
+  }
+ ],
+ "nm.snr.compressed": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.contmap",
+   "module_short": "nikamap",
+   "name": "ContMap.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.stack",
+   "module_short": "nikamap.stack",
+   "name": "StackMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "StackMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.compat",
+   "module_short": "astropy.nddata.compat",
+   "name": "NDDataArray.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataArray.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataArray.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndarithmetic",
+   "module_short": "astropy.nddata.mixins.ndarithmetic",
+   "name": "NDArithmeticMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDArithmeticMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDArithmeticMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDArithmeticMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndslicing",
+   "module_short": "astropy.nddata.mixins.ndslicing",
+   "name": "NDSlicingMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDSlicingMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDSlicingMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDSlicingMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins.ndio",
+   "module_short": "astropy.nddata.mixins.ndio",
+   "name": "NDIOMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.mixins",
+   "module_short": "astropy.nddata.mixins",
+   "name": "NDIOMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDIOMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDIOMixin.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata",
+   "module_short": "astropy.nddata.nddata",
+   "name": "NDData.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDData.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDData.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata.nddata_base",
+   "module_short": "astropy.nddata.nddata_base",
+   "name": "NDDataBase.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.nddata",
+   "module_short": "astropy.nddata",
+   "name": "NDDataBase.snr"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "NDDataBase.snr"
+  }
+ ],
+ "noise": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "noise_level": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "np.full": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "full"
+  }
+ ],
+ "np.linspace": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "_ArrayFunctionDispatcher"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "linspace"
+  }
+ ],
+ "np.ones": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ones"
+  }
+ ],
+ "np.random.default_rng": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "_cython_3_2_4",
+   "module_short": "_cython_3_2_4",
+   "name": "cython_function_or_method"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random",
+   "module_short": "numpy.random",
+   "name": "default_rng"
+  }
+ ],
+ "one_scan_map": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "NikaMap"
+  }
+ ],
+ "pixscale": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units.quantity",
+   "module_short": "astropy.units",
+   "name": "Quantity"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "Quantity"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Quantity"
+  }
+ ],
+ "pixscale.to": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units.quantity",
+   "module_short": "astropy.units",
+   "name": "Quantity.to"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "Quantity.to"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Quantity.to"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray.to"
+  }
+ ],
+ "plt.show": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "show"
+  }
+ ],
+ "plt.subplots": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "matplotlib.pyplot",
+   "module_short": "matplotlib.pyplot",
+   "name": "subplots"
+  }
+ ],
+ "primary_header": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits.header",
+   "module_short": "astropy.io.fits",
+   "name": "Header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io.fits",
+   "module_short": "astropy.io.fits",
+   "name": "Header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.io",
+   "module_short": "astropy.io",
+   "name": "Header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Header"
+  }
+ ],
+ "rng": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random._generator",
+   "module_short": "numpy.random",
+   "name": "Generator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random",
+   "module_short": "numpy.random",
+   "name": "Generator"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "Generator"
+  }
+ ],
+ "rng.normal": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random._generator",
+   "module_short": "numpy.random",
+   "name": "Generator.normal"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random",
+   "module_short": "numpy.random",
+   "name": "Generator.normal"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "Generator.normal"
+  }
+ ],
+ "shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "shutil.rmtree": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "shutil",
+   "module_short": "shutil",
+   "name": "rmtree"
+  }
+ ],
+ "sigma": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "float64"
+  }
+ ],
+ "signal": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "signal_cm": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap.contmap",
+   "module_short": "nikamap",
+   "name": "ContMap"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "nikamap",
+   "module_short": "nikamap",
+   "name": "ContMap"
+  }
+ ],
+ "snr": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "source_table": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.table.table",
+   "module_short": "astropy.table",
+   "name": "Table"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.table",
+   "module_short": "astropy.table",
+   "name": "Table"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Table"
+  }
+ ],
+ "spstats.norm.pdf": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "scipy.stats._continuous_distns",
+   "module_short": "scipy.stats._continuous_distns",
+   "name": "norm_gen.pdf"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "scipy.stats",
+   "module_short": "scipy.stats",
+   "name": "norm_gen.pdf"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "scipy",
+   "module_short": "scipy",
+   "name": "norm_gen.pdf"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "scipy.stats._distn_infrastructure",
+   "module_short": "scipy.stats",
+   "name": "rv_continuous.pdf"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "scipy.stats",
+   "module_short": "scipy.stats",
+   "name": "rv_continuous.pdf"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "scipy",
+   "module_short": "scipy",
+   "name": "rv_continuous.pdf"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "scipy.stats._distn_infrastructure",
+   "module_short": "scipy.stats._distn_infrastructure",
+   "name": "rv_generic.pdf"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "scipy.stats",
+   "module_short": "scipy.stats",
+   "name": "rv_generic.pdf"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "scipy",
+   "module_short": "scipy",
+   "name": "rv_generic.pdf"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "scipy.stats.norm",
+   "module_short": "scipy.stats.norm",
+   "name": "pdf"
+  }
+ ],
+ "stddev": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "tempfile.mkdtemp": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "tempfile",
+   "module_short": "tempfile",
+   "name": "mkdtemp"
+  }
+ ],
+ "title": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "str"
+  }
+ ],
+ "tmpdir": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pathlib",
+   "module_short": "pathlib",
+   "name": "PosixPath"
+  }
+ ],
+ "u.arcsec": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units.core",
+   "module_short": "astropy.units",
+   "name": "Unit"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "Unit"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "Unit"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "arcsec"
+  }
+ ],
+ "u.beam": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units.core",
+   "module_short": "astropy.units",
+   "name": "IrreducibleUnit"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "IrreducibleUnit"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "IrreducibleUnit"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "beam"
+  }
+ ],
+ "u.mJy": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units.core",
+   "module_short": "astropy.units",
+   "name": "PrefixUnit"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "PrefixUnit"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "PrefixUnit"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.units",
+   "module_short": "astropy.units",
+   "name": "mJy"
+  }
+ ],
+ "wcs": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCS"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCS"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "WCS"
+  }
+ ],
+ "wcs.to_header": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCS.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCS.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "WCS.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi.fitswcs",
+   "module_short": "astropy.wcs.wcsapi.fitswcs",
+   "name": "FITSWCSAPIMixin.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "FITSWCSAPIMixin.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "FITSWCSAPIMixin.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "FITSWCSAPIMixin.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "WCSBase.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "WCSBase.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi.low_level_api",
+   "module_short": "astropy.wcs.wcsapi.low_level_api",
+   "name": "BaseLowLevelWCS.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "BaseLowLevelWCS.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "BaseLowLevelWCS.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "BaseLowLevelWCS.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi.high_level_api",
+   "module_short": "astropy.wcs.wcsapi.high_level_api",
+   "name": "HighLevelWCSMixin.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "HighLevelWCSMixin.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "HighLevelWCSMixin.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "HighLevelWCSMixin.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi.high_level_api",
+   "module_short": "astropy.wcs.wcsapi.high_level_api",
+   "name": "BaseHighLevelWCS.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs.wcsapi",
+   "module_short": "astropy.wcs.wcsapi",
+   "name": "BaseHighLevelWCS.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "BaseHighLevelWCS.to_header"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "BaseHighLevelWCS.to_header"
+  }
+ ],
+ "wcs.wcs.cdelt": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "wcs.wcs.crpix": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "wcs.wcs.crval": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "wcs.wcs.ctype": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy.wcs",
+   "module_short": "astropy.wcs",
+   "name": "StrListProxy"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "astropy",
+   "module_short": "astropy",
+   "name": "StrListProxy"
+  }
+ ]
+}
